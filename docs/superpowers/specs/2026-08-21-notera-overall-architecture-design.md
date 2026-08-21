@@ -47,7 +47,7 @@ Notera 使用“无限层级目录 + 笔记”组织内容。笔记正文使用 
 
 ### 1.3 核心名词
 
-**Vault（加密库）**：一组笔记数据共同构成的加密与同步边界。一个 Vault 拥有稳定的 Vault ID 和 Vault Key，其数据包括目录、笔记、标签、收藏、历史、回收站、冲突和附件。启用同步后，同一个 Vault 的端到端加密副本可以分布在官方云端和多台设备上。Vault 是逻辑数据与安全边界，不是某个文件、数据库或进程；`vault.db` 只是它在一台设备上的本地数据表示，Vault Process 只是操作当前已解锁 Vault 的隔离进程。
+**Vault（加密库）**：一组笔记数据共同构成的加密与同步边界。一个 Vault 拥有稳定的 Vault ID 和 Vault Key，其数据包括目录、笔记、标签、收藏、历史、回收站、冲突和附件。启用同步后，同一个 Vault 的端到端加密副本可以分布在官方云端和多台设备上。Vault 是逻辑数据与安全边界，不是某个文件、数据库或进程；`vault.db` 只是它在一台设备上的本地数据表示，Main 中的当前 `ProfileSession` 负责操作已解锁 Vault。
 
 **Profile（本地配置档）**：某台设备上访问一个 Vault 的本地入口与运行环境。一个 Profile 包含本机 Local Profile ID、`vault.meta`、SQLCipher 数据库、附件密文、本机 Database Key、设备身份、同步游标和本地设置。Profile 是设备本地概念，不在设备之间复制；新设备访问已有 Vault 时会创建一个新的本地 Profile。
 
@@ -90,9 +90,8 @@ Renderer：React + Atlassian Editor
         │ 类型化、经过校验的 IPC
 Preload：最小白名单与 schema 校验
         │
-Main：窗口、Profile 索引、系统生命周期
-        │
-Vault Process：密钥、SQLCipher、附件、搜索、同步
+Main：窗口、Profile 索引、系统生命周期、当前 ProfileSession
+      └─ 密钥、SQLCipher、附件、搜索、同步
         │
 官方同步服务：不透明 Item 信封和加密附件块
 ```
@@ -101,32 +100,29 @@ Vault Process：密钥、SQLCipher、附件、搜索、同步
 
 - Renderer 启用 `contextIsolation` 和沙箱，不启用 Node。Renderer 不能直接接触数据库、主密码、密钥或附件真实路径。
 - Preload 只暴露业务动作级 IPC，例如 `note.save`、`search.query` 和 `attachment.open`。所有输入输出都必须通过共享 schema 校验。
-- Main 只负责窗口、系统锁屏与休眠事件、应用生命周期和非敏感 Profile 索引。
-- Vault Process 持有当前 Profile 的 Database Key、Vault Key、SQLCipher 连接、全文索引、Blob Store 和同步队列。
-- 切换 Profile 时，先停止同步、关闭数据库及附件句柄并销毁 Vault Process，再要求目标 Profile 的主密码。
-- 系统锁屏、休眠、应用退出或配置的无操作超时会立即锁定当前 Profile。
+- Main 负责窗口、系统锁屏与休眠事件、应用生命周期、非敏感 Profile 索引，以及当前已解锁 Profile 的全部本地业务能力。
+- Main 同一时刻最多创建一个 `ProfileSession`。该会话持有当前 Profile 的 Database Key、Vault Key、SQLCipher 连接、全文索引、Blob Store 和同步队列。
+- 切换 Profile 时，Main 先调用 `ProfileSession.close()`：停止同步、关闭数据库及附件句柄并清除密钥和服务引用，再要求目标 Profile 的主密码。Main 进程在锁定与切换期间保持运行。
+- 系统锁屏、休眠、应用退出或配置的无操作超时会立即触发同一套 `ProfileSession.close()` 流程并锁定当前 Profile。
 
 ### 4.2 模块结构
 
 ```text
-apps/desktop/
-  main/
-  preload/
-  renderer/
-  vault-process/
+src/
+  main/                 # Electron Main、Preload 与 IPC 入口
+  renderer/             # React、Atlassian Editor 与编辑器适配
+  shared/               # IPC schema 和共享 DTO
+  __tests__/             # 集成测试与测试辅助代码
 
 packages/
-  domain/
-  application/
-  crypto/
-  storage-sqlcipher/
-  attachments/
-  sync-protocol/
-  sync-engine/
-  editor-adapter/
-  ipc-contracts/
-  test-kit/
+  crypto/               # 密钥派生、包装、加密和解密
+  domain/               # 领域模型、值对象和领域规则
+  storage-sqlcipher/    # SQLCipher、Repository、事务、迁移和 FTS
+  attachments/          # 数据库外加密 Blob、分块、暂存和文件句柄
+  application/          # ProfileSession、业务用例和同步编排
 ```
+
+`src/main` 是桌面应用的组合根，创建 `ProfileSession` 并装配 `application`、`crypto`、`storage-sqlcipher` 和 `attachments`；`src/renderer` 只能通过 `src/shared` 定义并由 Preload 暴露的业务 IPC 调用 Main，不得导入 Node 专用实现。同步协议与同步引擎归入 `packages/application/sync`，编辑器适配归入 `src/renderer/editor`，IPC 合约归入 `src/shared`，通用测试辅助代码归入 `src/__tests__/helpers`。
 
 模块划分用于限制依赖方向和安全边界，不为移动端创建额外抽象。当前仓库不包含同步服务端实现；服务端实现语言在同步子项目启动前决定，并必须遵循版本化协议和兼容测试。
 
@@ -242,7 +238,7 @@ CREATE VIRTUAL TABLE notes_fts USING fts5(
 - `notes.current_revision` 与对应 `notes_fts.source_revision` 不一致；
 - FTS 记录数量与非回收站笔记数量不一致。
 
-重建在 Vault Process 中执行：暂停搜索和笔记写事务，清空 `notes_fts`，遍历所有非回收站笔记，从 ADF 重新提取并插入标题、正文和 `source_revision`，最后校验记录数量、Revision 一致性和 FTS5 `integrity-check`。只有全部校验通过后才恢复搜索和写入；失败时原始 `notes` 不受影响，保持“搜索索引需要重建”状态并允许重试。
+重建在 Main 的当前 `ProfileSession` 中执行：暂停搜索和笔记写事务，清空 `notes_fts`，遍历所有非回收站笔记，从 ADF 重新提取并插入标题、正文和 `source_revision`，最后校验记录数量、Revision 一致性和 FTS5 `integrity-check`。只有全部校验通过后才恢复搜索和写入；失败时原始 `notes` 不受影响，保持“搜索索引需要重建”状态并允许重试。
 
 短查询采用输入防抖、取消旧请求、结果上限和分页，避免连续全表扫描。构建和启动检查必须确认 SQLCipher 所带 SQLite 启用 FTS5 trigram；缺失时构建或启动失败，不静默更换分词策略。
 
