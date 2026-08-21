@@ -10,6 +10,8 @@ export type IpcResponse<T> =
   | { readonly ret: true; readonly data: T }
   | { readonly ret: false; readonly error: IpcError };
 
+export type IpcFailure = Extract<IpcResponse<never>, { readonly ret: false }>;
+
 const CANONICAL_UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -31,7 +33,7 @@ export function limitedUnicodeString(maxCodePoints: number): z.ZodString {
     });
 }
 
-export function ipcFailure(code: IpcErrorCode): IpcResponse<never> {
+export function ipcFailure(code: IpcErrorCode): IpcFailure {
   return {
     ret: false,
     error: { code, message: IPC_ERROR_MESSAGES[code] },
