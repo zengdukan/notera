@@ -119,12 +119,62 @@ packages/
   domain/               # 领域模型、值对象和领域规则
   storage-sqlcipher/    # SQLCipher、Repository、事务、迁移和 FTS
   attachments/          # 数据库外加密 Blob、分块、暂存和文件句柄
-  application/          # ProfileSession、业务用例和同步编排
+  application/          # ProfileSession 与本地业务用例编排
 ```
 
-`src/main` 是桌面应用的组合根，创建 `ProfileSession` 并装配 `application`、`crypto`、`storage-sqlcipher` 和 `attachments`；`src/renderer` 只能通过 `src/shared` 定义并由 Preload 暴露的业务 IPC 调用 Main，不得导入 Node 专用实现。同步协议与同步引擎归入 `packages/application/sync`，编辑器适配归入 `src/renderer/editor`，IPC 合约归入 `src/shared`，通用测试辅助代码归入 `src/__tests__/helpers`。
+`src/main` 是桌面应用的组合根，创建 `ProfileSession` 并装配 `application`、`crypto`、`storage-sqlcipher` 和 `attachments`；`src/renderer` 只能通过 `src/shared` 定义并由 Preload 暴露的业务 IPC 调用 Main，不得导入 Node 专用实现。编辑器适配归入 `src/renderer/editor`，IPC 合约归入 `src/shared`，通用测试辅助代码归入 `src/__tests__/helpers`。
 
 模块划分用于限制依赖方向和安全边界，不为移动端创建额外抽象。当前仓库不包含同步服务端实现；服务端实现语言在同步子项目启动前决定，并必须遵循版本化协议和兼容测试。
+
+### 4.3 模块依赖与实现顺序
+
+模块采用直接分层依赖，`A → B` 表示 A 可以导入并依赖 B。依赖只能从上层指向下层，禁止反向引用和循环依赖：
+
+```text
+第 0 层：纯基础
+  packages/domain                 无项目内依赖
+  packages/crypto                 无项目内依赖
+  src/shared                      无项目内依赖
+
+第 1 层：基础设施
+  packages/storage-sqlcipher  →   packages/domain
+  packages/attachments        →   packages/domain + packages/crypto
+
+第 2 层：业务编排
+  packages/application        →   packages/domain + packages/crypto
+                                  + packages/storage-sqlcipher + packages/attachments
+
+第 3 层：桌面入口
+  src/main                    →   src/shared + packages/application + 四个底层包
+  src/main/preload.ts         →   src/shared
+
+第 4 层：界面
+  src/renderer                →   src/shared
+```
+
+各模块职责与约束如下：
+
+- `domain` 只定义模型、ID、值对象和领域规则，不定义 Repository、Crypto 或 Attachment 端口，也不引用 Electron、Node、数据库或文件系统；
+- `crypto` 提供 KDF、AEAD、密钥派生与包装等纯加密能力，不访问文件、数据库或 Electron，也不依赖 `domain`；
+- `storage-sqlcipher` 提供 SQLCipher 连接、Schema、迁移、事务、Repository 和 FTS，Database Key 由调用方传入，不负责密钥派生和附件文件；
+- `attachments` 提供本地 Blob 暂存、分块加密、Manifest、流式读取和垃圾回收，不直接访问 SQLCipher；附件元数据事务由 `application` 协调；
+- `application` 提供 `ProfileSession` 和本地业务用例，通过下层包导出的公开接口编排密钥、数据库与附件操作，不包含 Electron IPC 或 UI；
+- `src/shared` 只定义可序列化的 IPC DTO 与 schema，不暴露领域对象、密钥、数据库连接或文件真实路径；
+- `src/main` 只负责对象装配、Electron 生命周期和 IPC 适配，不重复实现领域规则；`src/renderer` 不得导入 `packages` 下的任何模块。
+
+实现严格按依赖层级自底向上推进：
+
+1. 配置多包构建、路径解析、测试和包级依赖约束；
+2. 实现 `domain`；
+3. 实现 `crypto`；
+4. 实现 `src/shared`；
+5. 实现 `storage-sqlcipher`；
+6. 实现 `attachments`；
+7. 实现 `application`；
+8. 装配 `src/main` 与 Preload；
+9. 实现 `src/renderer` 与编辑器适配。
+
+`storage-sqlcipher` 与 `attachments` 位于同一层且不存在相互依赖，后续可以并行开发；顺序执行时先实现数据库再实现附件。当前离线阶段不实现同步协议、同步引擎、云端 API、同步 Outbox、同步冲突、远端附件状态或 `application/sync`；第 10 至 12 节保留为后续同步子项目的总体设计，不进入当前实施计划。第 5 至 9 节中的同步专用字段和流程同样延期：当前 Schema 不创建 `sync_outbox`、`sync_state` 和 `conflicts`，附件表不包含远端状态或传输状态，Note Repository 保存事务不写入 Outbox；这些能力在同步子项目中通过正式数据库迁移增加，不提前建立占位表或空实现。
 
 ## 5. Profile 与本地文件布局
 
