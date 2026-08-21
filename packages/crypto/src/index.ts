@@ -23,3 +23,9 @@ export {
   generateSalt,
   generateVaultKey,
 } from './random';
+export {
+  type KeyWrapContext,
+  type WrappedKeyEnvelope,
+  unwrapKey,
+  wrapKey,
+} from './key-wrapping';
