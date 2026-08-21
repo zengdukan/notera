@@ -15,12 +15,10 @@ describe('IPC contract registry', () => {
     ];
 
     expect(new Set(channels).size).toBe(channels.length);
-    for (const [key, contract] of [...requests, ...events]) {
+    [...requests, ...events].forEach(([key, contract]) => {
       expect(contract.key).toBe(key);
-      expect(contract.channel).toMatch(
-        /^notera:[a-z0-9-]+:[a-z0-9-]+$/,
-      );
-    }
+      expect(contract.channel).toMatch(/^notera:[a-z0-9-]+:[a-z0-9-]+$/);
+    });
   });
 
   it('does not register deferred synchronization capabilities', () => {
@@ -39,8 +37,9 @@ describe('IPC contract registry', () => {
   });
 
   it('keeps list and content replacement request requirements explicit', () => {
-    expect(requestContracts['profile.list'].request.safeParse({ limit: 10 }).success)
-      .toBe(true);
+    expect(
+      requestContracts['profile.list'].request.safeParse({ limit: 10 }).success,
+    ).toBe(true);
     expect(
       requestContracts['contentTree.listChildren'].request.safeParse({
         parentFolderId: '10000000-0000-4000-8000-000000000001',

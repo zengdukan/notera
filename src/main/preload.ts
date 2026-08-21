@@ -1,8 +1,4 @@
-import {
-  contextBridge,
-  ipcRenderer,
-  type IpcRendererEvent,
-} from 'electron';
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 import type { z } from 'zod';
 import {
   eventContracts,
@@ -76,7 +72,8 @@ function bindRequest<C extends RequestContractShape>(
 function bindEvent<E extends EventContractShape>(
   contract: E,
 ): SubscribeMethod<E> {
-  return (listener) => subscribe(contract, listener as (value: unknown) => void);
+  return (listener) =>
+    subscribe(contract, listener as (value: unknown) => void);
 }
 
 const noteraApi = {

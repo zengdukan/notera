@@ -23,14 +23,20 @@ describe('ADF document schema', () => {
       adfDocumentSchema.parse({
         type: 'doc',
         version: 1,
-        content: [{ type: 'paragraph', content: [{ type: 'text', text: '你好' }] }],
+        content: [
+          { type: 'paragraph', content: [{ type: 'text', text: '你好' }] },
+        ],
       }),
     ).toBeDefined();
   });
 
   it('rejects invalid roots and non-JSON values', () => {
-    expect(() => adfDocumentSchema.parse({ type: 'page', version: 1 })).toThrow();
-    expect(() => adfDocumentSchema.parse({ type: 'doc', version: 2 })).toThrow();
+    expect(() =>
+      adfDocumentSchema.parse({ type: 'page', version: 1 }),
+    ).toThrow();
+    expect(() =>
+      adfDocumentSchema.parse({ type: 'doc', version: 2 }),
+    ).toThrow();
     expect(() =>
       adfDocumentSchema.parse({ type: 'doc', version: 1, content: {} }),
     ).toThrow();

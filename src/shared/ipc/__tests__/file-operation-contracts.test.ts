@@ -78,12 +78,12 @@ describe('attachment and export contracts', () => {
       ['remoteState', 'UPLOADED'],
     ] as const;
 
-    for (const [field, value] of forbiddenFields) {
+    forbiddenFields.forEach(([field, value]) => {
       expect(
         attachmentSummarySchema.safeParse({ ...attachment, [field]: value })
           .success,
       ).toBe(false);
-    }
+    });
     expect(
       attachmentContracts.startImport.request.safeParse({
         noteId: uuid(2),
@@ -109,7 +109,10 @@ describe('attachment and export contracts', () => {
     expect(() =>
       attachmentContracts.getPreviewUrl.response.parse({
         ret: true,
-        data: { url: 'notera-media://attachment/token', expiresAt: Date.now() - 1 },
+        data: {
+          url: 'notera-media://attachment/token',
+          expiresAt: Date.now() - 1,
+        },
       }),
     ).toThrow();
   });
@@ -125,7 +128,10 @@ describe('attachment and export contracts', () => {
       }),
     ).toBeDefined();
     expect(
-      exportContracts.startNote.request.parse({ noteId: uuid(2), format: 'PDF' }),
+      exportContracts.startNote.request.parse({
+        noteId: uuid(2),
+        format: 'PDF',
+      }),
     ).toEqual({ noteId: uuid(2), format: 'PDF' });
   });
 });
@@ -141,13 +147,18 @@ describe('long operation state and events', () => {
 
     expect(operationStatusSchema.parse({ ...base, progress: 0 })).toBeDefined();
     expect(operationStatusSchema.parse({ ...base, progress: 1 })).toBeDefined();
-    expect(operationStatusSchema.parse({ ...base, progress: null })).toBeDefined();
-    expect(() => operationStatusSchema.parse({ ...base, progress: -0.1 }))
-      .toThrow();
-    expect(() => operationStatusSchema.parse({ ...base, progress: 1.1 }))
-      .toThrow();
-    expect(() => operationStatusSchema.parse({ ...base, progress: Number.NaN }))
-      .toThrow();
+    expect(
+      operationStatusSchema.parse({ ...base, progress: null }),
+    ).toBeDefined();
+    expect(() =>
+      operationStatusSchema.parse({ ...base, progress: -0.1 }),
+    ).toThrow();
+    expect(() =>
+      operationStatusSchema.parse({ ...base, progress: 1.1 }),
+    ).toThrow();
+    expect(() =>
+      operationStatusSchema.parse({ ...base, progress: Number.NaN }),
+    ).toThrow();
   });
 
   it('requires successful results to match the operation kind', () => {

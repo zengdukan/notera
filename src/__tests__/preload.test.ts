@@ -19,6 +19,7 @@ jest.mock('electron', () => ({
 
 function loadPreload(): NoteraApi {
   jest.isolateModules(() => {
+    // eslint-disable-next-line global-require
     require('../main/preload');
   });
   expect(mockExposeInMainWorld).toHaveBeenCalledTimes(1);

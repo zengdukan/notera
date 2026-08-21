@@ -117,11 +117,7 @@ export const noteListRecent = defineRequestContract({
   channel: 'notera:note:list-recent',
   request: cursorPageRequestSchema,
   data: cursorPageSchema(noteSummarySchema),
-  errors: [
-    'PROFILE_LOCKED',
-    'INVALID_CURSOR',
-    'IPC_OPERATION_FAILED',
-  ],
+  errors: ['PROFILE_LOCKED', 'INVALID_CURSOR', 'IPC_OPERATION_FAILED'],
 });
 
 export const noteContracts = {

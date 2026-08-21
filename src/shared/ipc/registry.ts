@@ -156,7 +156,7 @@ function assertRegistry(): void {
   const channels = new Set<string>();
   const channelPattern = /^notera:[a-z0-9-]+:[a-z0-9-]+$/;
 
-  for (const [key, contract] of entries) {
+  entries.forEach(([key, contract]) => {
     if (
       key !== contract.key ||
       !channelPattern.test(contract.channel) ||
@@ -165,7 +165,7 @@ function assertRegistry(): void {
       throw new Error('The IPC contract registry is invalid.');
     }
     channels.add(contract.channel);
-  }
+  });
 }
 
 assertRegistry();

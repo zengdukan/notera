@@ -25,7 +25,7 @@ export const searchResultSchema = searchResultBaseSchema.superRefine(
 
     result.highlights.forEach((range, index) => {
       const currentField = fieldOrder[range.field];
-      const length = Array.from(result[range.field]).length;
+      const { length } = Array.from(result[range.field]);
       const ordered =
         currentField > previousField ||
         (currentField === previousField && range.start >= previousEnd);
@@ -52,11 +52,7 @@ export const searchQuery = defineRequestContract({
   channel: 'notera:search:query',
   request: cursorPageRequestSchema.extend({ query: querySchema }),
   data: cursorPageSchema(searchResultSchema),
-  errors: [
-    'PROFILE_LOCKED',
-    'INVALID_CURSOR',
-    'IPC_OPERATION_FAILED',
-  ],
+  errors: ['PROFILE_LOCKED', 'INVALID_CURSOR', 'IPC_OPERATION_FAILED'],
 });
 
 export const searchContracts = { query: searchQuery } as const;

@@ -27,7 +27,11 @@ function isPlainObject(value: object): boolean {
   return prototype === Object.prototype || prototype === null;
 }
 
-function validateArray(value: readonly unknown[], stack: Frame[], depth: number) {
+function validateArray(
+  value: readonly unknown[],
+  stack: Frame[],
+  depth: number,
+) {
   const keys = Reflect.ownKeys(value);
   if (
     keys.some(
@@ -39,20 +43,18 @@ function validateArray(value: readonly unknown[], stack: Frame[], depth: number)
     return false;
   }
 
-  for (let index = 0; index < value.length; index += 1) {
-    if (!Object.prototype.hasOwnProperty.call(value, index)) {
-      return false;
-    }
-    stack.push({ value: value[index], depth: depth + 1 });
-  }
-  return true;
+  return Array.from({ length: value.length }, (_, index) => index).every(
+    (index) => {
+      if (!Object.prototype.hasOwnProperty.call(value, index)) {
+        return false;
+      }
+      stack.push({ value: value[index], depth: depth + 1 });
+      return true;
+    },
+  );
 }
 
-function validateObject(
-  value: object,
-  stack: Frame[],
-  depth: number,
-): boolean {
+function validateObject(value: object, stack: Frame[], depth: number): boolean {
   if (!isPlainObject(value)) {
     return false;
   }
@@ -62,7 +64,7 @@ function validateObject(
     return false;
   }
 
-  for (const descriptor of Object.values(descriptors)) {
+  return Object.values(descriptors).every((descriptor) => {
     if (
       !descriptor.enumerable ||
       !Object.prototype.hasOwnProperty.call(descriptor, 'value')
@@ -70,8 +72,8 @@ function validateObject(
       return false;
     }
     stack.push({ value: descriptor.value, depth: depth + 1 });
-  }
-  return true;
+    return true;
+  });
 }
 
 function isBoundedJson(value: unknown): value is JsonValue {
@@ -80,6 +82,10 @@ function isBoundedJson(value: unknown): value is JsonValue {
   let nodes = 0;
 
   try {
+    // An explicit stack is required so malicious deep ADF cannot overflow the
+    // JavaScript call stack. The repository's loop restriction is intended for
+    // transpiled iterators, not this bounded synchronous traversal.
+    // eslint-disable-next-line no-restricted-syntax
     while (stack.length > 0) {
       const frame = stack.pop() as Frame;
       nodes += 1;
@@ -92,25 +98,24 @@ function isBoundedJson(value: unknown): value is JsonValue {
         typeof frame.value === 'string' ||
         typeof frame.value === 'boolean'
       ) {
-        continue;
-      }
-      if (typeof frame.value === 'number') {
+        // Primitive is already valid and has no children.
+      } else if (typeof frame.value === 'number') {
         if (!Number.isFinite(frame.value)) {
           return false;
         }
-        continue;
-      }
-      if (typeof frame.value !== 'object' || seen.has(frame.value)) {
-        return false;
-      }
-
-      seen.add(frame.value);
-      if (Array.isArray(frame.value)) {
-        if (!validateArray(frame.value, stack, frame.depth)) {
+      } else {
+        if (typeof frame.value !== 'object' || seen.has(frame.value)) {
           return false;
         }
-      } else if (!validateObject(frame.value, stack, frame.depth)) {
-        return false;
+
+        seen.add(frame.value);
+        if (Array.isArray(frame.value)) {
+          if (!validateArray(frame.value, stack, frame.depth)) {
+            return false;
+          }
+        } else if (!validateObject(frame.value, stack, frame.depth)) {
+          return false;
+        }
       }
     }
 

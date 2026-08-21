@@ -41,9 +41,7 @@ describe('IPC common schemas', () => {
     expect(() =>
       responseSchema.parse({ ret: true, data: 'ok', error: {} }),
     ).toThrow();
-    expect(() =>
-      responseSchema.parse(ipcFailure('PROFILE_LOCKED')),
-    ).toThrow();
+    expect(() => responseSchema.parse(ipcFailure('PROFILE_LOCKED'))).toThrow();
   });
 
   it('validates identifiers, integer values and strict empty objects', () => {
@@ -76,9 +74,10 @@ describe('IPC common schemas', () => {
     expect(
       cursorPageRequestSchema.parse({ cursor: 'opaque', limit: 100 }),
     ).toEqual({ cursor: 'opaque', limit: 100 });
-    expect(
-      resultSchema.parse({ items: ['one'], nextCursor: 'next' }),
-    ).toEqual({ items: ['one'], nextCursor: 'next' });
+    expect(resultSchema.parse({ items: ['one'], nextCursor: 'next' })).toEqual({
+      items: ['one'],
+      nextCursor: 'next',
+    });
 
     expect(() => cursorPageRequestSchema.parse({ limit: 0 })).toThrow();
     expect(() => cursorPageRequestSchema.parse({ limit: 101 })).toThrow();
@@ -115,8 +114,9 @@ describe('IPC contract descriptors', () => {
   });
 
   it('parses responses and never forwards invalid response details', () => {
-    expect(parseResponse(requestContract, { ret: true, data: { title: 'x' } }))
-      .toEqual({ ret: true, data: { title: 'x' } });
+    expect(
+      parseResponse(requestContract, { ret: true, data: { title: 'x' } }),
+    ).toEqual({ ret: true, data: { title: 'x' } });
     expect(
       parseResponse(requestContract, {
         ret: true,

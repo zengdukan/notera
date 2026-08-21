@@ -56,8 +56,9 @@ describe('profile IPC contracts', () => {
       displayName: 'Personal',
       password: ' unchanged password ',
     });
-    expect(profileContracts.create.response.parse({ ret: true, data: session }))
-      .toEqual({ ret: true, data: session });
+    expect(
+      profileContracts.create.response.parse({ ret: true, data: session }),
+    ).toEqual({ ret: true, data: session });
     expect(() =>
       profileContracts.create.response.parse({
         ret: true,
@@ -164,10 +165,12 @@ describe('content tree IPC contracts', () => {
 
     expect(treeEntrySummarySchema.parse(folder)).toEqual(folder);
     expect(treeEntrySummarySchema.parse(note)).toEqual(note);
-    expect(() => treeEntrySummarySchema.parse({ ...folder, title: 'mixed' }))
-      .toThrow();
-    expect(() => treeEntrySummarySchema.parse({ ...note, document: emptyDocument }))
-      .toThrow();
+    expect(() =>
+      treeEntrySummarySchema.parse({ ...folder, title: 'mixed' }),
+    ).toThrow();
+    expect(() =>
+      treeEntrySummarySchema.parse({ ...note, document: emptyDocument }),
+    ).toThrow();
     expect(
       contentTreeContracts.listChildren.request.parse({
         parentFolderId: ids.root,
@@ -189,23 +192,28 @@ describe('content tree IPC contracts', () => {
       }).success,
     ).toBe(true);
     expect(() =>
-      entryRefSchema.parse({ kind: 'note', id: ids.note, folderId: ids.folder }),
+      entryRefSchema.parse({
+        kind: 'note',
+        id: ids.note,
+        folderId: ids.folder,
+      }),
     ).toThrow();
   });
 });
 
 describe('note IPC contracts', () => {
   it('defines all fixed note channels', () => {
-    expect(Object.values(noteContracts).map((contract) => contract.channel))
-      .toEqual([
-        'notera:note:create',
-        'notera:note:get',
-        'notera:note:save-draft',
-        'notera:note:move',
-        'notera:note:copy',
-        'notera:note:trash',
-        'notera:note:list-recent',
-      ]);
+    expect(
+      Object.values(noteContracts).map((contract) => contract.channel),
+    ).toEqual([
+      'notera:note:create',
+      'notera:note:get',
+      'notera:note:save-draft',
+      'notera:note:move',
+      'notera:note:copy',
+      'notera:note:trash',
+      'notera:note:list-recent',
+    ]);
   });
 
   it('requires expected content version when saving a draft', () => {
@@ -253,8 +261,9 @@ describe('note IPC contracts', () => {
 
     expect(noteDetailSchema.parse(detail)).toEqual(detail);
     expect(() => noteDetailSchema.parse({ ...detail, rowId: 12 })).toThrow();
-    expect(() => noteDetailSchema.parse({ ...detail, vaultId: ids.profile }))
-      .toThrow();
+    expect(() =>
+      noteDetailSchema.parse({ ...detail, vaultId: ids.profile }),
+    ).toThrow();
     expect(
       noteContracts.listRecent.request.parse({ cursor: 'next', limit: 20 }),
     ).toEqual({ cursor: 'next', limit: 20 });

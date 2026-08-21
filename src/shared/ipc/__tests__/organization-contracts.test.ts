@@ -1,10 +1,7 @@
 import { ipcFailure } from '../common';
 import { batchContracts } from '../contracts/batch';
 import { favoriteContracts } from '../contracts/favorite';
-import {
-  historyContracts,
-  versionRefSchema,
-} from '../contracts/history';
+import { historyContracts, versionRefSchema } from '../contracts/history';
 import { searchContracts, searchResultSchema } from '../contracts/search';
 import { tagContracts } from '../contracts/tag';
 import { trashContracts, trashItemSchema } from '../contracts/trash';
@@ -62,13 +59,13 @@ describe('organization contract catalog', () => {
       searchContracts.query,
     ];
 
-    for (const contract of listRequests) {
+    listRequests.forEach((contract) => {
       expect(contract.request.safeParse({ limit: 10 }).success).toBe(
         contract === tagContracts.list ||
           contract === favoriteContracts.list ||
           contract === trashContracts.list,
       );
-    }
+    });
     expect(
       historyContracts.list.request.safeParse({ noteId: uuid(1), limit: 10 })
         .success,
@@ -252,7 +249,8 @@ describe('search contract', () => {
         ],
       }),
     ).toThrow();
-    expect(() => searchResultSchema.parse({ ...validResult, rowId: 7 }))
-      .toThrow();
+    expect(() =>
+      searchResultSchema.parse({ ...validResult, rowId: 7 }),
+    ).toThrow();
   });
 });

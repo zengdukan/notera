@@ -40,7 +40,10 @@ const batchMutationErrors = [
 export const batchMove = defineRequestContract({
   key: 'batch.move',
   channel: 'notera:batch:move',
-  request: z.strictObject({ targets: targetsSchema, targetFolderId: uuidSchema }),
+  request: z.strictObject({
+    targets: targetsSchema,
+    targetFolderId: uuidSchema,
+  }),
   data: emptyObjectSchema,
   errors: batchMutationErrors,
 });
@@ -64,7 +67,10 @@ export const batchRemoveTags = defineRequestContract({
 export const batchCopy = defineRequestContract({
   key: 'batch.copy',
   channel: 'notera:batch:copy',
-  request: z.strictObject({ targets: targetsSchema, targetFolderId: uuidSchema }),
+  request: z.strictObject({
+    targets: targetsSchema,
+    targetFolderId: uuidSchema,
+  }),
   data: emptyObjectSchema,
   errors: batchMutationErrors,
 });

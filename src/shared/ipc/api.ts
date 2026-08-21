@@ -30,7 +30,9 @@ export interface NoteraApi {
     readonly switch: InvokeMethod<Request<'profile.switch'>>;
     readonly rename: InvokeMethod<Request<'profile.rename'>>;
     readonly changePassword: InvokeMethod<Request<'profile.changePassword'>>;
-    readonly removeFromDevice: InvokeMethod<Request<'profile.removeFromDevice'>>;
+    readonly removeFromDevice: InvokeMethod<
+      Request<'profile.removeFromDevice'>
+    >;
   };
   readonly contentTree: {
     readonly listChildren: InvokeMethod<Request<'contentTree.listChildren'>>;
@@ -104,6 +106,8 @@ export interface NoteraApi {
   readonly events: {
     readonly onProfileLocked: SubscribeMethod<Event<'profile.locked'>>;
     readonly onOperationProgress: SubscribeMethod<Event<'operation.progress'>>;
-    readonly onOperationCompleted: SubscribeMethod<Event<'operation.completed'>>;
+    readonly onOperationCompleted: SubscribeMethod<
+      Event<'operation.completed'>
+    >;
   };
 }

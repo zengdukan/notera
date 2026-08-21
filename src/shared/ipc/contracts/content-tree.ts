@@ -62,7 +62,10 @@ export const contentTreeListChildren = defineRequestContract({
 export const contentTreeCreateFolder = defineRequestContract({
   key: 'contentTree.createFolder',
   channel: 'notera:content-tree:create-folder',
-  request: z.strictObject({ parentFolderId: uuidSchema, name: folderNameSchema }),
+  request: z.strictObject({
+    parentFolderId: uuidSchema,
+    name: folderNameSchema,
+  }),
   data: folderSummarySchema,
   errors: [
     'PROFILE_LOCKED',

@@ -19,10 +19,7 @@ export interface RequestContract<
   readonly errors: readonly IpcErrorCode[];
 }
 
-export interface EventContract<
-  Key extends string,
-  Payload extends z.ZodType,
-> {
+export interface EventContract<Key extends string, Payload extends z.ZodType> {
   readonly key: Key;
   readonly channel: `notera:${string}`;
   readonly payload: Payload;

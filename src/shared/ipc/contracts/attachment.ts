@@ -100,11 +100,7 @@ export const attachmentStartSaveAs = defineRequestContract({
   channel: 'notera:attachment:start-save-as',
   request: z.strictObject({ attachmentId: uuidSchema }),
   data: startOperationResultSchema,
-  errors: [
-    ...attachmentErrors,
-    'ATTACHMENT_SAVE_FAILED',
-    'DISK_FULL',
-  ],
+  errors: [...attachmentErrors, 'ATTACHMENT_SAVE_FAILED', 'DISK_FULL'],
 });
 
 export const attachmentContracts = {

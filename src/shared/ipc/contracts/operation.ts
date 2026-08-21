@@ -1,9 +1,5 @@
 import { z } from 'zod';
-import {
-  limitedUnicodeString,
-  timestampSchema,
-  uuidSchema,
-} from '../common';
+import { limitedUnicodeString, timestampSchema, uuidSchema } from '../common';
 import { defineEventContract, defineRequestContract } from '../contract';
 import { ipcErrorSchema } from '../errors';
 
@@ -37,7 +33,11 @@ const operationAttachmentSummarySchema = z.strictObject({
   id: uuidSchema,
   fileName: limitedUnicodeString(255),
   mime: limitedUnicodeString(255),
-  byteLength: z.number().int().min(0).max(100 * 1024 * 1024),
+  byteLength: z
+    .number()
+    .int()
+    .min(0)
+    .max(100 * 1024 * 1024),
   localState: z.enum(['AVAILABLE', 'MISSING', 'CORRUPT']),
   previewable: z.boolean(),
   createdAt: timestampSchema,
