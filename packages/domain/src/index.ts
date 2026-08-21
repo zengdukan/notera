@@ -11,6 +11,8 @@ export * from './models/trash';
 export * from './models/vault';
 export * from './operations/copy';
 export * from './operations/folders';
+export * from './operations/history';
 export * from './operations/notes';
 export * from './operations/relations';
+export * from './operations/trash';
 export * from './values';
