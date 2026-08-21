@@ -29,3 +29,10 @@ export {
   unwrapKey,
   wrapKey,
 } from './key-wrapping';
+export {
+  changeProfilePassword,
+  createProfileKeyPackage,
+  type PasswordKeyPackage,
+  type UnlockedProfileKeys,
+  unlockProfileKeyPackage,
+} from './profile-keys';
