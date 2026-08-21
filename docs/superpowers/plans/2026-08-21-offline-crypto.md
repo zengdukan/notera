@@ -4,9 +4,9 @@
 
 **目标：** 在 `packages/crypto` 中实现无项目内依赖的离线密码学能力，包括安全随机数、Argon2id、HKDF-SHA-256、XChaCha20-Poly1305、版本化密钥包装，以及 Profile 密钥创建、解锁和修改主密码。
 
-**架构：** 以 `libsodium-wrappers` 封装 Argon2id、随机数与 XChaCha20-Poly1305，以标准 WebCrypto 实现 HKDF-SHA-256。所有生产参数、AAD 编码和域标签由包内固定；公共 API 无状态且异步，不访问 Profile 存储、数据库、文件系统或 Electron。
+**架构：** 以 `libsodium-wrappers-sumo` 封装 Argon2id、随机数与 XChaCha20-Poly1305，以标准 WebCrypto 实现 HKDF-SHA-256。`sumo` 构建用于获得 0.8.4 常规精简构建未包含的 `crypto_pwhash`。所有生产参数、AAD 编码和域标签由包内固定；公共 API 无状态且异步，不访问 Profile 存储、数据库、文件系统或 Electron。
 
-**技术栈：** TypeScript、`libsodium-wrappers` 0.8.4、WebCrypto、Jest、ts-jest、npm workspaces
+**技术栈：** TypeScript、`libsodium-wrappers-sumo` 0.8.4、WebCrypto、Jest、ts-jest、npm workspaces
 
 ---
 
@@ -74,7 +74,7 @@ packages/crypto/
 
 **功能逻辑：**
 
-1. 通过 `npm install --workspace @notera/crypto --save-exact libsodium-wrappers@0.8.4` 添加唯一第三方运行时依赖，并让 `packages/crypto/tsconfig.json` 使用 `dom` 与 `es2022` 类型、排除测试目录。
+1. 通过 `npm install --workspace @notera/crypto --save-exact libsodium-wrappers-sumo@0.8.4` 添加唯一第三方运行时依赖，并让 `packages/crypto/tsconfig.json` 使用 `dom` 与 `es2022` 类型、排除测试目录。
 2. 定义以下稳定错误模型：
 
 ```ts

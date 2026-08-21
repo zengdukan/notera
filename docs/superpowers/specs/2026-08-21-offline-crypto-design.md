@@ -19,7 +19,7 @@
 - Database Key 与 Vault Key 均为随机生成并由主密码派生的包装密钥保护；
 - 修改主密码只重新包装密钥，不重新加密数据库或附件。
 
-实现采用 `libsodium-wrappers`。Argon2id、随机数和 XChaCha20-Poly1305 由 Libsodium 提供；HKDF-SHA-256 使用标准 WebCrypto。包本身不依赖其他 Notera 包。
+实现采用 `libsodium-wrappers-sumo`。Argon2id、随机数和 XChaCha20-Poly1305 由 Libsodium 提供；HKDF-SHA-256 使用标准 WebCrypto。`sumo` 构建仍是同一 Libsodium WASM 封装，但包含常规 0.8.4 精简构建未提供的 `crypto_pwhash`。包本身不依赖其他 Notera 包。
 
 ## 2. 非目标
 
@@ -62,7 +62,7 @@ packages/crypto/src/
 
 约束如下：
 
-- 只依赖 `libsodium-wrappers` 和运行时标准 WebCrypto，不依赖 `domain`、Node 文件系统、数据库或 Electron；
+- 只依赖 `libsodium-wrappers-sumo` 和运行时标准 WebCrypto，不依赖 `domain`、Node 文件系统、数据库或 Electron；
 - `index.ts` 是唯一受支持的公共入口，不导出 Sodium 实例、内部参数注册表或内部测试接口；
 - 除只清除调用方缓冲区的同步 `wipeBytes` 外，公共密码学操作统一为异步 API，并在内部等待 `sodium.ready`；
 - 初始化 Promise 在模块内部复用，但模块不保存任何 Profile 密钥或会话状态；

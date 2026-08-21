@@ -13,3 +13,13 @@ export {
   SALT_BYTES,
 } from './parameters';
 export { wipeBytes } from './bytes';
+export {
+  derivePasswordWrappingKey,
+  deriveSubkey,
+} from './kdf';
+export {
+  generateDatabaseKey,
+  generateNonce,
+  generateSalt,
+  generateVaultKey,
+} from './random';
