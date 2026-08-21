@@ -18,7 +18,7 @@ Notera 使用“无限层级目录 + 笔记”组织内容。笔记正文使用 
 
 1. 创建、重命名、移动和删除无限层级目录。
 2. 创建、编辑、移动、复制和删除笔记。
-3. 使用 trigram 搜索标题、正文、目录、标签和附件名。
+3. 使用 trigram 搜索笔记标题和当前默认版本的正文。
 4. 为笔记添加、移除标签，以及加入或移出收藏。
 5. 自动保存当前稿；由用户手动创建永久历史版本。
 6. 恢复、复制或比较历史版本；高风险操作前创建系统保护版本。
@@ -143,7 +143,7 @@ app-data/
 `vault.db` 使用 SQLCipher。核心表包括：
 
 - `folders`：目录 ID、父目录、名称、排序和删除状态；
-- `notes`：当前标题、ADF、目录、当前 Revision 和时间戳；
+- `notes`：本地整数 Row ID、同步 Note ID、当前标题、ADF、目录、当前 Revision 和时间戳；
 - `note_versions`：用户版本和系统保护版本的完整压缩 ADF 快照；
 - `tags`、`note_tags`：标签及多对多关系；
 - `favorites`：收藏笔记及排序；
@@ -152,7 +152,7 @@ app-data/
 - `attachment_references`：当前笔记、历史、冲突和回收站引用；
 - `conflicts`：两个完整冲突分支及处理状态；
 - `trash_entries`：删除对象、原位置和到期时间；
-- `notes_fts`：标题、ADF 提取正文、目录路径、标签和附件名；
+- `notes_fts`：当前默认版本的规范化标题和 ADF 提取正文；
 - `sync_outbox`、`sync_state`：待同步任务、重试状态、设备信息和游标。
 
 所有移动、批量标签和删除操作必须在单个 SQLCipher 事务中完成。保存笔记时，同一事务更新当前 ADF、规范化搜索文本、FTS 索引和同步 Outbox。
@@ -163,25 +163,50 @@ app-data/
 
 搜索仅在当前已解锁 Profile 的本地 SQLCipher 中执行，索引永不上传。
 
-ADF 先提取为纯文本，再生成 NFKC 规范化和 Unicode 大小写折叠的搜索影子文本；展示内容保持原样。FTS 表使用 trigram：
+ADF 先提取为纯文本，再对标题和正文执行 NFKC 规范化与 Unicode 大小写折叠；展示内容保持原样。`notes_fts` 使用默认的内容型 FTS5 表，不增加搜索影子表：
 
 ```sql
 CREATE VIRTUAL TABLE notes_fts USING fts5(
     note_id UNINDEXED,
+    source_revision UNINDEXED,
     title,
     body,
-    folder_path,
-    tags,
-    attachment_names,
     tokenize = 'trigram'
 );
 ```
 
-长度不少于 3 个字符的规范化查询使用 FTS5 trigram，并由应用编译为字面量查询，不能把用户输入直接解释为 FTS 操作符。长度为 1 或 2 个字符时，对规范化影子列执行参数化 `LIKE '%...%'` 包含搜索；应用必须转义 `%`、`_` 和转义字符本身。
+`notes` 使用本地整数 `row_id` 作为 SQLCipher 主键，并使用 UUID `note_id` 作为同步身份；`notes_fts.rowid` 必须与 `notes.row_id` 一致。`source_revision` 记录生成当前索引内容时对应的笔记 Revision，用于检测索引漂移。
+
+长度不少于 3 个字符的规范化查询使用 FTS5 trigram，并由应用编译为字面量查询，不能把用户输入直接解释为 FTS 操作符。长度为 1 或 2 个字符时，直接对 `notes_fts.title` 和 `notes_fts.body` 执行参数化 `LIKE '%...%'` 包含扫描；应用必须转义 `%`、`_` 和转义字符本身。结果通过 `note_id` 回查 `notes`，不能把规范化索引内容直接作为展示文本。
+
+### 7.1 增量维护
+
+所有会改变当前默认标题或正文的路径必须进入同一个 Note Repository 保存入口，包括本地自动保存、标题修改、恢复历史、选择冲突版本和应用云端 Revision。保存入口执行：
+
+1. 从当前 ADF 提取纯文本，并规范化标题和正文；
+2. 在同一个 SQLCipher 事务中更新 `notes`；
+3. 使用稳定 `row_id` 删除 `notes_fts` 中的旧记录，再插入包含新 `source_revision` 的记录；
+4. 更新同步 Outbox；
+5. 任一步失败时回滚整个事务。
+
+新建笔记时插入 FTS 记录。笔记移入回收站时删除 FTS 记录，恢复时重新生成；永久删除不再进行额外索引处理。保存用户历史不更新 FTS，只有历史被恢复为当前默认版本时才更新。非默认冲突分支不进入 FTS。目录、标签、收藏和附件变化不触发 FTS 更新。
+
+禁止业务代码直接更新 `notes`；数据库访问层只向上暴露能同时维护正文、FTS 和 Outbox 的事务性接口。同步批量应用可以共用同一事务，但必须对批次内每篇发生变化的笔记执行相同索引更新。
+
+### 7.2 完整性检查与重建
+
+`notes` 是唯一权威数据，`notes_fts` 是可丢弃的派生数据。数据库元数据记录 FTS schema 版本、ADF 文本提取器版本和规范化规则版本。以下情况触发全量重建：
+
+- 任一搜索相关版本发生变化；
+- FTS5 `integrity-check` 失败；
+- `notes.current_revision` 与对应 `notes_fts.source_revision` 不一致；
+- FTS 记录数量与非回收站笔记数量不一致。
+
+重建在 Vault Process 中执行：暂停搜索和笔记写事务，清空 `notes_fts`，遍历所有非回收站笔记，从 ADF 重新提取并插入标题、正文和 `source_revision`，最后校验记录数量、Revision 一致性和 FTS5 `integrity-check`。只有全部校验通过后才恢复搜索和写入；失败时原始 `notes` 不受影响，保持“搜索索引需要重建”状态并允许重试。
 
 短查询采用输入防抖、取消旧请求、结果上限和分页，避免连续全表扫描。构建和启动检查必须确认 SQLCipher 所带 SQLite 启用 FTS5 trigram；缺失时构建或启动失败，不静默更换分词策略。
 
-搜索范围包括标题、正文、目录路径、标签和附件文件名，不索引附件正文、不做 OCR 或语义搜索。
+搜索范围只包括笔记标题和当前默认版本的正文，不索引目录、标签、附件名、历史版本、冲突分支或附件正文，也不做 OCR 或语义搜索。
 
 ## 8. 威胁模型与密钥体系
 
@@ -384,7 +409,7 @@ PDF 通过只读、沙箱化的 ADF 渲染视图生成，禁止加载远程资�
 ### 15.1 自动化测试
 
 - 领域模型：目录循环、移动/复制、批量事务、收藏、永久历史、回收站和附件引用；
-- 搜索：中日英及混合文本 trigram、1–2 字符回退、通配符转义、分页和索引重建；
+- 搜索：当前标题与正文的中日英及混合文本 trigram、1–2 字符回退、事务性增量维护、通配符转义、分页、完整性检查和索引重建；
 - 加密：已知答案、篡改、AAD 替换、Nonce 唯一性、密钥域隔离、错误密码和密码修改；
 - SQLCipher：迁移、事务回滚、磁盘满、异常退出、损坏检测和 Profile 隔离；
 - 附件：100 MB 边界、5 MiB 分块、断点续传、Range、分块损坏、staging 恢复和 GC；
