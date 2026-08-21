@@ -9,6 +9,7 @@ export * from './models/note';
 export * from './models/tag';
 export * from './models/trash';
 export * from './models/vault';
+export * from './operations/attachments';
 export * from './operations/copy';
 export * from './operations/folders';
 export * from './operations/history';
