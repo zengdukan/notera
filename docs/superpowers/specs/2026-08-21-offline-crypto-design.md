@@ -1,7 +1,9 @@
 # Notera 离线密码学设计
 
-**日期：** 2026-08-21  
-**状态：** 已确认，待实施  
+**日期：** 2026-08-21
+
+**状态：** 已确认，待实施
+
 **范围：** `packages/crypto`
 
 ## 1. 目标
@@ -47,6 +49,7 @@ Notera 只吸收两者的边界和版本化经验，不复制其同步协议、�
 ```text
 packages/crypto/src/
   errors.ts          # 稳定 CryptoError 与错误码
+  sodium.ts          # Libsodium 就绪状态与初始化错误映射
   bytes.ts           # 字节复制、长度校验、严格 Base64 和清零
   parameters.ts      # 版本化算法参数与允许的域标签
   random.ts          # Salt、Nonce、Database Key、Vault Key
