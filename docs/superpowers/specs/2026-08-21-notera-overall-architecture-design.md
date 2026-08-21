@@ -12,7 +12,7 @@ Notera 是一款面向个人用户的 Windows 本地优先加密笔记软件。�
 
 Notera 使用“无限层级目录 + 笔记”组织内容。笔记正文使用 Atlassian Document Format（ADF），编辑器直接集成 `D:\programs\atlassian-editor`。笔记支持图片和普通附件，单个附件最大 100 MB。
 
-同一台设备可以存在多个完全隔离的 Profile，但同一时刻只允许解锁一个 Profile。每个 Profile 独立拥有主密码、本地数据库、密钥、附件、搜索索引、云账户、订阅和同步状态。
+同一台设备可以存在多个完全隔离的 Profile，但同一时刻只允许解锁一个 Profile。每个本地 Profile 独立拥有 Local Profile ID、SQLCipher 数据库、Database Key、附件密文、搜索索引和设备同步状态；连接同一 Vault 的各设备 Profile 沿用相同 Vault ID 和 Vault Key，用户使用同一主密码解锁，但各设备不共享本地 Database Key 或数据库文件。
 
 ### 1.1 首版功能
 
@@ -44,6 +44,23 @@ Notera 使用“无限层级目录 + 笔记”组织内容。笔记正文使用 
 - OCR、附件正文索引、语义搜索和服务端全文搜索；
 - 附件内容去重；
 - 将 Standard Notes 代码直接复制到产品中。
+
+### 1.3 核心名词
+
+**Vault（加密库）**：一组笔记数据共同构成的加密与同步边界。一个 Vault 拥有稳定的 Vault ID 和 Vault Key，其数据包括目录、笔记、标签、收藏、历史、回收站、冲突和附件。启用同步后，同一个 Vault 的端到端加密副本可以分布在官方云端和多台设备上。Vault 是逻辑数据与安全边界，不是某个文件、数据库或进程；`vault.db` 只是它在一台设备上的本地数据表示，Vault Process 只是操作当前已解锁 Vault 的隔离进程。
+
+**Profile（本地配置档）**：某台设备上访问一个 Vault 的本地入口与运行环境。一个 Profile 包含本机 Local Profile ID、`vault.meta`、SQLCipher 数据库、附件密文、本机 Database Key、设备身份、同步游标和本地设置。Profile 是设备本地概念，不在设备之间复制；新设备访问已有 Vault 时会创建一个新的本地 Profile。
+
+两者关系为：
+
+```text
+一个 Vault
+├─ 设备 A 的本地 Profile
+├─ 设备 B 的本地 Profile
+└─ 官方云端的加密副本（启用同步后）
+```
+
+一个 Profile 只访问一个 Vault；一个 Vault 可以由多台设备上的多个 Profile 访问。创建离线 Profile 时同时创建一个新 Vault。删除本地 Profile 只删除该设备的本地副本，不自动删除云端 Vault 或其他设备的数据；注销云账户才删除云端 Vault，其他设备已存在的本地 Profile 默认转为离线可用。
 
 ## 2. 参考代码与依赖原则
 
@@ -126,7 +143,7 @@ app-data/
       staging/
 ```
 
-`local-profile-id` 是每台设备独立生成的随机 UUID，只用于本机目录和界面索引。每个 Profile 还在创建时生成一个账户级随机 `vault-id`，它标识加密域，绑定同步后在同一 Profile 的所有设备间保持一致。`profile-index.json` 只保存本机 Profile 顺序、Local Profile ID、最后使用时间及最近一次验证过的显示名称缓存，不保存 Vault ID、邮箱、Token、笔记或附件信息。真实 Profile 名称保存在 SQLCipher 中；名称缓存只用于锁定界面，不同步到服务器。
+`local-profile-id` 是每台设备独立生成的随机 UUID，只用于本机目录和界面索引。创建离线 Profile 时同时生成账户级随机 `vault-id`，用于标识新 Vault 的加密域；其他设备连接该 Vault 时各自生成 Local Profile ID，但沿用相同 Vault ID。`profile-index.json` 只保存本机 Profile 顺序、Local Profile ID、最后使用时间及最近一次验证过的显示名称缓存，不保存 Vault ID、邮箱、Token、笔记或附件信息。真实 Profile 名称保存在 SQLCipher 中；名称缓存只用于锁定界面，不同步到服务器。
 
 `vault.meta` 是打开 SQLCipher 前必需的最小引导记录，包含：
 
@@ -255,7 +272,7 @@ Vault Key
 └─ 包裹附件的 File Key
 ```
 
-- Database Key：每个 Profile、每台设备随机生成，只用于 SQLCipher，永不上传。
+- Database Key：每个本地 Profile 随机生成，只用于该设备上的 SQLCipher，永不上传。
 - Vault Key：创建离线 Profile 时即随机生成，绑定云账户后作为多设备共享根密钥；服务器只保存被包裹的密钥包。
 - Record Key：每个同步 Revision 随机生成，用于加密 Item 内容。
 - File Key：每个附件随机生成，用于附件分块及缩略图子密钥派生。
@@ -315,7 +332,7 @@ ADF 只保存 Attachment ID 和适配器所需的 collection 标识，不保存�
 
 ## 10. 账户与端到端加密同步
 
-同步默认关闭。每个 Profile 独立绑定一个官方云账户和订阅。账户使用邮箱与当前 Profile 的同一个主密码，但本地解锁和云端用途使用独立随机盐及 HKDF 域标签。
+同步默认关闭。每个本地 Profile 最多连接一个官方云账户及其对应的一个 Vault；同一个云账户和 Vault 可以由多台设备各自的本地 Profile 访问。账户使用邮箱与当前 Vault 的同一个主密码。每个 Profile 的本地 KDF 盐仅属于该设备；云账户 KDF 盐属于账户并供各设备沿用，两种用途使用独立盐和 HKDF 域标签。
 
 客户端通过邮箱获取版本化账户 KDF 参数，并拒绝低于安全基线的参数。未知账户返回不可区分的伪参数以降低邮箱枚举风险。客户端派生云端认证凭据和 Account Wrapping Key；认证凭据只通过 TLS 发送，服务端保存其慢哈希验证值。Vault Key 经 Account Wrapping Key 加密后上传。短期 Access Token 和 Refresh Token 均不包含解密密钥，Refresh Token 只存入 SQLCipher。
 
@@ -364,7 +381,7 @@ P3 失败、暂停或配额不足不得阻塞 P1。远端笔记先到而附件�
 1. 当前 Profile 已解锁；客户端执行 SQLCipher 完整性和 Blob Manifest 检查，并显示对象数量与预计上传大小。
 2. 用户完成邮箱验证和订阅，重新输入当前主密码。
 3. 客户端派生云端凭据，使用 Account Wrapping Key 包裹当前已有 Vault Key，创建空云端 Vault 并注册当前 Device ID。
-4. 若邮箱已绑定包含数据的云端 Profile，拒绝自动合并；该账户必须作为另一个本地 Profile 添加。
+4. 若邮箱已绑定包含数据的云端 Vault，拒绝自动合并；该 Vault 必须作为另一个本地 Profile 添加。
 5. 云端 Vault 进入 `BOOTSTRAPPING`。
 6. 客户端用短事务为现有对象确认稳定 Item/Revision ID，记录本地变更序号并生成初始 Outbox。同步期间的新编辑排在对应基线 Revision 后上传。
 7. P1 上传目录、笔记、标签、收藏、历史、冲突、回收站、Tombstone 及附件元数据。每批收到确认后才从 Outbox 删除。
