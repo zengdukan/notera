@@ -1,4 +1,12 @@
 export * from './adf';
 export { DomainError, type DomainErrorCode } from './errors';
 export * from './ids';
+export * from './models/attachment';
+export * from './models/favorite';
+export * from './models/folder';
+export * from './models/history';
+export * from './models/note';
+export * from './models/tag';
+export * from './models/trash';
+export * from './models/vault';
 export * from './values';

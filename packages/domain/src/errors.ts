@@ -15,7 +15,8 @@ export type DomainErrorCode =
   | 'ATTACHMENT_STILL_REFERENCED'
   | 'DUPLICATE_TARGET_ID'
   | 'ENTITY_NOT_FOUND'
-  | 'TRASH_TARGET_REQUIRED';
+  | 'TRASH_TARGET_REQUIRED'
+  | 'INVALID_ENTITY_STATE';
 
 const ERROR_MESSAGES: Readonly<Record<DomainErrorCode, string>> = {
   INVALID_ID: 'The identifier is invalid.',
@@ -35,6 +36,7 @@ const ERROR_MESSAGES: Readonly<Record<DomainErrorCode, string>> = {
   DUPLICATE_TARGET_ID: 'A target identifier is duplicated.',
   ENTITY_NOT_FOUND: 'A required domain object was not found.',
   TRASH_TARGET_REQUIRED: 'An explicit restore target is required.',
+  INVALID_ENTITY_STATE: 'The domain object state is invalid.',
 };
 
 export class DomainError extends Error {
