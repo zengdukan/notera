@@ -1,18 +1,15 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "incremental": true,
-    "target": "es2022",
-    "module": "node16",
-    "lib": ["dom", "es2022"],
-    "jsx": "react-jsx",
-    "strict": true,
-    "sourceMap": true,
-    "moduleResolution": "node16",
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true,
-    "allowJs": true,
-    "outDir": ".erb/dll"
+    "noEmit": true,
+    "tsBuildInfoFile": ".erb/dll/root.tsbuildinfo"
   },
-  "exclude": ["test", "release/build", "release/app/dist", ".erb/dll"]
+  "include": [
+    ".erb/**/*.ts",
+    "assets/**/*.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "exclude": ["release/build", "release/app/dist", ".erb/dll"]
 }
