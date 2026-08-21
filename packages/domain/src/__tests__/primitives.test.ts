@@ -38,9 +38,7 @@ describe('domain primitives', () => {
     (value) => {
       const error = captureDomainError(() => asVaultId(value));
       expect(error.code).toBe('INVALID_ID');
-      if (String(value).length > 0) {
-        expect(error.message).not.toContain(String(value));
-      }
+      expect(error.message).toBe('The identifier is invalid.');
     },
   );
 

@@ -1,7 +1,10 @@
 import { failDomain } from './errors';
 
 export type JsonPrimitive = string | number | boolean | null;
-export type JsonValue = JsonPrimitive | JsonObject | readonly JsonValue[];
+export type JsonValue =
+  | JsonPrimitive
+  | Readonly<{ [key: string]: JsonValue }>
+  | readonly JsonValue[];
 export type JsonObject = Readonly<{ [key: string]: JsonValue }>;
 
 export interface AdfDocument {
@@ -42,10 +45,13 @@ function cloneJson(value: unknown, ancestors: Set<object>): JsonValue {
     if (prototype !== Object.prototype && prototype !== null) {
       failDomain('INVALID_ADF_DOCUMENT');
     }
-    const clone: Record<string, JsonValue> = {};
-    for (const [key, item] of Object.entries(value)) {
-      clone[key] = cloneJson(item, ancestors);
-    }
+    const clone = Object.entries(value).reduce<Record<string, JsonValue>>(
+      (result, [key, item]) => {
+        result[key] = cloneJson(item, ancestors);
+        return result;
+      },
+      {},
+    );
     return Object.freeze(clone);
   } finally {
     ancestors.delete(value);

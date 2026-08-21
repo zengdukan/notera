@@ -1,5 +1,10 @@
 import type { FolderId, VaultId } from '../ids';
-import { asSortOrder, type FolderName, type SortOrder, type Timestamp } from '../values';
+import {
+  asSortOrder,
+  type FolderName,
+  type SortOrder,
+  type Timestamp,
+} from '../values';
 import { assertTimestampOrder, immutable } from './common';
 
 interface FolderBase {

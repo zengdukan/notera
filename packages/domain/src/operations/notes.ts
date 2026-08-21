@@ -2,11 +2,7 @@ import { asAdfDocument, type AdfDocument } from '../adf';
 import { assertDomain } from '../errors';
 import type { Folder } from '../models/folder';
 import { rehydrateNote, type Note } from '../models/note';
-import {
-  nextContentVersion,
-  type SortOrder,
-  type Timestamp,
-} from '../values';
+import { nextContentVersion, type SortOrder, type Timestamp } from '../values';
 
 export interface UpdateNoteContentInput {
   readonly title: string;

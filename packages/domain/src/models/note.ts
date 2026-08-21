@@ -22,11 +22,11 @@ export interface Note {
 
 export type CreateNoteInput = Omit<Note, 'contentVersion'>;
 
-export function createNote(input: CreateNoteInput): Note {
-  return rehydrateNote({ ...input, contentVersion: asContentVersion(1) });
-}
-
 export function rehydrateNote(input: Note): Note {
   assertTimestampOrder(input.createdAt, input.updatedAt);
   return immutable({ ...input, document: asAdfDocument(input.document) });
+}
+
+export function createNote(input: CreateNoteInput): Note {
+  return rehydrateNote({ ...input, contentVersion: asContentVersion(1) });
 }

@@ -45,9 +45,21 @@ const ids = {
 const now = asTimestamp(1_000);
 const document = asAdfDocument({ type: 'doc', version: 1, content: [] });
 
+function captureError(action: () => unknown): unknown {
+  try {
+    action();
+  } catch (error) {
+    return error;
+  }
+  throw new Error('Expected an error');
+}
+
 describe('offline entities', () => {
   it('creates a vault identity and immutable hidden root folder', () => {
-    const vault = createVaultIdentity({ id: ids.vault, rootFolderId: ids.root });
+    const vault = createVaultIdentity({
+      id: ids.vault,
+      rootFolderId: ids.root,
+    });
     const root = createRootFolder({
       id: ids.root,
       vaultId: ids.vault,
@@ -140,13 +152,11 @@ describe('offline entities', () => {
 
     expect(userVersion.protectionReason).toBeNull();
     expect(() =>
-      createNoteVersion(
-        {
-          ...userVersion,
-          kind: 'SYSTEM_PROTECTION',
-          protectionReason: null,
-        } as unknown as NoteVersion,
-      ),
+      createNoteVersion({
+        ...userVersion,
+        kind: 'SYSTEM_PROTECTION',
+        protectionReason: null,
+      } as unknown as NoteVersion),
     ).toThrow(DomainError);
   });
 
@@ -193,7 +203,7 @@ describe('offline entities', () => {
 
   it('rejects an attachment larger than 100 MB without exposing its name', () => {
     const secretName = 'secret-financial-report.pdf';
-    try {
+    const error = captureError(() =>
       createAttachment({
         id: ids.attachment,
         blobId: ids.blob,
@@ -204,13 +214,12 @@ describe('offline entities', () => {
         localState: 'READY',
         createdAt: now,
         updatedAt: now,
-      });
-      throw new Error('Expected DomainError');
-    } catch (error) {
-      expect(error).toBeInstanceOf(DomainError);
-      expect((error as DomainError).code).toBe('ATTACHMENT_TOO_LARGE');
-      expect((error as Error).message).not.toContain(secretName);
-    }
+      }),
+    );
+
+    expect(error).toBeInstanceOf(DomainError);
+    expect((error as DomainError).code).toBe('ATTACHMENT_TOO_LARGE');
+    expect((error as Error).message).not.toContain(secretName);
   });
 
   it('rejects entity timestamps that move backwards', () => {

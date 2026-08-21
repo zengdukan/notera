@@ -100,23 +100,24 @@ export interface CopyFolderTreeInput {
 function collectSubtree(
   sourceFolderId: FolderId,
   folders: readonly Folder[],
+  selected: ReadonlySet<FolderId> = new Set([sourceFolderId]),
 ): Set<FolderId> {
-  const selected = new Set<FolderId>([sourceFolderId]);
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const folder of folders) {
-      if (
+  const discovered = folders
+    .filter(
+      (folder) =>
         folder.kind === 'REGULAR' &&
         selected.has(folder.parentId) &&
-        !selected.has(folder.id)
-      ) {
-        selected.add(folder.id);
-        changed = true;
-      }
-    }
+        !selected.has(folder.id),
+    )
+    .map((folder) => folder.id);
+  if (discovered.length === 0) {
+    return new Set(selected);
   }
-  return selected;
+  return collectSubtree(
+    sourceFolderId,
+    folders,
+    new Set([...selected, ...discovered]),
+  );
 }
 
 function assertUniqueTargetIds(
@@ -132,18 +133,16 @@ function assertUniqueTargetIds(
     ...input.folders.map((folder) => folder.id),
     ...input.notes.map((note) => note.id),
   ]);
-  const unique = new Set<string>();
-  for (const id of targetIds) {
+  targetIds.reduce<Set<string>>((unique, id) => {
     if (unique.has(id) || existingIds.has(id)) {
       failDomain('DUPLICATE_TARGET_ID');
     }
     unique.add(id);
-  }
+    return unique;
+  }, new Set());
 }
 
-export function copyFolderTree(
-  input: CopyFolderTreeInput,
-): FolderTreeCopyPlan {
+export function copyFolderTree(input: CopyFolderTreeInput): FolderTreeCopyPlan {
   const source = input.folders.find(
     (folder) => folder.id === input.sourceFolderId,
   );

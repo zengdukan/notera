@@ -1,9 +1,6 @@
 import { assertDomain } from '../errors';
 import type { NoteId, TagId } from '../ids';
-import {
-  createFavorite,
-  type Favorite,
-} from '../models/favorite';
+import { createFavorite, type Favorite } from '../models/favorite';
 import type { Note } from '../models/note';
 import { createNoteTag, type NoteTag, type Tag } from '../models/tag';
 
@@ -36,9 +33,7 @@ export function removeNoteTag(
   noteTags: readonly NoteTag[],
 ): readonly NoteTag[] {
   return immutableArray(
-    noteTags.filter(
-      (item) => item.noteId !== noteId || item.tagId !== tagId,
-    ),
+    noteTags.filter((item) => item.noteId !== noteId || item.tagId !== tagId),
   );
 }
 

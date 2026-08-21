@@ -74,11 +74,7 @@ describe('attachment reference rules', () => {
 
   it('adds and removes references idempotently', () => {
     const added = addAttachmentReference(attachment, noteReference, []);
-    const duplicate = addAttachmentReference(
-      attachment,
-      noteReference,
-      added,
-    );
+    const duplicate = addAttachmentReference(attachment, noteReference, added);
 
     expect(duplicate).toHaveLength(1);
     expect(removeAttachmentReference(noteReference, duplicate)).toEqual([]);
@@ -117,16 +113,14 @@ describe('attachment reference rules', () => {
 
   it('allows GC only when no current, history, or trash reference remains', () => {
     expect(() =>
-      markAttachmentGcPending(attachment, [versionReference], asTimestamp(2_000)),
-    ).toThrow(
-      expect.objectContaining({ code: 'ATTACHMENT_STILL_REFERENCED' }),
-    );
+      markAttachmentGcPending(
+        attachment,
+        [versionReference],
+        asTimestamp(2_000),
+      ),
+    ).toThrow(expect.objectContaining({ code: 'ATTACHMENT_STILL_REFERENCED' }));
 
-    const pending = markAttachmentGcPending(
-      attachment,
-      [],
-      asTimestamp(2_000),
-    );
+    const pending = markAttachmentGcPending(attachment, [], asTimestamp(2_000));
     const pendingAgain = markAttachmentGcPending(
       pending,
       [],

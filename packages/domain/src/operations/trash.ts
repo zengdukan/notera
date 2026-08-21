@@ -1,15 +1,8 @@
 import { assertDomain, failDomain } from '../errors';
-import type {
-  FolderId,
-  NoteId,
-  TrashEntryId,
-} from '../ids';
+import type { FolderId, NoteId, TrashEntryId } from '../ids';
 import type { Folder, RegularFolder } from '../models/folder';
 import type { Note } from '../models/note';
-import {
-  createTrashEntry,
-  type TrashEntry,
-} from '../models/trash';
+import { createTrashEntry, type TrashEntry } from '../models/trash';
 import { addTimestamp, type Timestamp } from '../values';
 
 export const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1_000;
@@ -49,23 +42,47 @@ export interface TrashFolderTreeInput {
 function collectSubtree(
   sourceFolderId: FolderId,
   folders: readonly Folder[],
+  selected: ReadonlySet<FolderId> = new Set([sourceFolderId]),
 ): Set<FolderId> {
-  const selected = new Set<FolderId>([sourceFolderId]);
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const folder of folders) {
-      if (
+  const discovered = folders
+    .filter(
+      (folder) =>
         folder.kind === 'REGULAR' &&
         selected.has(folder.parentId) &&
-        !selected.has(folder.id)
-      ) {
-        selected.add(folder.id);
-        changed = true;
-      }
-    }
+        !selected.has(folder.id),
+    )
+    .map((folder) => folder.id);
+  if (discovered.length === 0) {
+    return new Set(selected);
   }
-  return selected;
+  return collectSubtree(
+    sourceFolderId,
+    folders,
+    new Set([...selected, ...discovered]),
+  );
+}
+
+function assertNoRestoreCycle(
+  objectId: FolderId,
+  target: Folder,
+  folders: readonly Folder[],
+  visited: ReadonlySet<FolderId> = new Set(),
+): void {
+  if (target.id === objectId || visited.has(target.id)) {
+    failDomain('FOLDER_CYCLE');
+  }
+  if (target.kind === 'ROOT') {
+    return;
+  }
+  const parent = folders.find((folder) => folder.id === target.parentId);
+  if (parent) {
+    assertNoRestoreCycle(
+      objectId,
+      parent,
+      folders,
+      new Set([...visited, target.id]),
+    );
+  }
 }
 
 export function trashFolderTree(input: TrashFolderTreeInput): TrashPlan {
@@ -165,18 +182,11 @@ export function resolveTrashRestoreTarget(
     'PARENT_FOLDER_INVALID',
   );
   if (input.entry.objectType === 'FOLDER') {
-    let cursor: Folder | undefined = input.explicitTarget;
-    const visited = new Set<FolderId>();
-    while (cursor) {
-      if (cursor.id === input.entry.objectId || visited.has(cursor.id)) {
-        failDomain('FOLDER_CYCLE');
-      }
-      visited.add(cursor.id);
-      if (cursor.kind === 'ROOT') {
-        break;
-      }
-      cursor = input.folders.find((folder) => folder.id === cursor?.parentId);
-    }
+    assertNoRestoreCycle(
+      input.entry.objectId,
+      input.explicitTarget,
+      input.folders,
+    );
   }
   return input.explicitTarget.id;
 }

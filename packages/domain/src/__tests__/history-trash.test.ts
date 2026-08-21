@@ -125,10 +125,7 @@ describe('history and trash rules', () => {
 
     expect(entry.expiresAt).toBe(now + TRASH_RETENTION_MS);
     expect(
-      expiredTrashEntries(
-        plan.entries,
-        asTimestamp(entry.expiresAt - 1),
-      ),
+      expiredTrashEntries(plan.entries, asTimestamp(entry.expiresAt - 1)),
     ).toEqual([]);
     expect(expiredTrashEntries(plan.entries, entry.expiresAt)).toEqual([entry]);
 
@@ -150,9 +147,7 @@ describe('history and trash rules', () => {
         [parent.id, asTrashEntryId(uuid('13'))],
         [child.id, asTrashEntryId(uuid('14'))],
       ]),
-      noteTrashEntryIds: new Map([
-        [note.id, asTrashEntryId(uuid('15'))],
-      ]),
+      noteTrashEntryIds: new Map([[note.id, asTrashEntryId(uuid('15'))]]),
       deletedAt: now,
     });
 
@@ -249,9 +244,7 @@ describe('history and trash rules', () => {
         [parent.id, asTrashEntryId(uuid('19'))],
         [child.id, asTrashEntryId(uuid('20'))],
       ]),
-      noteTrashEntryIds: new Map([
-        [note.id, asTrashEntryId(uuid('21'))],
-      ]),
+      noteTrashEntryIds: new Map([[note.id, asTrashEntryId(uuid('21'))]]),
       deletedAt: now,
     });
     const parentEntry = plan.entries.find(

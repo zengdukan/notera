@@ -17,11 +17,7 @@ export type FolderName = BrandedString<'FolderName'>;
 export type TagName = BrandedString<'TagName'>;
 
 function isNonNegativeSafeInteger(value: unknown): value is number {
-  return (
-    typeof value === 'number' &&
-    Number.isSafeInteger(value) &&
-    value >= 0
-  );
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 }
 
 export function asTimestamp(value: unknown): Timestamp {
@@ -62,9 +58,7 @@ export function nextContentVersion(version: ContentVersion): ContentVersion {
   return (version + 1) as ContentVersion;
 }
 
-export function asAttachmentByteLength(
-  value: unknown,
-): AttachmentByteLength {
+export function asAttachmentByteLength(value: unknown): AttachmentByteLength {
   assertDomain(isNonNegativeSafeInteger(value), 'ATTACHMENT_TOO_LARGE');
   return value as AttachmentByteLength;
 }
@@ -78,5 +72,4 @@ function asName<Name extends string>(value: unknown): BrandedString<Name> {
 
 export const asFolderName = (value: unknown): FolderName =>
   asName<'FolderName'>(value);
-export const asTagName = (value: unknown): TagName =>
-  asName<'TagName'>(value);
+export const asTagName = (value: unknown): TagName => asName<'TagName'>(value);

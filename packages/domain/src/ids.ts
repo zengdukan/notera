@@ -33,15 +33,12 @@ export const asLocalProfileId = (value: unknown): LocalProfileId =>
   asDomainId<'LocalProfileId'>(value);
 export const asFolderId = (value: unknown): FolderId =>
   asDomainId<'FolderId'>(value);
-export const asNoteId = (value: unknown): NoteId =>
-  asDomainId<'NoteId'>(value);
-export const asTagId = (value: unknown): TagId =>
-  asDomainId<'TagId'>(value);
+export const asNoteId = (value: unknown): NoteId => asDomainId<'NoteId'>(value);
+export const asTagId = (value: unknown): TagId => asDomainId<'TagId'>(value);
 export const asNoteVersionId = (value: unknown): NoteVersionId =>
   asDomainId<'NoteVersionId'>(value);
 export const asAttachmentId = (value: unknown): AttachmentId =>
   asDomainId<'AttachmentId'>(value);
-export const asBlobId = (value: unknown): BlobId =>
-  asDomainId<'BlobId'>(value);
+export const asBlobId = (value: unknown): BlobId => asDomainId<'BlobId'>(value);
 export const asTrashEntryId = (value: unknown): TrashEntryId =>
   asDomainId<'TrashEntryId'>(value);
