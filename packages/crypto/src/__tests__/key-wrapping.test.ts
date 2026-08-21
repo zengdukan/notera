@@ -28,28 +28,32 @@ const databaseContext: KeyWrapContext = {
 describe('authenticated key wrapping', () => {
   test('matches the libsodium XChaCha20-Poly1305 known answer', async () => {
     const plaintext = fromHex(
-      '4c616469657320616e642047656e746c656d656e206f662074686520636c6173' +
-        '73206f66202739393a204966204920636f756c64206f6666657220796f75206f' +
-        '6e6c79206f6e652074697020666f7220746865206675747572652c2073756e73' +
+      [
+        '4c616469657320616e642047656e746c656d656e206f662074686520636c6173',
+        '73206f66202739393a204966204920636f756c64206f6666657220796f75206f',
+        '6e6c79206f6e652074697020666f7220746865206675747572652c2073756e73',
         '637265656e20776f756c642062652069742e',
+      ].join(''),
     );
     const key = fromHex(
-      '808182838485868788898a8b8c8d8e8f' +
+      [
+        '808182838485868788898a8b8c8d8e8f',
         '909192939495969798999a9b9c9d9e9f',
+      ].join(''),
     );
-    const nonce = fromHex(
-      '404142434445464748494a4b4c4d4e4f5051525354555657',
-    );
+    const nonce = fromHex('404142434445464748494a4b4c4d4e4f5051525354555657');
     const aad = fromHex('50515253c0c1c2c3c4c5c6c7');
 
     const ciphertext = await encryptAead(plaintext, key, nonce, aad);
 
     expect(toHex(ciphertext)).toBe(
-      'bd6d179d3e83d43b9576579493c0e939572a1700252bfaccbed2902c21396cbb' +
-        '731c7f1b0b4aa6440bf3a82f4eda7e39ae64c6708c54c216cb96b72e1213b452' +
-        '2f8c9ba40db5d945b11b69b982c1bb9e3f3fac2bc369488f76b2383565d3fff9' +
-        '21f9664c97637da9768812f615c68b13b52e' +
+      [
+        'bd6d179d3e83d43b9576579493c0e939572a1700252bfaccbed2902c21396cbb',
+        '731c7f1b0b4aa6440bf3a82f4eda7e39ae64c6708c54c216cb96b72e1213b452',
+        '2f8c9ba40db5d945b11b69b982c1bb9e3f3fac2bc369488f76b2383565d3fff9',
+        '21f9664c97637da9768812f615c68b13b52e',
         'c0875924c1c7987947deafd8780acf49',
+      ].join(''),
     );
     await expect(decryptAead(ciphertext, key, nonce, aad)).resolves.toEqual(
       plaintext,
@@ -58,8 +62,7 @@ describe('authenticated key wrapping', () => {
 
   test('encodes key-wrap AAD canonically', () => {
     expect(toHex(encodeKeyWrapAad(databaseContext))).toBe(
-      '6e6f746572612f6b65792d7772617001010009' +
-        '70726f66696c652d31',
+      '6e6f746572612f6b65792d777261700101000970726f66696c652d31',
     );
   });
 
@@ -70,9 +73,9 @@ describe('authenticated key wrapping', () => {
     const envelope = await wrapKey(wrappingKey, keyToWrap, databaseContext);
 
     expect(envelope.version).toBe(1);
-    await expect(unwrapKey(wrappingKey, envelope, databaseContext)).resolves.toEqual(
-      keyToWrap,
-    );
+    await expect(
+      unwrapKey(wrappingKey, envelope, databaseContext),
+    ).resolves.toEqual(keyToWrap);
   });
 
   test('uses independent nonces for repeated wrapping', async () => {
@@ -121,10 +124,9 @@ describe('authenticated key wrapping', () => {
     );
     const nonce = await decodeBase64(envelope.nonce);
     const ciphertext = await decodeBase64(envelope.ciphertext);
-    nonce[0] ^= 1;
-    ciphertext[0] ^= 1;
-    const encode = (bytes: Uint8Array) =>
-      Buffer.from(bytes).toString('base64');
+    nonce[0] = (nonce[0] + 1) % 256;
+    ciphertext[0] = (ciphertext[0] + 1) % 256;
+    const encode = (bytes: Uint8Array) => Buffer.from(bytes).toString('base64');
 
     await expect(
       unwrapKey(
@@ -144,8 +146,16 @@ describe('authenticated key wrapping', () => {
 
   test.each([
     { version: 1, nonce: 'invalid', ciphertext: 'AA==' },
-    { version: 1, nonce: Buffer.alloc(23).toString('base64'), ciphertext: 'AA==' },
-    { version: 1, nonce: Buffer.alloc(24).toString('base64'), ciphertext: 'AA==' },
+    {
+      version: 1,
+      nonce: Buffer.alloc(23).toString('base64'),
+      ciphertext: 'AA==',
+    },
+    {
+      version: 1,
+      nonce: Buffer.alloc(24).toString('base64'),
+      ciphertext: 'AA==',
+    },
     { version: 1, nonce: Buffer.alloc(24).toString('base64') },
     {
       version: 1,
@@ -155,11 +165,7 @@ describe('authenticated key wrapping', () => {
     },
   ])('rejects malformed envelopes', async (envelope) => {
     await expect(
-      unwrapKey(
-        fromHex('11'.repeat(KEY_BYTES)),
-        envelope,
-        databaseContext,
-      ),
+      unwrapKey(fromHex('11'.repeat(KEY_BYTES)), envelope, databaseContext),
     ).rejects.toMatchObject({ code: 'INVALID_CRYPTO_INPUT' });
   });
 
@@ -186,11 +192,10 @@ describe('authenticated key wrapping', () => {
       ),
     ).rejects.toMatchObject({ code: 'INVALID_CRYPTO_INPUT' });
     await expect(
-      wrapKey(
-        new Uint8Array(KEY_BYTES),
-        new Uint8Array(KEY_BYTES),
-        { ...databaseContext, contextId: '' },
-      ),
+      wrapKey(new Uint8Array(KEY_BYTES), new Uint8Array(KEY_BYTES), {
+        ...databaseContext,
+        contextId: '',
+      }),
     ).rejects.toMatchObject({ code: 'INVALID_CRYPTO_INPUT' });
   });
 });

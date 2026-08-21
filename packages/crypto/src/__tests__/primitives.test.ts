@@ -41,7 +41,9 @@ describe('crypto primitives', () => {
       code: 'CRYPTO_INITIALIZATION_FAILED',
       message: 'Crypto initialization failed',
     });
-    await expect(initialization).rejects.not.toThrow('sensitive native failure');
+    await expect(initialization).rejects.not.toThrow(
+      'sensitive native failure',
+    );
   });
 
   test('copies bytes and validates exact lengths', () => {
@@ -58,9 +60,7 @@ describe('crypto primitives', () => {
 
   test('encodes UTF-8 without normalizing input', () => {
     expect(encodeUtf8('é')).not.toEqual(encodeUtf8('e\u0301'));
-    expect(encodeUtf8(' 密码 ')).toEqual(
-      new TextEncoder().encode(' 密码 '),
-    );
+    expect(encodeUtf8(' 密码 ')).toEqual(new TextEncoder().encode(' 密码 '));
   });
 
   test('round-trips canonical RFC 4648 Base64', async () => {
@@ -71,7 +71,7 @@ describe('crypto primitives', () => {
     await expect(decodeBase64(encoded)).resolves.toEqual(bytes);
   });
 
-  test.each(['AAEC_f7_Kg==', 'AAEC/f7/Kg', 'AAEC/f7/Kg===', 'AAE!']) (
+  test.each(['AAEC_f7_Kg==', 'AAEC/f7/Kg', 'AAEC/f7/Kg===', 'AAE!'])(
     'rejects non-canonical Base64 %s',
     async (value) => {
       await expect(decodeBase64(value)).rejects.toMatchObject({

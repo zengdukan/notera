@@ -83,19 +83,15 @@ export async function hkdfSha256(
     invalidInput();
   }
 
-  const subtle = globalThis.crypto?.subtle;
+  const subtle = typeof crypto === 'undefined' ? undefined : crypto.subtle;
   if (!subtle) {
     throw new CryptoError('CRYPTO_INITIALIZATION_FAILED');
   }
 
   try {
-    const key = await subtle.importKey(
-      'raw',
-      inputKeyMaterial,
-      'HKDF',
-      false,
-      ['deriveBits'],
-    );
+    const key = await subtle.importKey('raw', inputKeyMaterial, 'HKDF', false, [
+      'deriveBits',
+    ]);
     const bits = await subtle.deriveBits(
       { hash: 'SHA-256', info, name: 'HKDF', salt },
       key,

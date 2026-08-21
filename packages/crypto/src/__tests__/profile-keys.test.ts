@@ -56,13 +56,16 @@ describe('profile key packages', () => {
   test.each([
     ['wrong password', 'wrong password', profileId],
     ['wrong profile', password, '018f5f46-43ca-7c86-9912-ec42bde8c554'],
-  ])('rejects %s without returning partial keys', async (_name, input, context) => {
-    const created = await createProfileKeyPackage(password, profileId);
+  ])(
+    'rejects %s without returning partial keys',
+    async (_name, input, context) => {
+      const created = await createProfileKeyPackage(password, profileId);
 
-    await expect(
-      unlockProfileKeyPackage(input, context, created.keyPackage),
-    ).rejects.toMatchObject({ code: 'AUTHENTICATION_FAILED' });
-  });
+      await expect(
+        unlockProfileKeyPackage(input, context, created.keyPackage),
+      ).rejects.toMatchObject({ code: 'AUTHENTICATION_FAILED' });
+    },
+  );
 
   test('rejects swapped database and vault envelopes', async () => {
     const created = await createProfileKeyPackage(password, profileId);
@@ -137,7 +140,7 @@ describe('profile key packages', () => {
   test('wipes unlocked keys when new salt generation fails', async () => {
     const created = await createProfileKeyPackage(password, profileId);
     const unwrappedKeys: Uint8Array[] = [];
-    const unwrapKey = keyWrapping.unwrapKey;
+    const { unwrapKey } = keyWrapping;
     jest.spyOn(keyWrapping, 'unwrapKey').mockImplementation(async (...args) => {
       const key = await unwrapKey(...args);
       unwrappedKeys.push(key);
@@ -157,9 +160,9 @@ describe('profile key packages', () => {
     ).rejects.toThrow('random source failed');
 
     expect(unwrappedKeys).toHaveLength(2);
-    for (const key of unwrappedKeys) {
+    unwrappedKeys.forEach((key) => {
       expect(key).toEqual(new Uint8Array(KEY_BYTES));
-    }
+    });
   });
 
   test('wipes a generated database key when vault key generation fails', async () => {
@@ -171,9 +174,9 @@ describe('profile key packages', () => {
       .spyOn(random, 'generateVaultKey')
       .mockRejectedValueOnce(new Error('random source failed'));
 
-    await expect(
-      createProfileKeyPackage(password, profileId),
-    ).rejects.toThrow('random source failed');
+    await expect(createProfileKeyPackage(password, profileId)).rejects.toThrow(
+      'random source failed',
+    );
     expect(databaseKey).toEqual(new Uint8Array(KEY_BYTES));
   });
 
@@ -204,17 +207,20 @@ describe('profile key packages', () => {
         unexpected: true,
       },
     ],
-  ])('rejects invalid profile package input', async (input, context, keyPackage) => {
-    await expect(
-      unlockProfileKeyPackage(input, context, keyPackage),
-    ).rejects.toMatchObject({
-      code:
-        (keyPackage as { version?: number; kdfVersion?: number }).version ===
-          2 ||
-        (keyPackage as { version?: number; kdfVersion?: number }).kdfVersion ===
-          2
-          ? 'UNSUPPORTED_CRYPTO_VERSION'
-          : 'INVALID_CRYPTO_INPUT',
-    });
-  });
+  ])(
+    'rejects invalid profile package input',
+    async (input, context, keyPackage) => {
+      await expect(
+        unlockProfileKeyPackage(input, context, keyPackage),
+      ).rejects.toMatchObject({
+        code:
+          (keyPackage as { version?: number; kdfVersion?: number }).version ===
+            2 ||
+          (keyPackage as { version?: number; kdfVersion?: number })
+            .kdfVersion === 2
+            ? 'UNSUPPORTED_CRYPTO_VERSION'
+            : 'INVALID_CRYPTO_INPUT',
+      });
+    },
+  );
 });

@@ -18,11 +18,7 @@ import {
   KeyWrapPurpose,
   SALT_BYTES,
 } from './parameters';
-import {
-  generateDatabaseKey,
-  generateSalt,
-  generateVaultKey,
-} from './random';
+import { generateDatabaseKey, generateSalt, generateVaultKey } from './random';
 
 export type PasswordKeyPackage = Readonly<{
   version: 1;
@@ -105,8 +101,7 @@ function parseKeyPackage(value: unknown): PasswordKeyPackage {
     version: CRYPTO_FORMAT_VERSION,
     kdfVersion: KDF_VERSION,
     salt: keyPackage.salt,
-    wrappedDatabaseKey:
-      keyPackage.wrappedDatabaseKey as WrappedKeyEnvelope,
+    wrappedDatabaseKey: keyPackage.wrappedDatabaseKey as WrappedKeyEnvelope,
     wrappedVaultKey: keyPackage.wrappedVaultKey as WrappedKeyEnvelope,
   };
 }

@@ -54,10 +54,7 @@ export async function decodeBase64(value: string): Promise<Uint8Array> {
 
   try {
     const crypto = await getSodium();
-    const decoded = crypto.from_base64(
-      value,
-      crypto.base64_variants.ORIGINAL,
-    );
+    const decoded = crypto.from_base64(value, crypto.base64_variants.ORIGINAL);
     const canonical = crypto.to_base64(
       decoded,
       crypto.base64_variants.ORIGINAL,
@@ -72,7 +69,7 @@ export async function decodeBase64(value: string): Promise<Uint8Array> {
     if (isCryptoError(error)) {
       throw error;
     }
-    invalidInput();
+    return invalidInput();
   }
 }
 

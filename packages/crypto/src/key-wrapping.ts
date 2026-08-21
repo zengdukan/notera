@@ -137,12 +137,7 @@ export async function unwrapKey(
   assertByteLength('nonce', nonce, NONCE_BYTES);
   assertByteLength('wrapped key', ciphertext, KEY_BYTES + AUTH_TAG_BYTES);
 
-  const key = await decryptAead(
-    ciphertext,
-    wrappingKey,
-    nonce,
-    additionalData,
-  );
+  const key = await decryptAead(ciphertext, wrappingKey, nonce, additionalData);
   assertByteLength('unwrapped key', key, KEY_BYTES);
   return key;
 }

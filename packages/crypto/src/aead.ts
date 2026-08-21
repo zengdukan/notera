@@ -1,10 +1,6 @@
 import { assertByteLength } from './bytes';
 import { CryptoError, isCryptoError } from './errors';
-import {
-  AUTH_TAG_BYTES,
-  KEY_BYTES,
-  NONCE_BYTES,
-} from './parameters';
+import { AUTH_TAG_BYTES, KEY_BYTES, NONCE_BYTES } from './parameters';
 import { getSodium } from './sodium';
 
 function assertBytes(value: Uint8Array): void {
