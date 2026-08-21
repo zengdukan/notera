@@ -11,5 +11,8 @@ export interface ElectronHandler {
 export * from './ipc/adf';
 export * from './ipc/common';
 export * from './ipc/contract';
+export * from './ipc/contracts/content-tree';
+export * from './ipc/contracts/note';
+export * from './ipc/contracts/profile';
 export * from './ipc/errors';
 export * from './ipc/pagination';
