@@ -9,6 +9,7 @@ module.exports = {
   roots: ['<rootDir>/packages', '<rootDir>/src'],
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
   testEnvironment: 'node',
+  testMatch: ['**/*.test.[jt]s?(x)'],
   testPathIgnorePatterns: ['release/app/dist', '.erb/dll'],
   transform: {
     '\\.(ts|tsx|js|jsx)$': 'ts-jest',

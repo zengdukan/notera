@@ -11,7 +11,10 @@ describe('workspace package resolution', () => {
     ['crypto', crypto],
     ['domain', domain],
     ['storage-sqlcipher', storageSqlcipher],
-  ])('resolves the @notera/%s public entry point', (_name, workspacePackage) => {
-    expect(workspacePackage).toBeDefined();
-  });
+  ])(
+    'resolves the @notera/%s public entry point',
+    (_name, workspacePackage) => {
+      expect(workspacePackage).toBeDefined();
+    },
+  );
 });

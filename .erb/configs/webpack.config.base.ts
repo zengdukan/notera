@@ -16,7 +16,7 @@ const configuration: webpack.Configuration = {
     rules: [
       {
         test: /\.[jt]sx?$/,
-        exclude: /node_modules/,
+        include: [webpackPaths.srcPath, webpackPaths.packagesPath],
         use: {
           loader: 'ts-loader',
           options: {
@@ -43,7 +43,7 @@ const configuration: webpack.Configuration = {
    */
   resolve: {
     extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'],
-    modules: [webpackPaths.srcPath, 'node_modules'],
+    modules: [webpackPaths.srcPath, webpackPaths.packagesPath, 'node_modules'],
     // There is no need to add aliases here, the paths in tsconfig get mirrored
     plugins: [new TsconfigPathsPlugins()],
   },

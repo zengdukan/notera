@@ -58,7 +58,8 @@
     "test:unit": "jest",
     "typecheck:app": "tsc --noEmit -p tsconfig.json",
     "typecheck:packages": "npm run typecheck --workspaces --if-present",
-    "typecheck": "npm run typecheck:packages && npm run typecheck:app"
+    "typecheck": "npm run typecheck:packages && npm run typecheck:app",
+    "verify": "npm run typecheck && npm run test:unit -- --runInBand && npm run check:deps && npm run lint && npm run build"
   },
   "browserslist": [
     "extends browserslist-config-erb"

@@ -8,6 +8,7 @@ const erbNodeModulesPath = path.join(erbPath, 'node_modules');
 const dllPath = path.join(__dirname, '../dll');
 
 const srcPath = path.join(rootPath, 'src');
+const packagesPath = path.join(rootPath, 'packages');
 const srcMainPath = path.join(srcPath, 'main');
 const srcRendererPath = path.join(srcPath, 'renderer');
 
@@ -39,4 +40,5 @@ export default {
   distMainPath,
   distRendererPath,
   buildPath,
+  packagesPath,
 };
