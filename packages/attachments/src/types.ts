@@ -35,6 +35,7 @@ export interface ImportedBlob {
   readonly manifestVersion: 1;
   readonly manifest: Uint8Array;
   readonly plaintextLength: number;
+  readonly contentSha256: Uint8Array;
 }
 
 export interface OpenBlobReaderInput {

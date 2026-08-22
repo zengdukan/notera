@@ -1,4 +1,5 @@
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { ATTACHMENT_CHUNK_BYTES, MAX_ATTACHMENT_BYTES } from '../constants';
 import { fixedSizeChunks } from '../chunker';
@@ -66,6 +67,67 @@ describe('attachment store startup', () => {
 });
 
 describe('streaming attachment import', () => {
+  test('returns the SHA-256 digest of empty plaintext', async () => {
+    const root = await testRoot();
+    const store = await createAttachmentStore({ profileRoot: root });
+
+    const imported = await store.importBlob({
+      vaultId: TEST_VAULT_ID,
+      source: slicedSource(new Uint8Array(), [1]),
+    });
+
+    expect(Buffer.from(imported.contentSha256).toString('hex')).toBe(
+      'e3b0c44298fc1c149afbf4c8996fb924' +
+        '27ae41e4649b934ca495991b7852b855',
+    );
+    await store.close();
+  });
+
+  test.each([
+    [ATTACHMENT_CHUNK_BYTES, [1, 8191, 77777]],
+    [ATTACHMENT_CHUNK_BYTES + 1, [ATTACHMENT_CHUNK_BYTES + 1]],
+  ] as const)(
+    'hashes %i plaintext bytes independently of source slicing',
+    async (length, sliceSizes) => {
+      const root = await testRoot();
+      const store = await createAttachmentStore({ profileRoot: root });
+      const plaintext = patternBytes(length);
+      const expected = createHash('sha256').update(plaintext).digest();
+
+      const imported = await store.importBlob({
+        vaultId: TEST_VAULT_ID,
+        source: slicedSource(plaintext, sliceSizes),
+      });
+
+      expect(imported.contentSha256).toEqual(new Uint8Array(expected));
+      await store.close();
+    },
+    30_000,
+  );
+
+  test('repeated content shares a defensive digest but not encrypted identity', async () => {
+    const root = await testRoot();
+    const store = await createAttachmentStore({ profileRoot: root });
+    const plaintext = patternBytes(ATTACHMENT_CHUNK_BYTES + 1);
+
+    const first = await store.importBlob({
+      vaultId: TEST_VAULT_ID,
+      source: slicedSource(plaintext, [1, 8191]),
+    });
+    const expectedDigest = Uint8Array.from(first.contentSha256);
+    first.contentSha256.fill(0);
+    const second = await store.importBlob({
+      vaultId: TEST_VAULT_ID,
+      source: slicedSource(plaintext, [77777]),
+    });
+
+    expect(second.contentSha256).toEqual(expectedDigest);
+    expect(second.blobId).not.toBe(first.blobId);
+    expect(second.fileKey).not.toEqual(first.fileKey);
+    expect(second.manifest).not.toEqual(first.manifest);
+    await store.close();
+  }, 30_000);
+
   test.each([0, 1, ATTACHMENT_CHUNK_BYTES + 1])(
     'imports and decrypts %i plaintext bytes',
     async (length) => {

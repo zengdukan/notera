@@ -143,11 +143,13 @@ export async function importEncryptedBlob(
   let committed = false;
   try {
     handle = await open(stagingPath, 'wx', 0o600);
+    const plaintextSha256 = createHash('sha256');
     const chunks = [];
     let plaintextLength = 0;
     let chunkIndex = 0;
     for await (const plaintext of fixedSizeChunks(input.source, input.signal)) {
       throwIfAborted(input.signal);
+      plaintextSha256.update(plaintext);
       const ciphertext = await encryptAttachmentChunk(
         plaintext,
         fileKey,
@@ -185,12 +187,14 @@ export async function importEncryptedBlob(
     throwIfAborted(input.signal);
     await publishStagedBlob(input.paths, blobId, stagingPath);
     committed = true;
+    const contentSha256 = new Uint8Array(plaintextSha256.digest());
     const result = Object.freeze({
       blobId,
       fileKey: Uint8Array.from(fileKey),
       manifestVersion: 1 as const,
       manifest,
       plaintextLength,
+      contentSha256,
     });
     return result;
   } catch (error) {
