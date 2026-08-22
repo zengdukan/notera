@@ -62,6 +62,10 @@ interface SchemaV3Module {
   readonly V3_NOTE_VERSION_NAME: Migration;
 }
 
+interface SchemaV4Module {
+  readonly V4_NORMALIZED_ATTACHMENT_BLOBS: Migration;
+}
+
 interface SnapshotDatabaseModule {
   createVaultDatabase(options: {
     filePath: string;
@@ -101,6 +105,11 @@ function schemaV2Module(): SchemaV2Module {
 function schemaV3Module(): SchemaV3Module {
   // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
   return require('../schema/v3') as SchemaV3Module;
+}
+
+function schemaV4Module(): SchemaV4Module {
+  // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
+  return require('../schema/v4') as SchemaV4Module;
 }
 
 function databaseModuleWithProductionMigrations(
@@ -194,22 +203,29 @@ afterEach(() => {
 describe('schema migrations', () => {
   it('derives the current version and selects only the continuous suffix', () => {
     const registry = registryModule();
-    expect(registry.CURRENT_SCHEMA_VERSION).toBe(3);
+    expect(registry.CURRENT_SCHEMA_VERSION).toBe(4);
     expect(registry.selectProductionMigrations(1)).toEqual([
       schemaV2Module().V2_PENDING_VAULT_META_DIGEST,
       schemaV3Module().V3_NOTE_VERSION_NAME,
+      schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
     ]);
     expect(registry.selectProductionMigrations(2)).toEqual([
       schemaV3Module().V3_NOTE_VERSION_NAME,
+      schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
     ]);
-    expect(registry.selectProductionMigrations(3)).toEqual([]);
+    expect(registry.selectProductionMigrations(3)).toEqual([
+      schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
+    ]);
+    expect(registry.selectProductionMigrations(4)).toEqual([]);
 
     const v2 = migration(2);
     const v3 = migration(3);
-    const history = [v2, v3];
-    expect(registry.selectMigrationRange(history, 1, 1)).toEqual([v2, v3]);
-    expect(registry.selectMigrationRange(history, 1, 2)).toEqual([v3]);
-    expect(registry.selectMigrationRange(history, 1, 3)).toEqual([]);
+    const v4 = migration(4);
+    const history = [v2, v3, v4];
+    expect(registry.selectMigrationRange(history, 1, 1)).toEqual([v2, v3, v4]);
+    expect(registry.selectMigrationRange(history, 1, 2)).toEqual([v3, v4]);
+    expect(registry.selectMigrationRange(history, 1, 3)).toEqual([v4]);
+    expect(registry.selectMigrationRange(history, 1, 4)).toEqual([]);
   });
 
   it('rejects invalid history before selecting a migration suffix', () => {
@@ -492,7 +508,7 @@ describe('schema migrations', () => {
       );
       INSERT INTO schema_metadata VALUES (1, 0);
     `);
-    runnerModule().runMigrations(migrated, 0, 3, [
+    runnerModule().runMigrations(migrated, 0, 4, [
       migration(1, (database) => {
         database.exec('DROP TABLE schema_metadata');
         baselineV1Module().createBaselineV1(database, {
@@ -504,6 +520,7 @@ describe('schema migrations', () => {
       }),
       schemaV2Module().V2_PENDING_VAULT_META_DIGEST,
       schemaV3Module().V3_NOTE_VERSION_NAME,
+      schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
     ]);
 
     const fresh = openTestConnection(freshPath);

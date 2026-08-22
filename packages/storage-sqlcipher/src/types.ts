@@ -17,8 +17,13 @@ import type {
   TrashEntryId,
   TrashPlan,
   Attachment,
+  AttachmentBlob,
   AttachmentId,
   AttachmentReference,
+  BlobId,
+  CurrentNoteAttachmentReference,
+  NoteVersionAttachmentReference,
+  TrashAttachmentReference,
   VaultId,
   VaultIdentity,
   VersionName,
@@ -256,21 +261,56 @@ export interface ContentPlanWriter {
   applyBatchRelations(input: BatchRelationStoragePlan): void;
 }
 
-export interface StoredAttachment {
-  readonly attachment: Attachment;
+export interface StoredAttachmentBlob {
+  readonly blob: AttachmentBlob;
   readonly fileKey: Uint8Array;
   readonly manifestVersion: number;
   readonly manifest: Uint8Array;
 }
+export interface StoredAttachmentContent {
+  readonly attachment: Attachment;
+  readonly storedBlob: StoredAttachmentBlob;
+}
+export interface AttachmentListItem {
+  readonly attachment: Attachment;
+  readonly blob: AttachmentBlob;
+}
 export interface AttachmentReader {
-  get(id: AttachmentId): StoredAttachment | undefined;
+  getAttachment(id: AttachmentId): Attachment | undefined;
+  getBlob(id: BlobId): StoredAttachmentBlob | undefined;
+  getContent(id: AttachmentId): StoredAttachmentContent | undefined;
+  findReadyBlobBySha256(value: Uint8Array): StoredAttachmentBlob | undefined;
+  listForNote(noteId: NoteId, page: PageRequest): Page<AttachmentListItem>;
+  listReferencesForNotes(
+    ids: readonly NoteId[],
+  ): readonly CurrentNoteAttachmentReference[];
+  listReferencesForVersions(
+    ids: readonly NoteVersionId[],
+  ): readonly NoteVersionAttachmentReference[];
+  listReferencesForTrashEntries(
+    ids: readonly TrashEntryId[],
+  ): readonly TrashAttachmentReference[];
+  listReferencesForAttachments(
+    ids: readonly AttachmentId[],
+  ): readonly AttachmentReference[];
+  listAllBlobs(): readonly AttachmentBlob[];
+  listGcPendingBlobs(): readonly AttachmentBlob[];
 }
 export interface AttachmentWriter extends AttachmentReader {
-  insert(value: StoredAttachment): void;
-  replace(value: StoredAttachment): void;
-  addReference(reference: AttachmentReference): void;
-  removeReference(reference: AttachmentReference): void;
-  markGcPending(attachment: Attachment): void;
+  insertBlob(value: StoredAttachmentBlob): void;
+  insertAttachment(value: Attachment): void;
+  replaceBlob(value: StoredAttachmentBlob): void;
+  addReferences(values: readonly AttachmentReference[]): void;
+  removeReferences(values: readonly AttachmentReference[]): void;
+  replaceNoteReferences(
+    noteId: NoteId,
+    values: readonly CurrentNoteAttachmentReference[],
+  ): void;
+  deleteUnreferencedAttachments(
+    ids: readonly AttachmentId[],
+    now: Timestamp,
+  ): readonly BlobId[];
+  finalizeGc(blobId: BlobId): void;
 }
 
 export interface CreateVaultDatabaseOptions {

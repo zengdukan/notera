@@ -12,10 +12,11 @@ import {
   copyCurrentNoteAttachmentReferences,
   countAttachmentReferences,
   createAttachment,
+  createAttachmentBlob,
   createCurrentNoteAttachmentReference,
   createNoteVersionAttachmentReference,
   createTrashAttachmentReference,
-  markAttachmentGcPending,
+  markAttachmentBlobGcPending,
   referencesForAttachment,
   removeAttachmentReference,
 } from '..';
@@ -25,16 +26,22 @@ const uuid = (suffix: string) =>
 const vaultId = asVaultId(uuid('1'));
 const attachmentId = asAttachmentId(uuid('2'));
 const now = asTimestamp(1_000);
-const attachment = createAttachment({
-  id: attachmentId,
-  blobId: asBlobId(uuid('3')),
+const blob = createAttachmentBlob({
+  id: asBlobId(uuid('3')),
   vaultId,
-  fileName: 'file.bin',
-  mimeType: 'application/octet-stream',
+  contentSha256: new Uint8Array(32).fill(7),
   byteLength: asAttachmentByteLength(MAX_ATTACHMENT_BYTES),
   localState: 'READY',
   createdAt: now,
   updatedAt: now,
+});
+const attachment = createAttachment({
+  id: attachmentId,
+  blobId: blob.id,
+  vaultId,
+  fileName: 'file.bin',
+  mimeType: 'application/octet-stream',
+  createdAt: now,
 });
 const noteReference = createCurrentNoteAttachmentReference({
   vaultId,
@@ -53,6 +60,31 @@ const trashReference = createTrashAttachmentReference({
 });
 
 describe('attachment reference rules', () => {
+  it('separates immutable blob content from visible attachment metadata', () => {
+    const digest = new Uint8Array(32).fill(9);
+    const created = createAttachmentBlob({
+      ...blob,
+      contentSha256: digest,
+    });
+
+    digest.fill(0);
+
+    expect(created.contentSha256).toEqual(new Uint8Array(32).fill(9));
+    expect(created).not.toHaveProperty('fileName');
+    expect(attachment).not.toHaveProperty('byteLength');
+    expect(attachment).not.toHaveProperty('localState');
+    expect(Object.isFrozen(created)).toBe(true);
+  });
+
+  it('rejects malformed content digests but permits legacy null digests', () => {
+    expect(
+      createAttachmentBlob({ ...blob, contentSha256: undefined }),
+    ).not.toHaveProperty('contentSha256');
+    expect(() =>
+      createAttachmentBlob({ ...blob, contentSha256: new Uint8Array(31) }),
+    ).toThrow(expect.objectContaining({ code: 'INVALID_ENTITY_STATE' }));
+  });
+
   it('counts current-note, permanent-version, and trash references', () => {
     const references = [noteReference, versionReference, trashReference];
 
@@ -113,15 +145,11 @@ describe('attachment reference rules', () => {
 
   it('allows GC only when no current, history, or trash reference remains', () => {
     expect(() =>
-      markAttachmentGcPending(
-        attachment,
-        [versionReference],
-        asTimestamp(2_000),
-      ),
+      markAttachmentBlobGcPending(blob, [attachment], asTimestamp(2_000)),
     ).toThrow(expect.objectContaining({ code: 'ATTACHMENT_STILL_REFERENCED' }));
 
-    const pending = markAttachmentGcPending(attachment, [], asTimestamp(2_000));
-    const pendingAgain = markAttachmentGcPending(
+    const pending = markAttachmentBlobGcPending(blob, [], asTimestamp(2_000));
+    const pendingAgain = markAttachmentBlobGcPending(
       pending,
       [],
       asTimestamp(3_000),
@@ -129,7 +157,7 @@ describe('attachment reference rules', () => {
 
     expect(pending.localState).toBe('GC_PENDING');
     expect(pendingAgain.localState).toBe('GC_PENDING');
-    expect(attachment.localState).toBe('READY');
+    expect(blob.localState).toBe('READY');
     expect(Object.isFrozen(pending)).toBe(true);
   });
 });

@@ -1,5 +1,6 @@
 import type {
   Attachment,
+  AttachmentBlob,
   AttachmentReference,
   Favorite,
   Folder,
@@ -23,6 +24,7 @@ import {
   asTagName,
   asTimestamp,
   createAttachment,
+  createAttachmentBlob,
   createCurrentNoteAttachmentReference,
   createFavorite,
   createNote,
@@ -46,11 +48,16 @@ import {
   vaultMetaDigest,
 } from './helpers';
 
-interface StoredAttachment {
-  readonly attachment: Attachment;
+interface StoredAttachmentBlob {
+  readonly blob: AttachmentBlob;
   readonly fileKey: Uint8Array;
   readonly manifestVersion: number;
   readonly manifest: Uint8Array;
+}
+
+interface StoredAttachment {
+  readonly attachment: Attachment;
+  readonly storedBlob: StoredAttachmentBlob;
 }
 
 interface IntegrityIssue {
@@ -76,8 +83,9 @@ interface VaultDatabaseApi {
       readonly favorites: { insert(value: Favorite): void };
       readonly history: { insert(value: NoteVersion): void };
       readonly attachments: {
-        insert(value: StoredAttachment): void;
-        addReference(value: AttachmentReference): void;
+        insertBlob(value: StoredAttachmentBlob): void;
+        insertAttachment(value: Attachment): void;
+        addReferences(value: readonly AttachmentReference[]): void;
       };
     }) => Result,
   ): Result;
@@ -171,14 +179,22 @@ function storedAttachment(): StoredAttachment {
       vaultId: TEST_VAULT_ID,
       fileName: 'private-name.txt',
       mimeType: 'text/plain',
-      byteLength: asAttachmentByteLength(5),
-      localState: 'READY',
       createdAt: asTimestamp(1),
-      updatedAt: asTimestamp(1),
     }),
-    fileKey: new Uint8Array(32).fill(7),
-    manifestVersion: 1,
-    manifest: new Uint8Array([1, 2, 3]),
+    storedBlob: {
+      blob: createAttachmentBlob({
+        id: asBlobId('82000000-0000-4000-8000-000000000001'),
+        vaultId: TEST_VAULT_ID,
+        contentSha256: new Uint8Array(32).fill(6),
+        byteLength: asAttachmentByteLength(5),
+        localState: 'READY',
+        createdAt: asTimestamp(1),
+        updatedAt: asTimestamp(1),
+      }),
+      fileKey: new Uint8Array(32).fill(7),
+      manifestVersion: 1,
+      manifest: new Uint8Array([1, 2, 3]),
+    },
   };
 }
 
@@ -194,6 +210,7 @@ function databaseSnapshot(connection: SqlcipherConnection): string {
     'note_tags',
     'favorites',
     'trash_entries',
+    'attachment_blobs',
     'attachments',
     'attachment_references',
     'notes_fts',
@@ -261,8 +278,9 @@ describe('vault integrity scan', () => {
       transaction.tags.addToNote(noteTag);
       transaction.favorites.insert(favorite);
       transaction.history.insert(version);
-      transaction.attachments.insert(attachment);
-      transaction.attachments.addReference(reference);
+      transaction.attachments.insertBlob(attachment.storedBlob);
+      transaction.attachments.insertAttachment(attachment.attachment);
+      transaction.attachments.addReferences([reference]);
     });
 
     let raw = openTestConnection(filePath);
@@ -389,7 +407,8 @@ describe('vault integrity scan', () => {
     database.transaction((transaction) => {
       transaction.notes.insert(note);
       transaction.history.insert(version);
-      transaction.attachments.insert(attachment);
+      transaction.attachments.insertBlob(attachment.storedBlob);
+      transaction.attachments.insertAttachment(attachment.attachment);
     });
 
     const raw = openTestConnection(filePath);
@@ -401,8 +420,10 @@ describe('vault integrity scan', () => {
       )
       .run(version.id);
     raw
-      .prepare('UPDATE attachments SET file_key = zeroblob(31) WHERE id = ?')
-      .run(attachment.attachment.id);
+      .prepare(
+        'UPDATE attachment_blobs SET file_key = zeroblob(31) WHERE blob_id = ?',
+      )
+      .run(attachment.storedBlob.blob.id);
     raw.prepare('DELETE FROM notes_fts WHERE note_id = ?').run(note.id);
     raw.close();
 
@@ -418,8 +439,8 @@ describe('vault integrity scan', () => {
         },
         {
           code: 'ATTACHMENT_METADATA_INVALID',
-          table: 'attachments',
-          entityId: attachment.attachment.id,
+          table: 'attachment_blobs',
+          entityId: attachment.storedBlob.blob.id,
         },
         { code: 'SEARCH_INDEX_INVALID', table: 'notes_fts' },
       ]),

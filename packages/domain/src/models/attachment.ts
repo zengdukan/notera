@@ -19,16 +19,23 @@ export type AttachmentLocalState =
   | 'CORRUPT'
   | 'GC_PENDING';
 
+export interface AttachmentBlob {
+  readonly id: BlobId;
+  readonly vaultId: VaultId;
+  readonly contentSha256?: Uint8Array;
+  readonly byteLength: AttachmentByteLength;
+  readonly localState: AttachmentLocalState;
+  readonly createdAt: Timestamp;
+  readonly updatedAt: Timestamp;
+}
+
 export interface Attachment {
   readonly id: AttachmentId;
   readonly blobId: BlobId;
   readonly vaultId: VaultId;
   readonly fileName: string;
   readonly mimeType: string;
-  readonly byteLength: AttachmentByteLength;
-  readonly localState: AttachmentLocalState;
   readonly createdAt: Timestamp;
-  readonly updatedAt: Timestamp;
 }
 
 interface AttachmentReferenceBase {
@@ -66,15 +73,30 @@ const LOCAL_STATES: readonly AttachmentLocalState[] = [
   'GC_PENDING',
 ];
 
-export function createAttachment(input: Attachment): Attachment {
+export function createAttachmentBlob(input: AttachmentBlob): AttachmentBlob {
   assertTimestampOrder(input.createdAt, input.updatedAt);
   assertDomain(
     input.byteLength <= MAX_ATTACHMENT_BYTES,
     'ATTACHMENT_TOO_LARGE',
   );
+  assertDomain(
+    input.contentSha256 === undefined ||
+      (input.contentSha256 instanceof Uint8Array &&
+        input.contentSha256.byteLength === 32),
+    'INVALID_ENTITY_STATE',
+  );
+  assertDomain(LOCAL_STATES.includes(input.localState), 'INVALID_ENTITY_STATE');
+  const { contentSha256, ...rest } = input;
+  return immutable(
+    contentSha256 === undefined
+      ? rest
+      : { ...rest, contentSha256: Uint8Array.from(contentSha256) },
+  );
+}
+
+export function createAttachment(input: Attachment): Attachment {
   assertDomain(input.fileName.trim().length > 0, 'INVALID_NAME');
   assertDomain(input.mimeType.trim().length > 0, 'INVALID_NAME');
-  assertDomain(LOCAL_STATES.includes(input.localState), 'INVALID_ENTITY_STATE');
   return immutable({
     ...input,
     fileName: input.fileName.trim(),

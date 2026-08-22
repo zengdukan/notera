@@ -7,14 +7,16 @@ import {
   asTimestamp,
   asVaultId,
   createAttachment,
+  createAttachmentBlob,
   type Attachment,
+  type AttachmentBlob,
   type VaultId,
 } from '@notera/domain';
 
 import type { SqlcipherConnection } from './connection';
 import { CURRENT_FILE_FORMAT_VERSION } from './file-format';
 import { CURRENT_SCHEMA_VERSION } from './migrations/registry';
-import { MAX_ATTACHMENT_MANIFEST_BYTES } from './repositories/attachments';
+import { MAX_ATTACHMENT_MANIFEST_BYTES } from './repositories/attachment-blobs';
 import { checkSearchIndex } from './search/health';
 import { parseAdf } from './serialization/adf-json';
 import {
@@ -62,6 +64,7 @@ const ENTITY_TABLES: readonly Readonly<{
   { table: 'note_tags', id: 'note_id' },
   { table: 'favorites', id: 'note_id' },
   { table: 'trash_entries', id: 'id' },
+  { table: 'attachment_blobs', id: 'blob_id' },
   { table: 'attachments', id: 'id' },
   { table: 'attachment_references', id: 'attachment_id' },
 ];
@@ -382,23 +385,13 @@ class IntegrityScanner {
 
   private attachments(): void {
     this.rows<AttachmentRow>(
-      `SELECT id, blob_id, vault_id, file_name, mime_type, byte_length,
-              local_state, file_key, manifest_version, manifest,
-              created_at, updated_at
+      `SELECT id, blob_id, vault_id, file_name, mime_type, created_at
        FROM attachments ORDER BY id`,
     ).forEach((row) => {
       try {
         if (
           typeof row.file_name !== 'string' ||
-          typeof row.mime_type !== 'string' ||
-          typeof row.local_state !== 'string' ||
-          typeof row.manifest_version !== 'number' ||
-          !Number.isSafeInteger(row.manifest_version) ||
-          row.manifest_version < 1 ||
-          !(row.file_key instanceof Uint8Array) ||
-          row.file_key.byteLength !== 32 ||
-          !(row.manifest instanceof Uint8Array) ||
-          row.manifest.byteLength > MAX_ATTACHMENT_MANIFEST_BYTES
+          typeof row.mime_type !== 'string'
         ) {
           throw new Error('invalid attachment bytes');
         }
@@ -408,15 +401,57 @@ class IntegrityScanner {
           vaultId: asVaultId(row.vault_id),
           fileName: row.file_name,
           mimeType: row.mime_type,
-          byteLength: asAttachmentByteLength(row.byte_length),
-          localState: row.local_state as Attachment['localState'],
           createdAt: asTimestamp(row.created_at),
-          updatedAt: asTimestamp(row.updated_at),
         });
       } catch {
         this.add('ATTACHMENT_METADATA_INVALID', 'attachments', row.id);
       }
     });
+    this.rows<AttachmentRow>(
+      `SELECT blob_id AS id, blob_id, vault_id, content_sha256, byte_length,
+              local_state, file_key, manifest_version, manifest,
+              created_at, updated_at
+       FROM attachment_blobs ORDER BY blob_id`,
+    ).forEach((row) => {
+      try {
+        if (
+          typeof row.local_state !== 'string' ||
+          typeof row.manifest_version !== 'number' ||
+          !Number.isSafeInteger(row.manifest_version) ||
+          row.manifest_version < 1 ||
+          !(row.file_key instanceof Uint8Array) ||
+          row.file_key.byteLength !== 32 ||
+          !(row.manifest instanceof Uint8Array) ||
+          row.manifest.byteLength > MAX_ATTACHMENT_MANIFEST_BYTES ||
+          (row.content_sha256 !== null &&
+            (!(row.content_sha256 instanceof Uint8Array) ||
+              row.content_sha256.byteLength !== 32))
+        ) {
+          throw new Error('invalid attachment blob bytes');
+        }
+        createAttachmentBlob({
+          id: asBlobId(row.blob_id),
+          vaultId: asVaultId(row.vault_id),
+          ...(row.content_sha256 === null
+            ? {}
+            : { contentSha256: row.content_sha256 as Uint8Array }),
+          byteLength: asAttachmentByteLength(row.byte_length),
+          localState: row.local_state as AttachmentBlob['localState'],
+          createdAt: asTimestamp(row.created_at),
+          updatedAt: asTimestamp(row.updated_at),
+        });
+      } catch {
+        this.add('ATTACHMENT_METADATA_INVALID', 'attachment_blobs', row.id);
+      }
+    });
+    this.relationOrphans(
+      'attachments',
+      'a.id',
+      `FROM attachments a
+       LEFT JOIN attachment_blobs b
+         ON b.blob_id = a.blob_id AND b.vault_id = a.vault_id
+       WHERE a.vault_id = ? AND b.blob_id IS NULL`,
+    );
     this.relationOrphans(
       'attachment_references',
       'r.attachment_id',

@@ -18,6 +18,7 @@ import {
   asTrashEntryId,
   asVaultId,
   createAttachment,
+  createAttachmentBlob,
   createCurrentNoteAttachmentReference,
   createFavorite,
   createNote,
@@ -180,16 +181,22 @@ describe('offline entities', () => {
   });
 
   it('accepts an attachment at exactly 100 MB and its current-note reference', () => {
+    const blob = createAttachmentBlob({
+      id: ids.blob,
+      vaultId: ids.vault,
+      contentSha256: new Uint8Array(32),
+      byteLength: asAttachmentByteLength(MAX_ATTACHMENT_BYTES),
+      localState: 'READY',
+      createdAt: now,
+      updatedAt: now,
+    });
     const attachment = createAttachment({
       id: ids.attachment,
       blobId: ids.blob,
       vaultId: ids.vault,
       fileName: 'photo.png',
       mimeType: 'image/png',
-      byteLength: asAttachmentByteLength(MAX_ATTACHMENT_BYTES),
-      localState: 'READY',
       createdAt: now,
-      updatedAt: now,
     });
     const reference = createCurrentNoteAttachmentReference({
       vaultId: ids.vault,
@@ -197,20 +204,17 @@ describe('offline entities', () => {
       noteId: ids.note,
     });
 
-    expect(attachment.byteLength).toBe(MAX_ATTACHMENT_BYTES);
+    expect(blob.byteLength).toBe(MAX_ATTACHMENT_BYTES);
     expect(reference).toMatchObject({ source: 'NOTE', noteId: ids.note });
     expect(Object.isFrozen(attachment)).toBe(true);
   });
 
-  it('rejects an attachment larger than 100 MB without exposing its name', () => {
-    const secretName = 'secret-financial-report.pdf';
+  it('rejects an attachment blob larger than 100 MB safely', () => {
     const error = captureError(() =>
-      createAttachment({
-        id: ids.attachment,
-        blobId: ids.blob,
+      createAttachmentBlob({
+        id: ids.blob,
         vaultId: ids.vault,
-        fileName: secretName,
-        mimeType: 'application/pdf',
+        contentSha256: new Uint8Array(32),
         byteLength: asAttachmentByteLength(MAX_ATTACHMENT_BYTES + 1),
         localState: 'READY',
         createdAt: now,
@@ -220,7 +224,7 @@ describe('offline entities', () => {
 
     expect(error).toBeInstanceOf(DomainError);
     expect((error as DomainError).code).toBe('ATTACHMENT_TOO_LARGE');
-    expect((error as Error).message).not.toContain(secretName);
+    expect((error as Error).message).toBe('The attachment exceeds the size limit.');
   });
 
   it('rejects entity timestamps that move backwards', () => {

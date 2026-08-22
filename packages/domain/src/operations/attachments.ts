@@ -1,9 +1,10 @@
 import { assertDomain, failDomain } from '../errors';
 import type { NoteId, VaultId } from '../ids';
 import {
-  createAttachment,
+  createAttachmentBlob,
   createCurrentNoteAttachmentReference,
   type Attachment,
+  type AttachmentBlob,
   type AttachmentReference,
   type CurrentNoteAttachmentReference,
 } from '../models/attachment';
@@ -118,16 +119,23 @@ export function copyCurrentNoteAttachmentReferences(
   );
 }
 
-export function markAttachmentGcPending(
-  attachment: Attachment,
-  references: readonly AttachmentReference[],
+export function markAttachmentBlobGcPending(
+  blob: AttachmentBlob,
+  attachments: readonly Attachment[],
   updatedAt: Timestamp,
-): Attachment {
-  if (countAttachmentReferences(attachment, references) > 0) {
+): AttachmentBlob {
+  const matching = attachments.filter(
+    (attachment) => attachment.blobId === blob.id,
+  );
+  assertDomain(
+    matching.every((attachment) => attachment.vaultId === blob.vaultId),
+    'VAULT_MISMATCH',
+  );
+  if (matching.length > 0) {
     failDomain('ATTACHMENT_STILL_REFERENCED');
   }
-  return createAttachment({
-    ...attachment,
+  return createAttachmentBlob({
+    ...blob,
     localState: 'GC_PENDING',
     updatedAt,
   });
