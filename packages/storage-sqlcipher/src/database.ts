@@ -21,6 +21,8 @@ import {
   FavoriteRepository,
 } from './repositories/favorites';
 import { asHistoryReader, HistoryRepository } from './repositories/history';
+import { asTrashReader, TrashRepository } from './repositories/trash';
+import { ContentPlanRepository } from './repositories/content-plans';
 import {
   createCurrentSchema,
   CURRENT_SCHEMA_VERSION,
@@ -33,6 +35,7 @@ import type {
   TagReader,
   FavoriteReader,
   HistoryReader,
+  TrashReader,
   OpenVaultDatabaseOptions,
   ProfileMetadataReader,
   VaultTransaction,
@@ -73,6 +76,8 @@ export class VaultDatabase {
 
   readonly history: HistoryReader;
 
+  readonly trash: TrashReader;
+
   private readonly vaultId: VaultId;
 
   constructor(connection: SqlcipherConnection, vaultId: VaultId) {
@@ -104,6 +109,14 @@ export class VaultDatabase {
         historyNotes,
       ),
     );
+    const trashNotes = new NoteRepository(() => this.requireConnection(), vaultId);
+    this.trash = asTrashReader(
+      new TrashRepository(
+        () => this.requireConnection(),
+        vaultId,
+        trashNotes,
+      ),
+    );
   }
 
   private requireConnection(): SqlcipherConnection {
@@ -133,23 +146,25 @@ export class VaultDatabase {
       this.vaultId,
       guard,
     );
+    const folderWriter = new FolderRepository(
+      () => this.requireConnection(),
+      this.vaultId,
+      guard,
+    );
+    const tagWriter = new TagRepository(
+      () => this.requireConnection(),
+      this.vaultId,
+      guard,
+    );
     const transaction: VaultTransaction = {
       profileMetadata: new ProfileMetadataRepository(
         () => this.requireConnection(),
         this.vaultId,
         guard,
       ),
-      folders: new FolderRepository(
-        () => this.requireConnection(),
-        this.vaultId,
-        guard,
-      ),
+      folders: folderWriter,
       notes: noteWriter,
-      tags: new TagRepository(
-        () => this.requireConnection(),
-        this.vaultId,
-        guard,
-      ),
+      tags: tagWriter,
       favorites: new FavoriteRepository(
         () => this.requireConnection(),
         this.vaultId,
@@ -159,6 +174,20 @@ export class VaultDatabase {
         () => this.requireConnection(),
         this.vaultId,
         noteWriter,
+        guard,
+      ),
+      trash: new TrashRepository(
+        () => this.requireConnection(),
+        this.vaultId,
+        noteWriter,
+        guard,
+      ),
+      contentPlans: new ContentPlanRepository(
+        () => this.requireConnection(),
+        this.vaultId,
+        folderWriter,
+        noteWriter,
+        tagWriter,
         guard,
       ),
     };

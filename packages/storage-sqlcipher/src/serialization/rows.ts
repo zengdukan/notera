@@ -22,6 +22,9 @@ import {
   type Favorite,
   type NoteVersion,
   type Tag,
+  asTrashEntryId,
+  createTrashEntry,
+  type TrashEntry,
 } from '@notera/domain';
 
 import { StorageError } from '../errors';
@@ -78,6 +81,16 @@ export interface NoteVersionRow {
   readonly adf_bytes: unknown;
   readonly adf_sha256: unknown;
   readonly created_at: unknown;
+}
+
+export interface TrashEntryRow {
+  readonly id: unknown;
+  readonly vault_id: unknown;
+  readonly object_type: unknown;
+  readonly object_id: unknown;
+  readonly original_parent_id: unknown;
+  readonly deleted_at: unknown;
+  readonly expires_at: unknown;
 }
 
 export function hydrateFolder(row: FolderRow): Folder {
@@ -204,6 +217,28 @@ export function hydrateNoteVersion(row: NoteVersionRow): NoteVersion {
       document: parseAdf(row.adf_json),
       createdAt: asTimestamp(row.created_at),
     } as NoteVersion);
+  } catch {
+    throw new StorageError('DB_CORRUPT');
+  }
+}
+
+export function hydrateTrashEntry(row: TrashEntryRow): TrashEntry {
+  try {
+    if (row.object_type !== 'NOTE' && row.object_type !== 'FOLDER') {
+      throw new Error('invalid trash type');
+    }
+    return createTrashEntry({
+      id: asTrashEntryId(row.id),
+      vaultId: asVaultId(row.vault_id),
+      objectType: row.object_type,
+      objectId:
+        row.object_type === 'NOTE'
+          ? asNoteId(row.object_id)
+          : asFolderId(row.object_id),
+      originalParentId: asFolderId(row.original_parent_id),
+      deletedAt: asTimestamp(row.deleted_at),
+      expiresAt: asTimestamp(row.expires_at),
+    } as TrashEntry);
   } catch {
     throw new StorageError('DB_CORRUPT');
   }

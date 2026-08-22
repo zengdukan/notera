@@ -10,6 +10,12 @@ import type {
   NoteVersionId,
   Tag,
   TagId,
+  FolderTreeCopyPlan,
+  NoteCopyPlan,
+  Timestamp,
+  TrashEntry,
+  TrashEntryId,
+  TrashPlan,
   VaultId,
   VaultIdentity,
 } from '@notera/domain';
@@ -59,6 +65,8 @@ export interface VaultTransaction {
   readonly tags: TagWriter;
   readonly favorites: FavoriteWriter;
   readonly history: HistoryWriter;
+  readonly trash: TrashWriter;
+  readonly contentPlans: ContentPlanWriter;
 }
 
 export interface NoteReader {
@@ -119,6 +127,41 @@ export interface HistoryWriter extends HistoryReader {
     restoredNote: Note,
     expectedContentVersion: ContentVersion,
   ): void;
+}
+
+export interface TrashReader {
+  get(id: TrashEntryId): TrashEntry | undefined;
+  list(page: PageRequest): Page<TrashEntry>;
+}
+
+export interface TrashRestoreStoragePlan {
+  readonly entries: readonly TrashEntry[];
+  readonly targetFolderIds: ReadonlyMap<TrashEntryId | string, FolderId>;
+  readonly now: Timestamp;
+}
+
+export interface TrashWriter extends TrashReader {
+  apply(plan: TrashPlan): void;
+  restore(input: TrashRestoreStoragePlan): void;
+  deletePermanent(entries: readonly TrashEntry[]): void;
+  purgeExpired(entries: readonly TrashEntry[]): void;
+}
+
+export interface BatchMoveStoragePlan {
+  readonly folders: readonly Folder[];
+  readonly notes: readonly Note[];
+}
+
+export interface BatchRelationStoragePlan {
+  readonly add: readonly NoteTag[];
+  readonly remove: readonly NoteTag[];
+}
+
+export interface ContentPlanWriter {
+  insertNoteCopy(plan: NoteCopyPlan): void;
+  insertFolderTreeCopy(plan: FolderTreeCopyPlan): void;
+  applyBatchMove(input: BatchMoveStoragePlan): void;
+  applyBatchRelations(input: BatchRelationStoragePlan): void;
 }
 
 export interface CreateVaultDatabaseOptions {
