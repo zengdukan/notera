@@ -77,8 +77,7 @@ describe('streaming attachment import', () => {
     });
 
     expect(Buffer.from(imported.contentSha256).toString('hex')).toBe(
-      'e3b0c44298fc1c149afbf4c8996fb924' +
-        '27ae41e4649b934ca495991b7852b855',
+      'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
     );
     await store.close();
   });

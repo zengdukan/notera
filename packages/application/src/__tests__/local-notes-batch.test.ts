@@ -31,24 +31,22 @@ describe('LocalNotesService atomic batches', () => {
       folderId: profile.rootFolderId,
       title: 'Sibling',
     });
-    const nestedAttachment =
-      await manager.localAttachments.importAttachment({
-        noteId: nested.id,
-        fileName: 'nested.bin',
-        mimeType: 'application/octet-stream',
-        source: (async function* attachmentSource() {
-          yield new Uint8Array([1]);
-        })(),
-      });
-    const siblingAttachment =
-      await manager.localAttachments.importAttachment({
-        noteId: sibling.id,
-        fileName: 'sibling.bin',
-        mimeType: 'application/octet-stream',
-        source: (async function* attachmentSource() {
-          yield new Uint8Array([2]);
-        })(),
-      });
+    const nestedAttachment = await manager.localAttachments.importAttachment({
+      noteId: nested.id,
+      fileName: 'nested.bin',
+      mimeType: 'application/octet-stream',
+      source: (async function* attachmentSource() {
+        yield new Uint8Array([1]);
+      })(),
+    });
+    const siblingAttachment = await manager.localAttachments.importAttachment({
+      noteId: sibling.id,
+      fileName: 'sibling.bin',
+      mimeType: 'application/octet-stream',
+      source: (async function* attachmentSource() {
+        yield new Uint8Array([2]);
+      })(),
+    });
 
     await expect(
       localNotes.batchMove({

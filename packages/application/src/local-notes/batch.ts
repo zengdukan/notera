@@ -282,17 +282,17 @@ export function batchCopy(
       return {
         noteIdMap,
         plan: copyFolderTree({
-        sourceFolderId: folder.id,
-        targetParent: targetFolder,
-        folders: normalized.folders,
-        notes,
-        noteTags: subtreeNotes.flatMap((note) => noteTags(database, note)),
-        attachmentReferences: [],
-        folderIdMap: new Map(
-          subtree.map(({ id }) => [id, asFolderId(randomId())]),
-        ),
-        noteIdMap,
-        createdAt: now,
+          sourceFolderId: folder.id,
+          targetParent: targetFolder,
+          folders: normalized.folders,
+          notes,
+          noteTags: subtreeNotes.flatMap((note) => noteTags(database, note)),
+          attachmentReferences: [],
+          folderIdMap: new Map(
+            subtree.map(({ id }) => [id, asFolderId(randomId())]),
+          ),
+          noteIdMap,
+          createdAt: now,
         }),
       };
     });
@@ -304,22 +304,21 @@ export function batchCopy(
         sourceNoteId: note.id,
         newNoteId,
         plan: copyNote({
-        source: note,
-        newNoteId,
-        targetFolder,
-        sortOrder: note.sortOrder,
-        noteTags: noteTags(database, note),
-        attachmentReferences: [],
-        createdAt: now,
+          source: note,
+          newNoteId,
+          targetFolder,
+          sortOrder: note.sortOrder,
+          noteTags: noteTags(database, note),
+          attachmentReferences: [],
+          createdAt: now,
         }),
       };
     });
   const targetNoteIdMap = new Map([
     ...folderPlans.flatMap(({ noteIdMap }) => [...noteIdMap]),
-    ...notePlans.map(({ sourceNoteId, newNoteId }) => [
-      sourceNoteId,
-      newNoteId,
-    ] as const),
+    ...notePlans.map(
+      ({ sourceNoteId, newNoteId }) => [sourceNoteId, newNoteId] as const,
+    ),
   ]);
   const copiedReferences = new AttachmentReferenceCoordinator(
     database.attachments,

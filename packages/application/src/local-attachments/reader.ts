@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax */
 import { wipeBytes } from '@notera/crypto';
 import {
   createAttachmentBlob,
@@ -14,7 +15,9 @@ import type { AttachmentContentReader } from './types';
 import { mapReadError } from './errors';
 import { normalizeAttachmentId } from './validation';
 
-function wipeStored(value: ReturnType<VaultDatabase['attachments']['getContent']>): void {
+function wipeStored(
+  value: ReturnType<VaultDatabase['attachments']['getContent']>,
+): void {
   if (value === undefined) return;
   wipeBytes(value.storedBlob.fileKey);
   wipeBytes(value.storedBlob.manifest);
@@ -124,7 +127,7 @@ class SafeAttachmentReader implements AttachmentContentReader {
   }
 }
 
-export async function openAttachmentReader(input: {
+export default async function openAttachmentReader(input: {
   readonly database: VaultDatabase;
   readonly attachments: AttachmentStore;
   readonly signal: AbortSignal;

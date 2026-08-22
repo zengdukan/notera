@@ -8,7 +8,6 @@ import {
   asVaultId,
   createAttachment,
   createAttachmentBlob,
-  type Attachment,
   type AttachmentBlob,
   type VaultId,
 } from '@notera/domain';

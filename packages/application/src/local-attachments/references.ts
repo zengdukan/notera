@@ -21,7 +21,11 @@ function immutable<T>(values: readonly T[]): readonly T[] {
 }
 
 export class AttachmentReferenceCoordinator {
-  constructor(private readonly attachments: AttachmentReader) {}
+  private readonly attachments: AttachmentReader;
+
+  constructor(attachments: AttachmentReader) {
+    this.attachments = attachments;
+  }
 
   copyNotes(
     sourceNoteIds: readonly NoteId[],
@@ -92,15 +96,13 @@ export class AttachmentReferenceCoordinator {
     targetNoteId: NoteId,
   ): readonly CurrentNoteAttachmentReference[] {
     return immutable(
-      this.attachments
-        .listReferencesForVersions([versionId])
-        .map((reference) =>
-          createCurrentNoteAttachmentReference({
-            vaultId: reference.vaultId,
-            attachmentId: reference.attachmentId,
-            noteId: targetNoteId,
-          }),
-        ),
+      this.attachments.listReferencesForVersions([versionId]).map((reference) =>
+        createCurrentNoteAttachmentReference({
+          vaultId: reference.vaultId,
+          attachmentId: reference.attachmentId,
+          noteId: targetNoteId,
+        }),
+      ),
     );
   }
 

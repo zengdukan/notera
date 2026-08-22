@@ -22,7 +22,7 @@ function availability(state: AttachmentLocalState): AttachmentAvailability {
   throw new ApplicationError('DB_CORRUPT');
 }
 
-export function attachmentSummary(
+export default function attachmentSummary(
   attachment: Attachment,
   blob: AttachmentBlob,
 ): AttachmentSummary {

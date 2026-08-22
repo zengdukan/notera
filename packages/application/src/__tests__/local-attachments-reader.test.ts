@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax, no-await-in-loop */
 import { readFile, readdir, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 

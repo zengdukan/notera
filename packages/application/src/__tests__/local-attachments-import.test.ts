@@ -64,7 +64,9 @@ describe('LocalAttachmentsService import', () => {
     );
     const profile = manager.listProfiles({ limit: 10 }).items[0];
     expect(
-      await countBlobFiles(join(appDataRoot, 'profiles', profile.localProfileId)),
+      await countBlobFiles(
+        join(appDataRoot, 'profiles', profile.localProfileId),
+      ),
     ).toBe(1);
 
     await manager.lockProfile();
@@ -111,7 +113,9 @@ describe('LocalAttachmentsService import', () => {
     expect(first.id).not.toBe(second.id);
     const profile = manager.listProfiles({ limit: 10 }).items[0];
     expect(
-      await countBlobFiles(join(appDataRoot, 'profiles', profile.localProfileId)),
+      await countBlobFiles(
+        join(appDataRoot, 'profiles', profile.localProfileId),
+      ),
     ).toBe(2);
     await manager.close();
   });

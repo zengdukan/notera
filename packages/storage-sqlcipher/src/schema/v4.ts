@@ -15,7 +15,10 @@ function invalidMigration(): never {
   throw new Error('Invalid normalized attachment migration.');
 }
 
-function columns(database: MigrationDatabase, table: string): readonly string[] {
+function columns(
+  database: MigrationDatabase,
+  table: string,
+): readonly string[] {
   return database
     .prepare<{ name: unknown }>(`PRAGMA table_info('${table}')`)
     .all()

@@ -1,5 +1,9 @@
 import type { AttachmentId, NoteId, Timestamp } from '@notera/domain';
-import type { Page } from '../types';
+
+interface Page<Value> {
+  readonly items: readonly Value[];
+  readonly nextCursor?: string;
+}
 
 export type AttachmentAvailability = 'AVAILABLE' | 'MISSING' | 'CORRUPT';
 
@@ -41,6 +45,14 @@ export interface AttachmentGcReport {
   readonly scannedCount: number;
   readonly collectedCount: number;
   readonly retryCount: number;
+}
+
+export interface AttachmentRecoveryReport {
+  readonly missingCount: number;
+  readonly collectedGcCount: number;
+  readonly collectedOrphanCount: number;
+  readonly retryCount: number;
+  readonly unexpectedEntryCount: number;
 }
 
 export interface LocalAttachmentsService {

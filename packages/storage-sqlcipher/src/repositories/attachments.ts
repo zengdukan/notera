@@ -52,7 +52,10 @@ function corrupt(): never {
 
 function hydrateAttachment(row: Row): Attachment {
   try {
-    if (typeof row.file_name !== 'string' || typeof row.mime_type !== 'string') {
+    if (
+      typeof row.file_name !== 'string' ||
+      typeof row.mime_type !== 'string'
+    ) {
       return corrupt();
     }
     return createAttachment({
@@ -253,7 +256,7 @@ export class AttachmentRepository implements AttachmentWriter {
       blob.blob.vaultId !== attachment.vaultId ||
       this.getAttachment(attachment.id) !== undefined
     ) {
-      return violation();
+      violation();
     }
     this.connection()
       .prepare(
@@ -296,7 +299,7 @@ export class AttachmentRepository implements AttachmentWriter {
           .prepare(`SELECT 1 FROM ${table} WHERE id = ? AND vault_id = ?`)
           .get(ownerId, this.vaultId) === undefined
       ) {
-        return violation();
+        violation();
       }
       this.connection()
         .prepare(
@@ -304,12 +307,7 @@ export class AttachmentRepository implements AttachmentWriter {
              vault_id, attachment_id, source_type, ${column}
            ) VALUES (?, ?, ?, ?)`,
         )
-        .run(
-          this.vaultId,
-          reference.attachmentId,
-          reference.source,
-          ownerId,
-        );
+        .run(this.vaultId, reference.attachmentId, reference.source, ownerId);
     });
   }
 
@@ -323,12 +321,7 @@ export class AttachmentRepository implements AttachmentWriter {
            WHERE vault_id = ? AND attachment_id = ? AND source_type = ?
              AND ${column} = ?`,
         )
-        .run(
-          this.vaultId,
-          reference.attachmentId,
-          reference.source,
-          ownerId,
-        );
+        .run(this.vaultId, reference.attachmentId, reference.source, ownerId);
     });
   }
 
@@ -343,7 +336,7 @@ export class AttachmentRepository implements AttachmentWriter {
           reference.noteId !== noteId || reference.vaultId !== this.vaultId,
       )
     ) {
-      return violation();
+      violation();
     }
     this.connection()
       .prepare(
@@ -381,7 +374,7 @@ export class AttachmentRepository implements AttachmentWriter {
         .get(this.vaultId, attachment.blobId);
       if (remaining !== undefined) return;
       const stored = this.blobs.get(attachment.blobId);
-      if (stored === undefined) return corrupt();
+      if (stored === undefined) corrupt();
       this.blobs.replace({
         ...stored,
         blob: createAttachmentBlob({
@@ -406,7 +399,7 @@ export class AttachmentRepository implements AttachmentWriter {
       )
       .get(this.vaultId, blobId);
     if (stored.blob.localState !== 'GC_PENDING' || remaining !== undefined) {
-      return violation();
+      violation();
     }
     this.connection()
       .prepare(

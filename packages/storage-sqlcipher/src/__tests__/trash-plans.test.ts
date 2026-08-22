@@ -180,7 +180,8 @@ describe('trash and content plans', () => {
 
     const root = plan.entries.find(({ objectId }) => objectId === parent.id);
     const internal = plan.entries.find(({ objectId }) => objectId === child.id);
-    if (root === undefined || internal === undefined) throw new Error('entries');
+    if (root === undefined || internal === undefined)
+      throw new Error('entries');
     expect(database.trash.list({ limit: 10 }).items).toEqual([root]);
     expect(database.trash.listGroup(root.id)).toHaveLength(3);
     expect(database.trash.listGroup(internal.id)).toEqual([]);

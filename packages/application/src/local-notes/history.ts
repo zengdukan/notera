@@ -134,9 +134,10 @@ export function createPermanentVersion(
   database.transaction((transaction) => {
     transaction.history.insert(version);
     transaction.attachments.addReferences(
-      new AttachmentReferenceCoordinator(
-        transaction.attachments,
-      ).snapshotNote(note.id, version.id),
+      new AttachmentReferenceCoordinator(transaction.attachments).snapshotNote(
+        note.id,
+        version.id,
+      ),
     );
   });
   return historySummary(version);

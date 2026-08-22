@@ -56,6 +56,7 @@ import { createLocalNotesService } from './local-notes/service';
 import type { LocalNotesService } from './local-notes/types';
 import { createLocalAttachmentsService } from './local-attachments/service';
 import type { LocalAttachmentsService } from './local-attachments/types';
+import recoverAttachments from './local-attachments/recovery';
 
 const lockedState = Object.freeze({ state: 'LOCKED' as const });
 
@@ -390,6 +391,11 @@ class LocalProfileManager implements ProfileManager {
       if (roots.length !== 1) throw new ApplicationError('DB_CORRUPT');
       const stored = database.profileMetadata.get();
       attachments = await createAttachmentStore({ profileRoot: profile.root });
+      await recoverAttachments({
+        database,
+        attachments,
+        now: asTimestamp(Date.now()),
+      });
       createdSession = createProfileSession({
         localProfileId: id,
         vaultId: meta.value.vaultId,

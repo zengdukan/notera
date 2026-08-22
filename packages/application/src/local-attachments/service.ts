@@ -9,13 +9,17 @@ import type {
   ListAttachmentsForNoteInput,
   LocalAttachmentsService,
 } from './types';
-import { importAttachment } from './import';
+import importAttachment from './import';
 import { collectBlobIds, collectGarbage } from './gc';
-import { attachmentSummary } from './mapping';
+import attachmentSummary from './mapping';
 import { mapReadError } from './errors';
-import { openAttachmentReader } from './reader';
-import { requireActiveNote, validateListInput } from './validation';
-import { normalizeAttachmentId, normalizeNoteId } from './validation';
+import openAttachmentReader from './reader';
+import {
+  requireActiveNote,
+  validateListInput,
+  normalizeAttachmentId,
+  normalizeNoteId,
+} from './validation';
 
 export interface LocalAttachmentsDependencies {
   readonly getSession: () => ProfileSession | undefined;
@@ -78,7 +82,9 @@ class SessionLocalAttachmentsService implements LocalAttachmentsService {
       });
   }
 
-  openReader(attachmentId: Parameters<LocalAttachmentsService['openReader']>[0]) {
+  openReader(
+    attachmentId: Parameters<LocalAttachmentsService['openReader']>[0],
+  ) {
     const session = this.dependencies.getSession();
     if (session === undefined) {
       return Promise.reject(new ApplicationError('PROFILE_LOCKED'));
@@ -108,9 +114,7 @@ class SessionLocalAttachmentsService implements LocalAttachmentsService {
       const blobIds = resources.database.transaction((transaction) => {
         const reference = transaction.attachments
           .listReferencesForAttachments([attachmentId])
-          .find(
-            (value) => value.source === 'NOTE' && value.noteId === noteId,
-          );
+          .find((value) => value.source === 'NOTE' && value.noteId === noteId);
         if (reference === undefined) {
           throw new ApplicationError('ENTITY_NOT_FOUND');
         }

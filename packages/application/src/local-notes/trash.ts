@@ -215,7 +215,9 @@ function deleteEntries(
       entries.map(({ id }) => id),
     ),
   ];
-  const attachmentIds = [...new Set(references.map(({ attachmentId }) => attachmentId))];
+  const attachmentIds = [
+    ...new Set(references.map(({ attachmentId }) => attachmentId)),
+  ];
   const blobIds = database.transaction((transaction) => {
     transaction.attachments.removeReferences(references);
     if (mode === 'PERMANENT') transaction.trash.deletePermanent(entries);

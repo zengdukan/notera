@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax */
 import { createProfileManager } from '../manager';
 import { cleanupTempRoots, tempRoot } from './helpers';
 

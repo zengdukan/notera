@@ -31,15 +31,16 @@ export function mapImportError(
     }
     if (error.code === 'DISK_FULL') return new ApplicationError('DISK_FULL');
     if (error.code === 'DB_CORRUPT') return new ApplicationError('DB_CORRUPT');
-    return new ApplicationError(phase === 'DATABASE' ? 'SAVE_FAILED' : 'ATTACHMENT_IMPORT_FAILED');
+    return new ApplicationError(
+      phase === 'DATABASE' ? 'SAVE_FAILED' : 'ATTACHMENT_IMPORT_FAILED',
+    );
   }
   if (error instanceof DomainError) {
+    if (error.code === 'ATTACHMENT_TOO_LARGE') {
+      return new ApplicationError('ATTACHMENT_TOO_LARGE');
+    }
     return new ApplicationError(
-      error.code === 'ATTACHMENT_TOO_LARGE'
-        ? 'ATTACHMENT_TOO_LARGE'
-        : phase === 'DATABASE'
-          ? 'SAVE_FAILED'
-          : 'ATTACHMENT_IMPORT_FAILED',
+      phase === 'DATABASE' ? 'SAVE_FAILED' : 'ATTACHMENT_IMPORT_FAILED',
     );
   }
   return new ApplicationError(
@@ -53,7 +54,8 @@ export function mapReadError(
 ): ApplicationError {
   if (error instanceof ApplicationError) return error;
   if (error instanceof AttachmentStorageError) {
-    if (error.code === 'BLOB_MISSING') return new ApplicationError('BLOB_MISSING');
+    if (error.code === 'BLOB_MISSING')
+      return new ApplicationError('BLOB_MISSING');
     if (
       error.code === 'BLOB_CORRUPT' ||
       error.code === 'MANIFEST_CORRUPT' ||
@@ -70,8 +72,10 @@ export function mapReadError(
     }
   }
   if (error instanceof StorageError) {
-    if (error.code === 'DATABASE_CLOSED') return new ApplicationError('PROFILE_LOCKED');
-    if (error.code === 'INVALID_CURSOR') return new ApplicationError('INVALID_CURSOR');
+    if (error.code === 'DATABASE_CLOSED')
+      return new ApplicationError('PROFILE_LOCKED');
+    if (error.code === 'INVALID_CURSOR')
+      return new ApplicationError('INVALID_CURSOR');
     if (error.code === 'DB_CORRUPT') return new ApplicationError('DB_CORRUPT');
   }
   return new ApplicationError('OPERATION_FAILED');

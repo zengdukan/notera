@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax, no-await-in-loop, no-continue */
 import { wipeBytes } from '@notera/crypto';
 import type { BlobId } from '@notera/domain';
 

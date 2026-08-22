@@ -116,7 +116,9 @@ describe('current vault schema', () => {
       connection
         .prepare("PRAGMA table_info('note_versions')")
         .all()
-        .some((column) => (column as { name?: unknown }).name === 'version_name'),
+        .some(
+          (column) => (column as { name?: unknown }).name === 'version_name',
+        ),
     ).toBe(true);
     expect(
       connection

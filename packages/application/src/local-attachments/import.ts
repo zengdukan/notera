@@ -15,10 +15,14 @@ import { StorageError, type VaultDatabase } from '@notera/storage-sqlcipher';
 import type { AttachmentStore, ImportedBlob } from '@notera/attachments';
 
 import type { SessionResources } from '../session';
-import { attachmentSummary } from './mapping';
+import attachmentSummary from './mapping';
 import { mapImportError } from './errors';
 import type { ImportAttachmentInput } from './types';
-import { combineSignals, requireActiveNote, validateImportInput } from './validation';
+import {
+  combineSignals,
+  requireActiveNote,
+  validateImportInput,
+} from './validation';
 
 function commitImport(
   database: VaultDatabase,
@@ -84,12 +88,15 @@ function commitImport(
   });
 }
 
-async function compensate(store: AttachmentStore, imported?: ImportedBlob): Promise<void> {
+async function compensate(
+  store: AttachmentStore,
+  imported?: ImportedBlob,
+): Promise<void> {
   if (imported === undefined) return;
   await store.collectBlob(imported.blobId).catch(() => undefined);
 }
 
-export async function importAttachment(
+export default async function importAttachment(
   resources: SessionResources,
   vaultId: VaultId,
   value: ImportAttachmentInput,

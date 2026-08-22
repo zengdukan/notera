@@ -87,17 +87,16 @@ function noteIsTrashed(database: VaultDatabase, noteId: NoteId): boolean {
       limit: 100,
       ...(cursor === undefined ? {} : { cursor }),
     });
-    for (const root of page.items) {
-      if (
+    if (
+      page.items.some((root) =>
         database.trash
           .listGroup(root.id)
           .some(
-            (entry) =>
-              entry.objectType === 'NOTE' && entry.objectId === noteId,
-          )
-      ) {
-        return true;
-      }
+            (entry) => entry.objectType === 'NOTE' && entry.objectId === noteId,
+          ),
+      )
+    ) {
+      return true;
     }
     cursor = page.nextCursor;
   } while (cursor !== undefined);
@@ -108,14 +107,18 @@ export function requireActiveNote(
   database: VaultDatabase,
   noteId: NoteId,
 ): void {
-  if (database.notes.get(noteId) === undefined || noteIsTrashed(database, noteId)) {
+  if (
+    database.notes.get(noteId) === undefined ||
+    noteIsTrashed(database, noteId)
+  ) {
     throw new ApplicationError('ENTITY_NOT_FOUND');
   }
 }
 
-export function combineSignals(
-  signals: readonly (AbortSignal | undefined)[],
-): { readonly signal: AbortSignal; cleanup(): void } {
+export function combineSignals(signals: readonly (AbortSignal | undefined)[]): {
+  readonly signal: AbortSignal;
+  cleanup(): void;
+} {
   const controller = new AbortController();
   const active = signals.filter(
     (signal): signal is AbortSignal => signal !== undefined,

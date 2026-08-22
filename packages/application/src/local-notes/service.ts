@@ -4,8 +4,7 @@ import { asTimestamp, type Timestamp } from '@notera/domain';
 import type { VaultDatabase } from '@notera/storage-sqlcipher';
 
 import { ApplicationError } from '../errors';
-import type { ProfileSession } from '../session';
-import type { SessionResources } from '../session';
+import type { ProfileSession, SessionResources } from '../session';
 import { collectBlobIds } from '../local-attachments/gc';
 import {
   batchAddTags,

@@ -106,6 +106,7 @@ describe('LocalNotesService search and session integration', () => {
     expect(publicApi.VaultDatabase).toBeUndefined();
     expect(publicApi.createLocalNotesService).toBeUndefined();
     expect(publicApi.createLocalAttachmentsService).toBeUndefined();
+    expect(publicApi.recoverAttachments).toBeUndefined();
     expect(publicApi.search).toBeUndefined();
   });
 });

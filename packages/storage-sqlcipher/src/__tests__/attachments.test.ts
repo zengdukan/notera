@@ -221,9 +221,9 @@ describe('normalized attachment repository', () => {
       first.id,
     ]);
     expect(page1.items[0].blob.id).toBe(page2.items[0].blob.id);
-    expect(database.attachments.listReferencesForAttachments([first.id])).toEqual([
-      refs[0],
-    ]);
+    expect(
+      database.attachments.listReferencesForAttachments([first.id]),
+    ).toEqual([refs[0]]);
   });
 
   it('deletes unreferenced attachments and marks only an unused blob for GC', () => {
