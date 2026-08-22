@@ -76,6 +76,33 @@ describe('validated preload bridge', () => {
     });
   });
 
+  it('exposes history rename through its fixed contract channel', async () => {
+    const versionId = '10000000-0000-4000-8000-000000000001';
+    const noteId = '20000000-0000-4000-8000-000000000002';
+    mockInvoke.mockResolvedValue({
+      ret: true,
+      data: {
+        versionId,
+        noteId,
+        displayTitle: 'Version',
+        createdAt: 1,
+        kind: 'USER',
+        protectionReason: null,
+        versionName: null,
+      },
+    });
+    const api = loadPreload();
+
+    await expect(
+      api.history.rename({ noteId, versionId, versionName: null }),
+    ).resolves.toMatchObject({ ret: true });
+    expect(mockInvoke).toHaveBeenCalledWith('notera:history:rename', {
+      noteId,
+      versionId,
+      versionName: null,
+    });
+  });
+
   it('rejects invalid input before invoking Electron', async () => {
     const api = loadPreload();
 

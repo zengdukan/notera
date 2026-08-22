@@ -38,6 +38,9 @@ describe('IPC common schemas', () => {
         message: IPC_ERROR_MESSAGES.ENTITY_NOT_FOUND,
       },
     });
+    expect(responseSchema.parse(ipcFailure('INVALID_IPC_REQUEST'))).toEqual(
+      ipcFailure('INVALID_IPC_REQUEST'),
+    );
     expect(() =>
       responseSchema.parse({ ret: true, data: 'ok', error: {} }),
     ).toThrow();

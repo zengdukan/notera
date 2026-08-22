@@ -44,7 +44,10 @@ export function createIpcResponseSchema<T extends z.ZodType>(
   dataSchema: T,
   allowedErrors: readonly IpcErrorCode[],
 ): z.ZodType<IpcResponse<z.output<T>>> {
-  const allowed = new Set<IpcErrorCode>(allowedErrors);
+  const allowed = new Set<IpcErrorCode>([
+    ...allowedErrors,
+    'INVALID_IPC_REQUEST',
+  ]);
   const allowedErrorSchema = ipcErrorSchema.superRefine((error, context) => {
     if (!allowed.has(error.code)) {
       context.addIssue({

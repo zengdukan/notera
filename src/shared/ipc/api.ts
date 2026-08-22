@@ -75,6 +75,7 @@ export interface NoteraApi {
     readonly list: InvokeMethod<Request<'history.list'>>;
     readonly get: InvokeMethod<Request<'history.get'>>;
     readonly createPermanent: InvokeMethod<Request<'history.createPermanent'>>;
+    readonly rename: InvokeMethod<Request<'history.rename'>>;
     readonly compare: InvokeMethod<Request<'history.compare'>>;
     readonly restore: InvokeMethod<Request<'history.restore'>>;
     readonly copy: InvokeMethod<Request<'history.copy'>>;

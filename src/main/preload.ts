@@ -129,6 +129,7 @@ const noteraApi = {
     list: bindRequest(requestContracts['history.list']),
     get: bindRequest(requestContracts['history.get']),
     createPermanent: bindRequest(requestContracts['history.createPermanent']),
+    rename: bindRequest(requestContracts['history.rename']),
     compare: bindRequest(requestContracts['history.compare']),
     restore: bindRequest(requestContracts['history.restore']),
     copy: bindRequest(requestContracts['history.copy']),
