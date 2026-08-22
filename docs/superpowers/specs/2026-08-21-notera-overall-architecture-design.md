@@ -174,6 +174,17 @@ packages/
 8. 装配 `src/main` 与 Preload；
 9. 实现 `src/renderer` 与编辑器适配。
 
+完成 `storage-sqlcipher` 与 `attachments` 后，后续工作按以下细化顺序推进，作为离线桌面版本直至同步子项目的固定工作清单：
+
+1. **Application：Profile 生命周期基础**：创建、解锁、锁定、切换、重命名、修改主密码，以及 `ProfileSession` 的资源持有与安全关闭；
+2. **Application：本地笔记用例**：目录、笔记、标签、收藏、历史、回收站、批量操作和搜索的业务编排；
+3. **Application：附件编排**：协调密文 Blob、SQLCipher 附件元数据与引用事务、失败补偿、读取和垃圾回收；
+4. **Electron Main / Preload / IPC 装配**：把 Profile、笔记和附件用例接入 `src/shared` 已定义的 IPC 合约，并连接应用生命周期；
+5. **Renderer 与编辑器集成**：实现桌面界面、Atlassian Editor 适配和上述本地能力的交互；
+6. **E2EE 同步系统**：仅在离线桌面功能完成并稳定后，作为独立子项目重新设计协议、存储迁移、客户端引擎与云端 API。当前阶段不为它创建占位实现。
+
+每一项分别经过设计规格、实施计划、按完整功能模块实施与最终验证；开始后一项前，前一项应达到其设计文档定义的完成标准。同步子项目仍受当前阶段范围限制，只有项目协作规则明确解除限制后才进入实施。
+
 `storage-sqlcipher` 与 `attachments` 位于同一层且不存在相互依赖，后续可以并行开发；顺序执行时先实现数据库再实现附件。当前离线阶段不实现同步协议、同步引擎、云端 API、同步 Outbox、同步冲突、远端附件状态或 `application/sync`；第 10 至 12 节保留为后续同步子项目的总体设计，不进入当前实施计划。第 5 至 9 节中的同步专用字段和流程同样延期：当前 Schema 不创建 `sync_outbox`、`sync_state` 和 `conflicts`，附件表不包含远端状态或传输状态，Note Repository 保存事务不写入 Outbox；这些能力在同步子项目中通过正式数据库迁移增加，不提前建立占位表或空实现。
 
 ## 5. Profile 与本地文件布局
