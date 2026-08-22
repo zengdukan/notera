@@ -17,11 +17,18 @@ interface Migration {
 }
 
 interface RegistryModule {
+  readonly CURRENT_SCHEMA_VERSION: number;
   validateMigrationRegistry(
     migrations: readonly Migration[],
     fromVersion: number,
     targetVersion: number,
   ): readonly Migration[];
+  selectMigrationRange(
+    migrations: readonly Migration[],
+    baseVersion: number,
+    fromVersion: number,
+  ): readonly Migration[];
+  selectProductionMigrations(fromVersion: number): readonly Migration[];
 }
 
 interface RunnerModule {
@@ -33,8 +40,8 @@ interface RunnerModule {
   ): void;
 }
 
-interface CurrentSchemaModule {
-  createCurrentSchema(
+interface BaselineV1Module {
+  createBaselineV1(
     database: SqlcipherConnection,
     input: {
       identity: typeof TEST_IDENTITY;
@@ -65,9 +72,9 @@ function runnerModule(): RunnerModule {
   return require('../migrations/runner') as RunnerModule;
 }
 
-function currentSchemaModule(): CurrentSchemaModule {
+function baselineV1Module(): BaselineV1Module {
   // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
-  return require('../schema/current') as CurrentSchemaModule;
+  return require('../schema/baseline-v1') as BaselineV1Module;
 }
 
 function createMigrationDatabase(version: number): {
@@ -120,6 +127,40 @@ function expectMigrationFailure(operation: () => unknown): void {
 afterEach(cleanupTempDatabases);
 
 describe('schema migrations', () => {
+  it('derives the current version and selects only the continuous suffix', () => {
+    const registry = registryModule();
+    expect(registry.CURRENT_SCHEMA_VERSION).toBe(1);
+    expect(registry.selectProductionMigrations(1)).toEqual([]);
+
+    const v2 = migration(2);
+    const v3 = migration(3);
+    const history = [v2, v3];
+    expect(registry.selectMigrationRange(history, 1, 1)).toEqual([v2, v3]);
+    expect(registry.selectMigrationRange(history, 1, 2)).toEqual([v3]);
+    expect(registry.selectMigrationRange(history, 1, 3)).toEqual([]);
+  });
+
+  it('rejects invalid history before selecting a migration suffix', () => {
+    const registry = registryModule();
+    const invalidHistories = [
+      [migration(2), migration(2)],
+      [migration(2), migration(4)],
+      [migration(3), migration(2)],
+      [migration(1), migration(2)],
+    ];
+    invalidHistories.forEach((history) => {
+      expectMigrationFailure(() =>
+        registry.selectMigrationRange(history, 1, 2),
+      );
+    });
+
+    [0, 4, Number.NaN, Number.MAX_SAFE_INTEGER + 1].forEach((fromVersion) => {
+      expectMigrationFailure(() =>
+        registry.selectMigrationRange([migration(2), migration(3)], 1, fromVersion),
+      );
+    });
+  });
+
   it('validates an ordered, gap-free registry for the requested range', () => {
     const valid = [migration(2), migration(3), migration(4)];
     expect(registryModule().validateMigrationRegistry(valid, 1, 4)).toEqual(
@@ -239,7 +280,7 @@ describe('schema migrations', () => {
     runnerModule().runMigrations(migrated, 0, 1, [
       migration(1, (database) => {
         database.exec('DROP TABLE schema_metadata');
-        currentSchemaModule().createCurrentSchema(database, {
+        baselineV1Module().createBaselineV1(database, {
           identity: TEST_IDENTITY,
           profileName: 'Profile',
           vaultMetaDigest: vaultMetaDigest(),

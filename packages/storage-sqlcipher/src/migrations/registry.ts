@@ -1,7 +1,11 @@
 import { StorageError } from '../errors';
+import { BASE_SCHEMA_VERSION } from '../schema/baseline-v1';
 import type { Migration } from './types';
 
 export const PRODUCTION_MIGRATIONS: readonly Migration[] = Object.freeze([]);
+
+export const CURRENT_SCHEMA_VERSION =
+  PRODUCTION_MIGRATIONS.at(-1)?.targetVersion ?? BASE_SCHEMA_VERSION;
 
 function migrationFailure(): never {
   throw new StorageError('MIGRATION_FAILED');
@@ -28,4 +32,42 @@ export function validateMigrationRegistry(
     }
   });
   return migrations;
+}
+
+export function selectMigrationRange(
+  migrations: readonly Migration[],
+  baseVersion: number,
+  fromVersion: number,
+): readonly Migration[] {
+  const registryCurrentVersion =
+    migrations.at(-1)?.targetVersion ?? baseVersion;
+  validateMigrationRegistry(migrations, baseVersion, registryCurrentVersion);
+  if (
+    !Number.isSafeInteger(fromVersion) ||
+    fromVersion < baseVersion ||
+    fromVersion > registryCurrentVersion
+  ) {
+    migrationFailure();
+  }
+
+  const selected = migrations.filter(
+    (migration) =>
+      migration.targetVersion > fromVersion &&
+      migration.targetVersion <= registryCurrentVersion,
+  );
+  return validateMigrationRegistry(
+    selected,
+    fromVersion,
+    registryCurrentVersion,
+  );
+}
+
+export function selectProductionMigrations(
+  fromVersion: number,
+): readonly Migration[] {
+  return selectMigrationRange(
+    PRODUCTION_MIGRATIONS,
+    BASE_SCHEMA_VERSION,
+    fromVersion,
+  );
 }

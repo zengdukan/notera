@@ -2,10 +2,10 @@ import type { VaultIdentity } from '@notera/domain';
 
 import type { SqlcipherConnection } from '../connection';
 
-export const CURRENT_SCHEMA_VERSION = 1;
-export const CURRENT_FILE_FORMAT_VERSION = 1;
-export const SEARCH_NORMALIZER_VERSION = 1;
-export const MAX_ATTACHMENT_MANIFEST_BYTES = 1024 * 1024;
+export const BASE_SCHEMA_VERSION = 1;
+
+const BASE_FILE_FORMAT_VERSION = 1;
+const BASE_SEARCH_NORMALIZER_VERSION = 1;
 
 const CANONICAL_UUID_GLOB =
   '[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]-' +
@@ -19,7 +19,7 @@ function uuidCheck(column: string): string {
   return `typeof(${column}) = 'text' AND ${column} GLOB '${CANONICAL_UUID_GLOB}'`;
 }
 
-const CURRENT_SCHEMA_SQL = `
+const BASE_SCHEMA_V1_SQL = `
   CREATE TABLE schema_metadata(
     singleton INTEGER PRIMARY KEY CHECK(singleton = 1),
     schema_version INTEGER NOT NULL
@@ -238,24 +238,24 @@ const CURRENT_SCHEMA_SQL = `
   );
 `;
 
-export interface CurrentSchemaInput {
+export interface BaselineV1Input {
   readonly identity: VaultIdentity;
   readonly profileName: string;
   readonly vaultMetaDigest: Uint8Array;
   readonly createdAt: number;
 }
 
-export function createCurrentSchema(
+export function createBaselineV1(
   database: SqlcipherConnection,
-  input: CurrentSchemaInput,
+  input: BaselineV1Input,
 ): void {
-  database.exec(CURRENT_SCHEMA_SQL);
+  database.exec(BASE_SCHEMA_V1_SQL);
   database
     .prepare(
       `INSERT INTO schema_metadata(singleton, schema_version)
        VALUES (1, ?)`,
     )
-    .run(CURRENT_SCHEMA_VERSION);
+    .run(BASE_SCHEMA_VERSION);
   database
     .prepare(
       `INSERT INTO vault_metadata(
@@ -268,14 +268,14 @@ export function createCurrentSchema(
       input.identity.rootFolderId,
       input.profileName,
       Buffer.from(input.vaultMetaDigest),
-      CURRENT_FILE_FORMAT_VERSION,
+      BASE_FILE_FORMAT_VERSION,
     );
   database
     .prepare(
       `INSERT INTO search_metadata(singleton, normalizer_version, index_state)
        VALUES (1, ?, 'READY')`,
     )
-    .run(SEARCH_NORMALIZER_VERSION);
+    .run(BASE_SEARCH_NORMALIZER_VERSION);
   database
     .prepare(
       `INSERT INTO folders(

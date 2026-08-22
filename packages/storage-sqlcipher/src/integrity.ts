@@ -12,6 +12,9 @@ import {
 } from '@notera/domain';
 
 import type { SqlcipherConnection } from './connection';
+import { CURRENT_FILE_FORMAT_VERSION } from './file-format';
+import { CURRENT_SCHEMA_VERSION } from './migrations/registry';
+import { MAX_ATTACHMENT_MANIFEST_BYTES } from './repositories/attachments';
 import { checkSearchIndex } from './search/health';
 import { parseAdf } from './serialization/adf-json';
 import {
@@ -28,11 +31,6 @@ import {
   type TagRow,
   type TrashEntryRow,
 } from './serialization/rows';
-import {
-  CURRENT_FILE_FORMAT_VERSION,
-  CURRENT_SCHEMA_VERSION,
-  MAX_ATTACHMENT_MANIFEST_BYTES,
-} from './schema/current';
 import type {
   IntegrityIssue,
   IntegrityIssueCode,

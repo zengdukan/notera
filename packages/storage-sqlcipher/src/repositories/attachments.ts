@@ -21,7 +21,7 @@ import type {
 } from '../types';
 
 type Provider = () => SqlcipherConnection;
-const MAX_MANIFEST = 1024 * 1024;
+export const MAX_ATTACHMENT_MANIFEST_BYTES = 1024 * 1024;
 function violation(): never {
   throw new StorageError('RELATION_INTEGRITY_VIOLATION');
 }
@@ -52,7 +52,7 @@ export class AttachmentRepository implements AttachmentWriter {
         !(row.file_key instanceof Uint8Array) ||
         !(row.manifest instanceof Uint8Array) ||
         row.file_key.byteLength !== 32 ||
-        row.manifest.byteLength > MAX_MANIFEST
+        row.manifest.byteLength > MAX_ATTACHMENT_MANIFEST_BYTES
       )
         throw new Error();
       return {
@@ -89,7 +89,7 @@ export class AttachmentRepository implements AttachmentWriter {
       !Number.isSafeInteger(value.manifestVersion) ||
       value.manifestVersion < 1 ||
       !(value.manifest instanceof Uint8Array) ||
-      value.manifest.byteLength > MAX_MANIFEST
+      value.manifest.byteLength > MAX_ATTACHMENT_MANIFEST_BYTES
     )
       throw new StorageError('STORAGE_OPERATION_FAILED');
   }

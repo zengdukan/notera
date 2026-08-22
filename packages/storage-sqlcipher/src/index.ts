@@ -4,7 +4,7 @@ export {
   VaultDatabase,
 } from './database';
 export { StorageError, type StorageErrorCode } from './errors';
-export { CURRENT_SCHEMA_VERSION } from './schema/current';
+export { CURRENT_SCHEMA_VERSION } from './migrations/registry';
 export type {
   CreateVaultDatabaseOptions,
   FolderReader,

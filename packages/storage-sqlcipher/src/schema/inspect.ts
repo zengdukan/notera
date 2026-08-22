@@ -4,6 +4,7 @@ import { asFolderId, asVaultId, type VaultId } from '@notera/domain';
 
 import type { SqlcipherConnection } from '../connection';
 import { StorageError } from '../errors';
+import { CURRENT_FILE_FORMAT_VERSION } from '../file-format';
 
 interface SchemaVersionRow {
   readonly schema_version: unknown;
@@ -77,7 +78,7 @@ export function validateVaultMetadata(
       vaultId !== expectedVaultId ||
       typeof row.profile_name !== 'string' ||
       row.profile_name.trim().length === 0 ||
-      row.file_format_version !== 1 ||
+      row.file_format_version !== CURRENT_FILE_FORMAT_VERSION ||
       !(row.vault_meta_digest instanceof Uint8Array) ||
       row.vault_meta_digest.byteLength !== 32 ||
       !timingSafeEqual(

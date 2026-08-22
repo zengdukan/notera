@@ -5,7 +5,10 @@ import type { VaultId } from '@notera/domain';
 import { openNativeConnection, type SqlcipherConnection } from './connection';
 import { mapNativeError, StorageError } from './errors';
 import { checkIntegrity } from './integrity';
-import { PRODUCTION_MIGRATIONS } from './migrations/registry';
+import {
+  CURRENT_SCHEMA_VERSION,
+  PRODUCTION_MIGRATIONS,
+} from './migrations/registry';
 import { runMigrations } from './migrations/runner';
 import { asFolderReader, FolderRepository } from './repositories/folders';
 import {
@@ -24,7 +27,7 @@ import {
 } from './repositories/attachments';
 import { checkSearchIndex, rebuildSearchIndex } from './search/health';
 import { SearchRepository } from './search/query';
-import { createCurrentSchema, CURRENT_SCHEMA_VERSION } from './schema/current';
+import { createBaselineV1 } from './schema/baseline-v1';
 import { readSchemaVersion, validateVaultMetadata } from './schema/inspect';
 import type {
   CreateVaultDatabaseOptions,
@@ -282,7 +285,7 @@ export function createVaultDatabase(
 
   try {
     connection.transaction(() => {
-      createCurrentSchema(connection, {
+      createBaselineV1(connection, {
         identity: options.identity,
         profileName: options.profileName,
         vaultMetaDigest: options.vaultMetaDigest,
