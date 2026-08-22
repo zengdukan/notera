@@ -55,6 +55,7 @@
     "start:preload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack --config ./.erb/configs/webpack.config.preload.dev.ts",
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
     "test": "jest",
+    "test:sqlcipher-runtime": "cross-env ELECTRON_RUN_AS_NODE=1 electron packages/storage-sqlcipher/scripts/sqlcipher-runtime.cjs",
     "test:unit": "jest",
     "typecheck:app": "tsc --noEmit -p tsconfig.json",
     "typecheck:packages": "npm run typecheck --workspaces --if-present",
