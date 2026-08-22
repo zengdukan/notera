@@ -39,9 +39,6 @@ export function mapIpcError(
   return ipcFailure('IPC_OPERATION_FAILED');
 }
 
-export function toIpcError(
-  contract: ErrorContract,
-  error: unknown,
-): IpcError {
+export function toIpcError(contract: ErrorContract, error: unknown): IpcError {
   return mapIpcError(contract, error).error;
 }

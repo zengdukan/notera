@@ -1,4 +1,12 @@
-import { mkdtemp, open, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+/* eslint-disable no-restricted-syntax */
+import {
+  mkdtemp,
+  open,
+  readFile,
+  readdir,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -94,7 +102,7 @@ describe('attachment file access', () => {
       onBytes: (value) => completed.push(value),
     });
 
-    expect([...await readFile(savePath)]).toEqual([1, 2, 3]);
+    expect([...(await readFile(savePath))]).toEqual([1, 2, 3]);
     expect(completed).toEqual([2, 3]);
     expect(await readdir(root)).toEqual(['saved.bin']);
   });

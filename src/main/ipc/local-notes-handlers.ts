@@ -33,9 +33,7 @@ export function createLocalNotesBindings(input: {
   const { service, gate } = input;
   return Object.freeze([
     defineIpcBinding('contentTree.listChildren', (value) =>
-      gate.run(() =>
-        service.listChildren(asInput<'listChildren'>(value)),
-      ),
+      gate.run(() => service.listChildren(asInput<'listChildren'>(value))),
     ),
     defineIpcBinding('contentTree.createFolder', (value) =>
       gate.run(() => service.createFolder(asInput<'createFolder'>(value))),
@@ -115,9 +113,7 @@ export function createLocalNotesBindings(input: {
       ),
     ),
     defineIpcBinding('batch.move', (value) =>
-      emptyResult(gate, () =>
-        service.batchMove(asInput<'batchMove'>(value)),
-      ),
+      emptyResult(gate, () => service.batchMove(asInput<'batchMove'>(value))),
     ),
     defineIpcBinding('batch.addTags', (value) =>
       emptyResult(gate, () =>
@@ -130,9 +126,7 @@ export function createLocalNotesBindings(input: {
       ),
     ),
     defineIpcBinding('batch.copy', (value) =>
-      emptyResult(gate, () =>
-        service.batchCopy(asInput<'batchCopy'>(value)),
-      ),
+      emptyResult(gate, () => service.batchCopy(asInput<'batchCopy'>(value))),
     ),
     defineIpcBinding('batch.trash', (value) =>
       gate.run(() => service.batchTrash(asInput<'batchTrash'>(value))),

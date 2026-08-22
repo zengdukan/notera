@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax */
 import type {
   AttachmentContentReader,
   LocalAttachmentsService,
@@ -33,7 +34,10 @@ const attachment = {
   previewable: true,
   createdAt: 1,
 };
-const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
+const settle = () =>
+  new Promise<void>((resolve) => {
+    setImmediate(resolve);
+  });
 
 function reader(bytes = Uint8Array.from([1, 2, 3])) {
   const close = jest.fn(async () => undefined);
@@ -55,10 +59,12 @@ function reader(bytes = Uint8Array.from([1, 2, 3])) {
   return { value, close };
 }
 
-function setup(input: {
-  readonly importSelection?: ImportSelection | null;
-  readonly saveSelection?: SaveSelection | null;
-} = {}) {
+function setup(
+  input: {
+    readonly importSelection?: ImportSelection | null;
+    readonly saveSelection?: SaveSelection | null;
+  } = {},
+) {
   const progress: OperationProgressPayload[] = [];
   const completed: OperationTerminalStatus[] = [];
   const operations = new OperationRegistry({
@@ -213,7 +219,9 @@ describe('attachment and operation IPC handlers', () => {
         onBytes(written.length);
       },
     };
-    const { bindings, operations, opened } = setup({ saveSelection: selection });
+    const { bindings, operations, opened } = setup({
+      saveSelection: selection,
+    });
 
     await expect(
       binding(bindings, 'attachment.startSaveAs').invoke({ attachmentId }),
@@ -240,10 +248,15 @@ describe('attachment and operation IPC handlers', () => {
         attachmentId,
       }),
     ).resolves.toEqual({});
-    expect(service.removeFromNote).toHaveBeenCalledWith({ noteId, attachmentId });
+    expect(service.removeFromNote).toHaveBeenCalledWith({
+      noteId,
+      attachmentId,
+    });
 
     await expect(
-      binding(bindings, 'operation.getStatus').invoke({ operationId: uuid(99) }),
+      binding(bindings, 'operation.getStatus').invoke({
+        operationId: uuid(99),
+      }),
     ).rejects.toEqual(
       expect.objectContaining({
         code: 'OPERATION_NOT_FOUND',

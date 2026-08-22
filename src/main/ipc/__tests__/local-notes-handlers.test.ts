@@ -1,7 +1,4 @@
-import {
-  ApplicationError,
-  type LocalNotesService,
-} from '@notera/application';
+import { ApplicationError, type LocalNotesService } from '@notera/application';
 
 import { requestContracts } from '../../../shared';
 import {
@@ -445,7 +442,8 @@ function serviceFor(
   calls: { method: PropertyKey; arguments: readonly unknown[] }[],
 ): LocalNotesService {
   return new Proxy({} as LocalNotesService, {
-    get: (_target, method) =>
+    get:
+      (_target, method) =>
       (...args: readonly unknown[]) => {
         if (method !== expectedMethod) {
           throw new Error(`Unexpected Application method: ${String(method)}`);
@@ -469,30 +467,35 @@ describe('local note IPC handlers', () => {
     expect(new Set(bindings.map((binding) => binding.key)).size).toBe(39);
   });
 
-  test.each(cases)('$key calls $method with the intended DTO mapping', async (value) => {
-    const calls: { method: PropertyKey; arguments: readonly unknown[] }[] = [];
-    const bindings = createLocalNotesBindings({
-      service: serviceFor(value.method, value.applicationResult, calls),
-      gate: openGate,
-    });
-    const binding = bindings.find((candidate) => candidate.key === value.key);
+  test.each(cases)(
+    '$key calls $method with the intended DTO mapping',
+    async (value) => {
+      const calls: { method: PropertyKey; arguments: readonly unknown[] }[] =
+        [];
+      const bindings = createLocalNotesBindings({
+        service: serviceFor(value.method, value.applicationResult, calls),
+        gate: openGate,
+      });
+      const binding = bindings.find((candidate) => candidate.key === value.key);
 
-    await expect(binding?.invoke(value.request)).resolves.toEqual(
-      value.expectedResult,
-    );
-    expect(calls).toEqual([
-      {
-        method: value.method,
-        arguments:
-          value.applicationArgument === noArgument
-            ? []
-            : [value.applicationArgument],
-      },
-    ]);
-    expect(
-      requestContracts[value.key].data.safeParse(value.expectedResult).success,
-    ).toBe(true);
-  });
+      await expect(binding?.invoke(value.request)).resolves.toEqual(
+        value.expectedResult,
+      );
+      expect(calls).toEqual([
+        {
+          method: value.method,
+          arguments:
+            value.applicationArgument === noArgument
+              ? []
+              : [value.applicationArgument],
+        },
+      ]);
+      expect(
+        requestContracts[value.key].data.safeParse(value.expectedResult)
+          .success,
+      ).toBe(true);
+    },
+  );
 
   it('does not call Application when the Session Gate rejects', async () => {
     const calls: { method: PropertyKey; arguments: readonly unknown[] }[] = [];

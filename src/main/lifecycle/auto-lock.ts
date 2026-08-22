@@ -1,12 +1,6 @@
-import {
-  ApplicationError,
-  type SessionState,
-} from '@notera/application';
+import { ApplicationError, type SessionState } from '@notera/application';
 
-import {
-  IPC_ERROR_CODES,
-  type IpcErrorCode,
-} from '../../shared';
+import { IPC_ERROR_CODES, type IpcErrorCode } from '../../shared';
 import type { SessionLifecycle } from './session-lock';
 
 export const AUTO_LOCK_SECONDS = 15 * 60;
@@ -32,16 +26,21 @@ export interface AutoLockLogger {
 const knownCodes = new Set<string>(IPC_ERROR_CODES);
 
 function safeCode(error: unknown): IpcErrorCode {
-  if (
-    error instanceof ApplicationError &&
-    knownCodes.has(error.code)
-  ) {
+  if (error instanceof ApplicationError && knownCodes.has(error.code)) {
     return error.code as IpcErrorCode;
   }
   return 'IPC_OPERATION_FAILED';
 }
 
 export class AutoLockController {
+  private readonly input: {
+    readonly powerMonitor: PowerMonitorPort;
+    readonly scheduler: SchedulerPort;
+    readonly lifecycle: Pick<SessionLifecycle, 'lock'>;
+    readonly getSessionState: () => SessionState;
+    readonly logger: AutoLockLogger;
+  };
+
   private readonly lockScreen = () => this.trigger('SYSTEM_LOCK');
 
   private readonly suspend = () => this.trigger('SYSTEM_SUSPEND');
@@ -63,15 +62,9 @@ export class AutoLockController {
 
   private started = false;
 
-  constructor(
-    private readonly input: {
-      readonly powerMonitor: PowerMonitorPort;
-      readonly scheduler: SchedulerPort;
-      readonly lifecycle: Pick<SessionLifecycle, 'lock'>;
-      readonly getSessionState: () => SessionState;
-      readonly logger: AutoLockLogger;
-    },
-  ) {}
+  constructor(input: AutoLockController['input']) {
+    this.input = input;
+  }
 
   start(): void {
     if (this.started) return;

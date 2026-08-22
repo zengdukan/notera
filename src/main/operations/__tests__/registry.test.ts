@@ -22,16 +22,19 @@ const attachment = {
 };
 
 function deferred<Value>() {
-  let resolve!: (value: Value) => void;
-  let reject!: (error: unknown) => void;
-  const promise = new Promise<Value>((resolvePromise, rejectPromise) => {
-    resolve = resolvePromise;
-    reject = rejectPromise;
+  let complete!: (value: Value) => void;
+  let fail!: (error: unknown) => void;
+  const promise = new Promise<Value>((resolve, reject) => {
+    complete = resolve;
+    fail = reject;
   });
-  return { promise, resolve, reject };
+  return { promise, resolve: complete, reject: fail };
 }
 
-const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
+const settle = () =>
+  new Promise<void>((resolve) => {
+    setImmediate(resolve);
+  });
 
 function setup() {
   const progress: OperationProgressPayload[] = [];
@@ -170,13 +173,12 @@ describe('session operation registry', () => {
     const id = registry.start({
       kind: 'ATTACHMENT_SAVE_AS',
       execute: ({ signal }) =>
-        new Promise((resolve, reject) => {
+        new Promise((_resolve, reject) => {
           signal.addEventListener(
             'abort',
             () => reject(new ApplicationError('OPERATION_ABORTED')),
             { once: true },
           );
-          void resolve;
         }),
       mapError: () => ({
         code: 'ATTACHMENT_SAVE_FAILED',
@@ -198,13 +200,12 @@ describe('session operation registry', () => {
     registry.start({
       kind: 'ATTACHMENT_SAVE_AS',
       execute: ({ signal }) =>
-        new Promise((resolve, reject) => {
+        new Promise((_resolve, reject) => {
           signal.addEventListener(
             'abort',
             () => reject(new ApplicationError('OPERATION_ABORTED')),
             { once: true },
           );
-          void resolve;
         }),
       mapError: () => ({
         code: 'ATTACHMENT_SAVE_FAILED',

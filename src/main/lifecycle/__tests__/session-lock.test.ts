@@ -13,11 +13,11 @@ const secondProfileId = uuid(2);
 const rootFolderId = uuid(3);
 
 function deferred() {
-  let resolve!: () => void;
-  const promise = new Promise<void>((done) => {
-    resolve = done;
+  let complete!: () => void;
+  const promise = new Promise<void>((resolve) => {
+    complete = resolve;
   });
-  return { promise, resolve };
+  return { promise, resolve: complete };
 }
 
 function setup(initial: SessionState = { state: 'LOCKED' }) {
@@ -60,7 +60,9 @@ function setup(initial: SessionState = { state: 'LOCKED' }) {
     }),
   } as unknown as ProfileManager;
   const operations = {
-    beginSession: jest.fn((value: string) => calls.push(`operations.begin:${value}`)),
+    beginSession: jest.fn((value: string) =>
+      calls.push(`operations.begin:${value}`),
+    ),
     endSession: jest.fn(async () => {
       calls.push('operations.end');
     }),
@@ -76,7 +78,10 @@ function setup(initial: SessionState = { state: 'LOCKED' }) {
     operations,
     media,
     sink,
-    randomUUID: () => `epoch-${++epoch}`,
+    randomUUID: () => {
+      epoch += 1;
+      return `epoch-${epoch}`;
+    },
   });
   calls.length = 0;
   operations.beginSession.mockClear();
@@ -103,11 +108,13 @@ describe('SessionLifecycle', () => {
     });
 
     const pending = deferred();
-    (state.manager.createProfile as jest.Mock).mockImplementationOnce(async () => {
-      await pending.promise;
-      state.setState(state.unlocked(firstProfileId));
-      return state.unlocked(firstProfileId);
-    });
+    (state.manager.createProfile as jest.Mock).mockImplementationOnce(
+      async () => {
+        await pending.promise;
+        state.setState(state.unlocked(firstProfileId));
+        return state.unlocked(firstProfileId);
+      },
+    );
     const creating = state.lifecycle.create({
       displayName: 'Profile',
       password: 'password',

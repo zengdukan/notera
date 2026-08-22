@@ -1,7 +1,4 @@
-import {
-  ApplicationError,
-  type ProfileManager,
-} from '@notera/application';
+import { ApplicationError, type ProfileManager } from '@notera/application';
 
 import type { MediaGateway } from '../attachments/media-gateway';
 import type { SessionCommandGate } from '../ipc/local-notes-handlers';
@@ -36,6 +33,7 @@ async function runAll(
         } catch (error) {
           if (firstError === undefined) firstError = error;
         }
+        return undefined;
       }),
     Promise.resolve(),
   );
@@ -72,10 +70,7 @@ export class SessionLifecycle implements SessionCommandGate {
 
   constructor(input: {
     readonly manager: ProfileManager;
-    readonly operations: Pick<
-      OperationRegistry,
-      'beginSession' | 'endSession'
-    >;
+    readonly operations: Pick<OperationRegistry, 'beginSession' | 'endSession'>;
     readonly media: Pick<MediaGateway, 'revokeAll'>;
     readonly sink: ProfileEventSink;
     readonly randomUUID: () => string;
@@ -200,9 +195,7 @@ export class SessionLifecycle implements SessionCommandGate {
     return result.finally(() => {
       this.pendingTransitions -= 1;
       this.accepting =
-        this.sessionActive &&
-        !this.closing &&
-        this.pendingTransitions === 0;
+        this.sessionActive && !this.closing && this.pendingTransitions === 0;
     });
   }
 

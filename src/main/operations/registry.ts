@@ -45,6 +45,7 @@ function runningStatus(
   });
 }
 
+// eslint-disable-next-line import/prefer-default-export
 export class OperationRegistry {
   private readonly records = new Map<string, OperationRecord>();
 
@@ -164,6 +165,7 @@ export class OperationRegistry {
       .then(() => {
         this.records.clear();
         this.sessionEpoch = undefined;
+        return undefined;
       })
       .finally(() => {
         this.endPromise = undefined;

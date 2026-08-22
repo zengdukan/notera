@@ -106,9 +106,9 @@ describe('profile IPC handlers', () => {
       localProfileId,
       password: 'password',
     });
-    await expect(binding(state.bindings, 'profile.lock').invoke({})).resolves.toEqual(
-      {},
-    );
+    await expect(
+      binding(state.bindings, 'profile.lock').invoke({}),
+    ).resolves.toEqual({});
     await binding(state.bindings, 'profile.rename').invoke({
       displayName: 'Renamed',
     });

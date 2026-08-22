@@ -154,8 +154,7 @@ function responseBody(
 
 function sessionMatches(state: SessionState, token: MediaToken): boolean {
   return (
-    state.state === 'UNLOCKED' &&
-    state.localProfileId === token.localProfileId
+    state.state === 'UNLOCKED' && state.localProfileId === token.localProfileId
   );
 }
 

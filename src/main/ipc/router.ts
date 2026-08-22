@@ -1,10 +1,6 @@
 import type { z } from 'zod';
 
-import {
-  ipcFailure,
-  requestContracts,
-  type IpcResponse,
-} from '../../shared';
+import { ipcFailure, requestContracts, type IpcResponse } from '../../shared';
 import { mapIpcError, type ErrorContract } from './errors';
 
 export interface IpcInvokeEventLike {
@@ -12,7 +8,7 @@ export interface IpcInvokeEventLike {
   readonly senderFrame?: {
     readonly routingId: number;
     readonly parent: unknown;
-  };
+  } | null;
 }
 
 export interface IpcMainPort {
@@ -52,7 +48,8 @@ export function defineIpcBinding<Key extends RequestKey>(
   return Object.freeze({
     key,
     contract: requestContracts[key] as RuntimeRequestContract,
-    invoke: (input: unknown) => Promise.resolve(invoke(input as RequestInput<Key>)),
+    invoke: (input: unknown) =>
+      Promise.resolve(invoke(input as RequestInput<Key>)),
   });
 }
 

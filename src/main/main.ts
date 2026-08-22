@@ -1,131 +1,138 @@
-/* eslint global-require: off, no-console: off, promise/always-return: off */
+import { randomBytes, randomUUID } from 'node:crypto';
+import path from 'node:path';
 
-/**
- * This module executes inside of electron's main process. You can start
- * electron renderer process from here and communicate with the other processes
- * through IPC.
- *
- * When running `npm run build` or `npm run build:main`, this file is compiled to
- * `./src/main.js` using webpack. This gives us some performance wins.
- */
-import path from 'path';
-import { app, BrowserWindow, shell } from 'electron';
-import { autoUpdater } from 'electron-updater';
-import log from 'electron-log';
+import { createProfileManager } from '@notera/application';
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  powerMonitor,
+  protocol,
+  shell,
+  type BrowserWindowConstructorOptions,
+} from 'electron';
+
 import MenuBuilder from './menu';
+import { createMainRuntime, type MainRuntime } from './runtime';
 import { resolveHtmlPath } from './util';
+import { createSecureWindow } from './window';
 
-class AppUpdater {
-  constructor() {
-    log.transports.file.level = 'info';
-    autoUpdater.logger = log;
-    autoUpdater.checkForUpdatesAndNotify();
-  }
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'notera-media',
+    privileges: {
+      standard: true,
+      secure: true,
+      stream: true,
+      supportFetchAPI: true,
+    },
+  },
+]);
+
+let mainWindow: BrowserWindow | undefined;
+let runtime: MainRuntime | undefined;
+let shutdown: Promise<void> | undefined;
+let exitAllowed = false;
+
+function fixedLog(code: string): void {
+  process.stderr.write(`[Notera] ${code}\n`);
 }
 
-let mainWindow: BrowserWindow | null = null;
+async function start(): Promise<void> {
+  const preloadPath = app.isPackaged
+    ? path.join(__dirname, 'preload.js')
+    : path.join(__dirname, '../../.erb/dll/preload.js');
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'assets', 'icon.png')
+    : path.join(__dirname, '../../assets/icon.png');
+  const entryUrl = resolveHtmlPath('index.html');
+  mainWindow = createSecureWindow({
+    factory: {
+      create: (options) =>
+        new BrowserWindow(options as BrowserWindowConstructorOptions),
+    },
+    shell,
+    preloadPath,
+    entryUrl,
+    iconPath,
+  }) as BrowserWindow;
+  mainWindow.on('closed', () => {
+    mainWindow = undefined;
+  });
+  new MenuBuilder(mainWindow).buildMenu();
 
-if (process.env.NODE_ENV === 'production') {
-  const sourceMapSupport = require('source-map-support');
-  sourceMapSupport.install();
-}
-
-const isDebug =
-  process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
-
-if (isDebug) {
-  require('electron-debug').default();
-}
-
-const installExtensions = async () => {
-  const installer = require('electron-devtools-installer');
-  const forceDownload = !!process.env.UPGRADE_EXTENSIONS;
-  const extensions = ['REACT_DEVELOPER_TOOLS'];
-
-  return installer
-    .default(
-      extensions.map((name) => installer[name]),
-      forceDownload,
-    )
-    .catch(console.log);
-};
-
-const createWindow = async () => {
-  if (isDebug) {
-    await installExtensions();
-  }
-
-  const RESOURCES_PATH = app.isPackaged
-    ? path.join(process.resourcesPath, 'assets')
-    : path.join(__dirname, '../../assets');
-
-  const getAssetPath = (...paths: string[]): string => {
-    return path.join(RESOURCES_PATH, ...paths);
-  };
-
-  mainWindow = new BrowserWindow({
-    show: false,
-    width: 1024,
-    height: 728,
-    icon: getAssetPath('icon.png'),
-    webPreferences: {
-      preload: app.isPackaged
-        ? path.join(__dirname, 'preload.js')
-        : path.join(__dirname, '../../.erb/dll/preload.js'),
+  runtime = await createMainRuntime({
+    appDataRoot: app.getPath('userData'),
+    window: mainWindow,
+    electron: {
+      createProfileManager,
+      ipcMain,
+      protocol,
+      dialogs: {
+        async chooseImportPath() {
+          if (mainWindow === undefined) return null;
+          const result = await dialog.showOpenDialog(mainWindow, {
+            properties: ['openFile'],
+          });
+          return result.canceled ? null : (result.filePaths[0] ?? null);
+        },
+        async chooseSavePath() {
+          if (mainWindow === undefined) return null;
+          const result = await dialog.showSaveDialog(mainWindow, {});
+          return result.canceled ? null : (result.filePath ?? null);
+        },
+      },
+      powerMonitor,
+      scheduler: {
+        setInterval: (callback, milliseconds) =>
+          global.setInterval(callback, milliseconds),
+        clearInterval: (handle) =>
+          global.clearInterval(handle as ReturnType<typeof setInterval>),
+      },
+      confirmation: {
+        async confirmRemove() {
+          if (mainWindow === undefined) return false;
+          const result = await dialog.showMessageBox(mainWindow, {
+            type: 'warning',
+            title: 'Remove profile',
+            message: 'Remove this profile from this device?',
+            buttons: ['Remove', 'Cancel'],
+            defaultId: 1,
+            cancelId: 1,
+            noLink: true,
+          });
+          return result.response === 0;
+        },
+      },
+      logger: { error: fixedLog },
+      randomUUID,
+      randomBytes: () => randomBytes(32),
+      now: Date.now,
     },
   });
+  await runtime.start();
+}
 
-  mainWindow.loadURL(resolveHtmlPath('index.html'));
-
-  mainWindow.on('ready-to-show', () => {
-    if (!mainWindow) {
-      throw new Error('"mainWindow" is not defined');
-    }
-    if (process.env.START_MINIMIZED) {
-      mainWindow.minimize();
-    } else {
-      mainWindow.show();
-    }
-  });
-
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
-
-  const menuBuilder = new MenuBuilder(mainWindow);
-  menuBuilder.buildMenu();
-
-  // Open urls in the user's browser
-  mainWindow.webContents.setWindowOpenHandler((edata) => {
-    shell.openExternal(edata.url);
-    return { action: 'deny' };
-  });
-
-  // Remove this if your app does not use auto updates
-  // eslint-disable-next-line
-  new AppUpdater();
-};
-
-/**
- * Add event listeners...
- */
-
-app.on('window-all-closed', () => {
-  // Respect the OSX convention of having the application in memory even
-  // after all windows have been closed
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+app.on('before-quit', (event) => {
+  if (exitAllowed) return;
+  event.preventDefault();
+  if (shutdown !== undefined) return;
+  shutdown = Promise.resolve(runtime?.close())
+    .catch(() => undefined)
+    .then(() => {
+      exitAllowed = true;
+      app.exit(0);
+      return undefined;
+    });
 });
+
+app.on('window-all-closed', () => app.quit());
 
 app
   .whenReady()
-  .then(() => {
-    createWindow();
-    app.on('activate', () => {
-      // On macOS it's common to re-create a window in the app when the
-      // dock icon is clicked and there are no other windows open.
-      if (mainWindow === null) createWindow();
-    });
-  })
-  .catch(console.log);
+  .then(start)
+  .catch(() => {
+    fixedLog('START_FAILED');
+    app.exit(1);
+  });

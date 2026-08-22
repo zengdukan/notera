@@ -157,4 +157,27 @@ describe('validated preload bridge', () => {
     expect(mainSource).not.toContain('ipc-example');
     expect(rendererSource).not.toContain('ipc-example');
   });
+
+  it('removes boilerplate updaters, logging, and help links', () => {
+    const mainSource = fs.readFileSync(
+      path.join(process.cwd(), 'src/main/main.ts'),
+      'utf8',
+    );
+    const menuSource = fs.readFileSync(
+      path.join(process.cwd(), 'src/main/menu.ts'),
+      'utf8',
+    );
+    const packageJson = fs.readFileSync(
+      path.join(process.cwd(), 'package.json'),
+      'utf8',
+    );
+    const combined = `${mainSource}\n${menuSource}\n${packageJson}`;
+
+    expect(combined).not.toContain('AppUpdater');
+    expect(combined).not.toContain('electron-updater');
+    expect(combined).not.toContain('electron-log');
+    expect(combined).not.toContain('Electron Boilerplate Help');
+    expect(menuSource).not.toContain('electronjs.org');
+    expect(menuSource).not.toContain('github.com/electron');
+  });
 });

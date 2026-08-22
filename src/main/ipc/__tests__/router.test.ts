@@ -60,20 +60,16 @@ describe('validated Main IPC router', () => {
     });
 
     await expect(
-      ipcMain.invoke(
-        requestContracts['profile.list'].channel,
-        allowedEvent,
-        { limit: 10 },
-      ),
+      ipcMain.invoke(requestContracts['profile.list'].channel, allowedEvent, {
+        limit: 10,
+      }),
     ).resolves.toEqual({ ret: true, data: { items: [] } });
     expect(invoke).toHaveBeenCalledWith({ limit: 10 });
 
     await expect(
-      ipcMain.invoke(
-        requestContracts['profile.list'].channel,
-        allowedEvent,
-        { limit: 0 },
-      ),
+      ipcMain.invoke(requestContracts['profile.list'].channel, allowedEvent, {
+        limit: 0,
+      }),
     ).resolves.toEqual(ipcFailure('INVALID_IPC_REQUEST'));
     expect(invoke).toHaveBeenCalledTimes(1);
 
@@ -101,11 +97,9 @@ describe('validated Main IPC router', () => {
     });
 
     await expect(
-      ipcMain.invoke(
-        requestContracts['profile.list'].channel,
-        allowedEvent,
-        { limit: 10 },
-      ),
+      ipcMain.invoke(requestContracts['profile.list'].channel, allowedEvent, {
+        limit: 10,
+      }),
     ).resolves.toEqual(ipcFailure('IPC_OPERATION_FAILED'));
   });
 
@@ -150,8 +144,6 @@ describe('validated Main IPC router', () => {
     });
     dispose();
     dispose();
-    expect(ipcMain.removed).toEqual([
-      requestContracts['profile.list'].channel,
-    ]);
+    expect(ipcMain.removed).toEqual([requestContracts['profile.list'].channel]);
   });
 });

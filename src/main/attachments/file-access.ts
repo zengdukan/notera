@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop, no-restricted-syntax */
 import { createReadStream } from 'node:fs';
 import { lstat, open, rename, rm, type FileHandle } from 'node:fs/promises';
 import { basename, dirname, extname, join } from 'node:path';
@@ -69,9 +70,7 @@ function mapSaveError(error: unknown, signal: AbortSignal): Error {
     return new ApplicationError('OPERATION_ABORTED');
   }
   return new MainIpcError(
-    nativeCode(error) === 'ENOSPC'
-      ? 'DISK_FULL'
-      : 'ATTACHMENT_SAVE_FAILED',
+    nativeCode(error) === 'ENOSPC' ? 'DISK_FULL' : 'ATTACHMENT_SAVE_FAILED',
   );
 }
 
@@ -80,10 +79,7 @@ async function closeQuietly(handle: FileHandle | undefined): Promise<void> {
   await handle.close().catch(() => undefined);
 }
 
-async function writeAll(
-  handle: FileHandle,
-  chunk: Uint8Array,
-): Promise<void> {
+async function writeAll(handle: FileHandle, chunk: Uint8Array): Promise<void> {
   let offset = 0;
   while (offset < chunk.byteLength) {
     const result = await handle.write(

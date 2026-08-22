@@ -8,9 +8,7 @@ import {
   type IpcError,
 } from '../../shared';
 
-export type ActiveOperationKind =
-  | 'ATTACHMENT_IMPORT'
-  | 'ATTACHMENT_SAVE_AS';
+export type ActiveOperationKind = 'ATTACHMENT_IMPORT' | 'ATTACHMENT_SAVE_AS';
 export type OperationPhase = z.output<typeof operationPhaseSchema>;
 export type OperationProgressPayload = z.output<
   typeof operationProgress.payload
@@ -46,8 +44,6 @@ export interface OperationEventSink {
 
 export interface StartOperationInput<Kind extends ActiveOperationKind> {
   readonly kind: Kind;
-  execute(
-    context: OperationContext,
-  ): Promise<OperationSuccessByKind[Kind]>;
+  execute(context: OperationContext): Promise<OperationSuccessByKind[Kind]>;
   mapError(error: unknown): IpcError;
 }

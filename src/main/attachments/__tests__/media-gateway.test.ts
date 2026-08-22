@@ -4,10 +4,7 @@ import {
   type LocalAttachmentsService,
 } from '@notera/application';
 
-import {
-  createMediaGateway,
-  type MediaProtocolPort,
-} from '../media-gateway';
+import { createMediaGateway, type MediaProtocolPort } from '../media-gateway';
 
 const uuid = (value: number) =>
   `10000000-0000-4000-8000-${value.toString().padStart(12, '0')}`;
@@ -84,10 +81,10 @@ function setup() {
       rootFolderId: uuid(4) as never,
     }),
     randomBytes: () => {
-      const bytes = new Uint8Array(32);
-      bytes[31] = randomValue;
+      const tokenBytes = new Uint8Array(32);
+      tokenBytes[31] = randomValue;
       randomValue += 1;
-      return bytes;
+      return tokenBytes;
     },
     now: () => now,
   });
@@ -134,10 +131,9 @@ describe('MediaGateway', () => {
     expect(second.expiresAt - first.expiresAt).toBe(0);
     expect(state.gateRun).toHaveBeenCalledTimes(2);
     expect(state.service.openReader).toHaveBeenCalledWith(attachmentId);
-    expect(state.readers.map((reader) => reader.close.mock.calls.length)).toEqual([
-      1,
-      1,
-    ]);
+    expect(
+      state.readers.map((reader) => reader.close.mock.calls.length),
+    ).toEqual([1, 1]);
 
     state.lockGate();
     await expect(state.gateway.issue(attachmentId)).rejects.toMatchObject({
