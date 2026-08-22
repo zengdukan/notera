@@ -192,6 +192,7 @@ export interface FavoriteReader {
 }
 
 export interface FavoriteWriter extends FavoriteReader {
+  listAll(): readonly Favorite[];
   insert(value: Favorite): void;
   delete(noteId: NoteId): void;
   replaceSortOrders(values: readonly Favorite[]): void;

@@ -1,9 +1,10 @@
-import type { Folder, Note, Tag } from '@notera/domain';
+import type { Favorite, Folder, Note, Tag } from '@notera/domain';
 import type { VaultDatabase } from '@notera/storage-sqlcipher';
 
 import { ApplicationError } from '../errors';
 import type {
   FolderSummary,
+  FavoriteNoteSummary,
   NoteDetail,
   NoteSummary,
   TagSummary,
@@ -49,6 +50,18 @@ export function noteDetail(database: VaultDatabase, note: Note): NoteDetail {
     document: note.document,
     createdAt: note.createdAt,
     tags: Object.freeze(database.tags.listForNote(note.id).map(tagSummary)),
+  });
+}
+
+export function favoriteNoteSummary(
+  database: VaultDatabase,
+  favorite: Favorite,
+): FavoriteNoteSummary {
+  const note = database.notes.get(favorite.noteId);
+  if (note === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
+  return Object.freeze({
+    ...noteSummary(note),
+    favoriteSortOrder: favorite.sortOrder,
   });
 }
 

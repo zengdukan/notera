@@ -3,6 +3,7 @@ import type {
   ContentVersion,
   FolderId,
   NoteId,
+  SortOrder,
   TagId,
   Timestamp,
   TrashEntryId,
@@ -46,6 +47,10 @@ export interface NoteDetail extends NoteSummary {
   readonly document: AdfDocument;
   readonly createdAt: Timestamp;
   readonly tags: readonly TagSummary[];
+}
+
+export interface FavoriteNoteSummary extends NoteSummary {
+  readonly favoriteSortOrder: SortOrder;
 }
 
 export type TreeEntrySummary = FolderSummary | NoteSummary;
@@ -96,4 +101,26 @@ export interface LocalNotesService {
   }): Promise<NoteSummary>;
   trashNote(noteId: NoteId): Promise<{ readonly trashEntryId: TrashEntryId }>;
   listRecent(input: PageRequest): Promise<Page<NoteSummary>>;
+  listTags(input: PageRequest): Promise<Page<TagSummary>>;
+  createTag(name: string): Promise<TagSummary>;
+  renameTag(input: {
+    readonly tagId: TagId;
+    readonly name: string;
+  }): Promise<TagSummary>;
+  deleteTag(tagId: TagId): Promise<void>;
+  addTagToNote(input: {
+    readonly noteId: NoteId;
+    readonly tagId: TagId;
+  }): Promise<void>;
+  removeTagFromNote(input: {
+    readonly noteId: NoteId;
+    readonly tagId: TagId;
+  }): Promise<void>;
+  listFavorites(input: PageRequest): Promise<Page<FavoriteNoteSummary>>;
+  addFavorite(noteId: NoteId): Promise<void>;
+  removeFavorite(noteId: NoteId): Promise<void>;
+  reorderFavorite(input: {
+    readonly noteId: NoteId;
+    readonly beforeNoteId?: NoteId;
+  }): Promise<void>;
 }

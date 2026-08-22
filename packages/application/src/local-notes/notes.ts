@@ -62,6 +62,25 @@ export function getNote(database: VaultDatabase, value: unknown): NoteDetail {
   return noteDetail(database, note);
 }
 
+export function getActiveNoteEntity(
+  database: VaultDatabase,
+  value: unknown,
+) {
+  const noteId = asNoteId(value);
+  const note = database.notes.get(noteId);
+  if (note === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
+  let cursor: string | undefined;
+  do {
+    const page = database.notes.listByFolder(note.folderId, {
+      limit: 100,
+      ...(cursor === undefined ? {} : { cursor }),
+    });
+    if (page.items.some(({ id }) => id === note.id)) return note;
+    cursor = page.nextCursor;
+  } while (cursor !== undefined);
+  throw new ApplicationError('ENTITY_NOT_FOUND');
+}
+
 export function saveDraft(
   database: VaultDatabase,
   input: {

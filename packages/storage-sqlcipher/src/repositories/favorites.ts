@@ -79,6 +79,17 @@ export class FavoriteRepository implements FavoriteWriter {
     };
   }
 
+  listAll(): readonly Favorite[] {
+    this.guard();
+    return this.connection()
+      .prepare<FavoriteRow>(
+        `SELECT vault_id, note_id, sort_order, created_at
+         FROM favorites WHERE vault_id = ? ORDER BY sort_order, note_id`,
+      )
+      .all(this.vaultId)
+      .map(hydrateFavorite);
+  }
+
   insert(value: Favorite): void {
     this.guard();
     if (value.vaultId !== this.vaultId) relationViolation();

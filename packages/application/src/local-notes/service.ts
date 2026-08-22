@@ -13,6 +13,12 @@ import {
 } from './folders';
 import { mapLocalNotesError } from './errors';
 import {
+  addFavorite,
+  listFavorites,
+  removeFavorite,
+  reorderFavorite,
+} from './favorites';
+import {
   copyNote,
   createNote,
   getNote,
@@ -21,6 +27,14 @@ import {
   saveDraft,
   trashNote,
 } from './notes';
+import {
+  addTagToNote,
+  createTag,
+  deleteTag,
+  listTags,
+  removeTagFromNote,
+  renameTag,
+} from './tags';
 import type {
   FolderSummary,
   ListChildrenInput,
@@ -117,6 +131,56 @@ class SessionLocalNotesService implements LocalNotesService {
 
   listRecent(input: Parameters<LocalNotesService['listRecent']>[0]) {
     return this.run('READ', (database) => listRecent(database, input));
+  }
+
+  listTags(input: Parameters<LocalNotesService['listTags']>[0]) {
+    return this.run('READ', (database) => listTags(database, input));
+  }
+
+  createTag(name: Parameters<LocalNotesService['createTag']>[0]) {
+    return this.run('WRITE', (database) =>
+      createTag(database, name, this.randomId(), this.now()),
+    );
+  }
+
+  renameTag(input: Parameters<LocalNotesService['renameTag']>[0]) {
+    return this.run('WRITE', (database) =>
+      renameTag(database, input, this.now()),
+    );
+  }
+
+  deleteTag(tagId: Parameters<LocalNotesService['deleteTag']>[0]) {
+    return this.run('WRITE', (database) => deleteTag(database, tagId));
+  }
+
+  addTagToNote(input: Parameters<LocalNotesService['addTagToNote']>[0]) {
+    return this.run('WRITE', (database) => addTagToNote(database, input));
+  }
+
+  removeTagFromNote(
+    input: Parameters<LocalNotesService['removeTagFromNote']>[0],
+  ) {
+    return this.run('WRITE', (database) =>
+      removeTagFromNote(database, input),
+    );
+  }
+
+  listFavorites(input: Parameters<LocalNotesService['listFavorites']>[0]) {
+    return this.run('READ', (database) => listFavorites(database, input));
+  }
+
+  addFavorite(noteId: Parameters<LocalNotesService['addFavorite']>[0]) {
+    return this.run('WRITE', (database) =>
+      addFavorite(database, noteId, this.now()),
+    );
+  }
+
+  removeFavorite(noteId: Parameters<LocalNotesService['removeFavorite']>[0]) {
+    return this.run('WRITE', (database) => removeFavorite(database, noteId));
+  }
+
+  reorderFavorite(input: Parameters<LocalNotesService['reorderFavorite']>[0]) {
+    return this.run('WRITE', (database) => reorderFavorite(database, input));
   }
 }
 

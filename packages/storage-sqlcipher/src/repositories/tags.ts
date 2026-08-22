@@ -110,14 +110,9 @@ export class TagRepository implements TagWriter {
 
   delete(id: TagId): void {
     this.guard();
-    const related = this.connection()
-      .prepare(
-        'SELECT 1 FROM note_tags WHERE vault_id = ? AND tag_id = ? LIMIT 1',
-      )
-      .get(this.vaultId, id);
-    if (related) {
-      relationViolation();
-    }
+    this.connection()
+      .prepare('DELETE FROM note_tags WHERE vault_id = ? AND tag_id = ?')
+      .run(this.vaultId, id);
     this.connection()
       .prepare('DELETE FROM tags WHERE id = ? AND vault_id = ?')
       .run(id, this.vaultId);

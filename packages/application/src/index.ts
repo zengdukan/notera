@@ -3,6 +3,7 @@ export { ApplicationError, type ApplicationErrorCode } from './errors';
 export type {
   ContentSort,
   ContentSortField,
+  FavoriteNoteSummary,
   FolderSummary,
   ListChildrenInput,
   LocalNotesService,
