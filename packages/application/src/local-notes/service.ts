@@ -6,6 +6,13 @@ import type { VaultDatabase } from '@notera/storage-sqlcipher';
 import { ApplicationError } from '../errors';
 import type { ProfileSession } from '../session';
 import {
+  batchAddTags,
+  batchCopy,
+  batchMove,
+  batchRemoveTags,
+  batchTrash,
+} from './batch';
+import {
   createFolder,
   listChildren,
   moveFolder,
@@ -266,6 +273,32 @@ class SessionLocalNotesService implements LocalNotesService {
   purgeExpiredTrash() {
     return this.run('WRITE', (database) =>
       purgeExpiredTrash(database, this.now()),
+    );
+  }
+
+  batchMove(input: Parameters<LocalNotesService['batchMove']>[0]) {
+    return this.run('WRITE', (database) =>
+      batchMove(database, input, this.now()),
+    );
+  }
+
+  batchAddTags(input: Parameters<LocalNotesService['batchAddTags']>[0]) {
+    return this.run('WRITE', (database) => batchAddTags(database, input));
+  }
+
+  batchRemoveTags(input: Parameters<LocalNotesService['batchRemoveTags']>[0]) {
+    return this.run('WRITE', (database) => batchRemoveTags(database, input));
+  }
+
+  batchCopy(input: Parameters<LocalNotesService['batchCopy']>[0]) {
+    return this.run('WRITE', (database) =>
+      batchCopy(database, input, this.randomId, this.now()),
+    );
+  }
+
+  batchTrash(input: Parameters<LocalNotesService['batchTrash']>[0]) {
+    return this.run('WRITE', (database) =>
+      batchTrash(database, input, this.randomId, this.now()),
     );
   }
 }

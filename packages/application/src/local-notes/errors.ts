@@ -14,6 +14,7 @@ const DOMAIN_CODES: Readonly<Partial<Record<string, ApplicationErrorCode>>> = {
   INVALID_ENTITY_STATE: 'INVALID_ENTITY_STATE',
   TRASH_ENTRY_EXPIRED: 'TRASH_ENTRY_EXPIRED',
   TRASH_TARGET_REQUIRED: 'TRASH_TARGET_REQUIRED',
+  DUPLICATE_TARGET_ID: 'DUPLICATE_TARGET_ID',
 };
 
 const STORAGE_CODES: Readonly<Partial<Record<string, ApplicationErrorCode>>> = {

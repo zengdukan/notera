@@ -102,6 +102,9 @@ export interface TrashItem {
 }
 
 export type TreeEntrySummary = FolderSummary | NoteSummary;
+export type EntryRef =
+  | Readonly<{ kind: 'folder'; id: FolderId }>
+  | Readonly<{ kind: 'note'; id: NoteId }>;
 
 export interface ListChildrenInput {
   readonly parentFolderId: FolderId;
@@ -214,4 +217,23 @@ export interface LocalNotesService {
     trashEntryId: TrashEntryId,
   ): Promise<{ readonly deletedCount: number }>;
   purgeExpiredTrash(): Promise<{ readonly deletedCount: number }>;
+  batchMove(input: {
+    readonly targets: readonly EntryRef[];
+    readonly targetFolderId: FolderId;
+  }): Promise<void>;
+  batchAddTags(input: {
+    readonly noteIds: readonly NoteId[];
+    readonly tagIds: readonly TagId[];
+  }): Promise<void>;
+  batchRemoveTags(input: {
+    readonly noteIds: readonly NoteId[];
+    readonly tagIds: readonly TagId[];
+  }): Promise<void>;
+  batchCopy(input: {
+    readonly targets: readonly EntryRef[];
+    readonly targetFolderId: FolderId;
+  }): Promise<void>;
+  batchTrash(input: {
+    readonly targets: readonly EntryRef[];
+  }): Promise<{ readonly trashEntryIds: readonly TrashEntryId[] }>;
 }

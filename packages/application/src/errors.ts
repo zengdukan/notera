@@ -12,6 +12,7 @@ export type ApplicationErrorCode =
   | 'INVALID_ENTITY_STATE'
   | 'TRASH_ENTRY_EXPIRED'
   | 'TRASH_TARGET_REQUIRED'
+  | 'DUPLICATE_TARGET_ID'
   | 'WRONG_PASSWORD'
   | 'VAULT_META_INVALID'
   | 'CRYPTO_UNAVAILABLE'
@@ -38,6 +39,7 @@ const SAFE_MESSAGES: Readonly<Record<ApplicationErrorCode, string>> = {
   INVALID_ENTITY_STATE: 'The item is in an invalid state.',
   TRASH_ENTRY_EXPIRED: 'The trash entry has expired.',
   TRASH_TARGET_REQUIRED: 'An explicit restore target is required.',
+  DUPLICATE_TARGET_ID: 'A target identifier is duplicated.',
   WRONG_PASSWORD: 'The password is incorrect.',
   VAULT_META_INVALID: 'The profile metadata is invalid.',
   CRYPTO_UNAVAILABLE: 'Encryption is unavailable.',
