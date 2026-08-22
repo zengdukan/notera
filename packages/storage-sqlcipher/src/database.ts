@@ -15,6 +15,12 @@ import {
   ProfileMetadataRepository,
 } from './repositories/profile-metadata';
 import { asNoteReader, NoteRepository } from './repositories/notes';
+import { asTagReader, TagRepository } from './repositories/tags';
+import {
+  asFavoriteReader,
+  FavoriteRepository,
+} from './repositories/favorites';
+import { asHistoryReader, HistoryRepository } from './repositories/history';
 import {
   createCurrentSchema,
   CURRENT_SCHEMA_VERSION,
@@ -24,6 +30,9 @@ import type {
   CreateVaultDatabaseOptions,
   FolderReader,
   NoteReader,
+  TagReader,
+  FavoriteReader,
+  HistoryReader,
   OpenVaultDatabaseOptions,
   ProfileMetadataReader,
   VaultTransaction,
@@ -58,6 +67,12 @@ export class VaultDatabase {
 
   readonly notes: NoteReader;
 
+  readonly tags: TagReader;
+
+  readonly favorites: FavoriteReader;
+
+  readonly history: HistoryReader;
+
   private readonly vaultId: VaultId;
 
   constructor(connection: SqlcipherConnection, vaultId: VaultId) {
@@ -71,6 +86,23 @@ export class VaultDatabase {
     );
     this.notes = asNoteReader(
       new NoteRepository(() => this.requireConnection(), vaultId),
+    );
+    this.tags = asTagReader(
+      new TagRepository(() => this.requireConnection(), vaultId),
+    );
+    this.favorites = asFavoriteReader(
+      new FavoriteRepository(() => this.requireConnection(), vaultId),
+    );
+    const historyNotes = new NoteRepository(
+      () => this.requireConnection(),
+      vaultId,
+    );
+    this.history = asHistoryReader(
+      new HistoryRepository(
+        () => this.requireConnection(),
+        vaultId,
+        historyNotes,
+      ),
     );
   }
 
@@ -96,6 +128,11 @@ export class VaultDatabase {
       }
       this.requireConnection();
     };
+    const noteWriter = new NoteRepository(
+      () => this.requireConnection(),
+      this.vaultId,
+      guard,
+    );
     const transaction: VaultTransaction = {
       profileMetadata: new ProfileMetadataRepository(
         () => this.requireConnection(),
@@ -107,9 +144,21 @@ export class VaultDatabase {
         this.vaultId,
         guard,
       ),
-      notes: new NoteRepository(
+      notes: noteWriter,
+      tags: new TagRepository(
         () => this.requireConnection(),
         this.vaultId,
+        guard,
+      ),
+      favorites: new FavoriteRepository(
+        () => this.requireConnection(),
+        this.vaultId,
+        guard,
+      ),
+      history: new HistoryRepository(
+        () => this.requireConnection(),
+        this.vaultId,
+        noteWriter,
         guard,
       ),
     };

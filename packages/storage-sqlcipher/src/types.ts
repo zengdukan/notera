@@ -4,6 +4,12 @@ import type {
   ContentVersion,
   Note,
   NoteId,
+  Favorite,
+  NoteTag,
+  NoteVersion,
+  NoteVersionId,
+  Tag,
+  TagId,
   VaultId,
   VaultIdentity,
 } from '@notera/domain';
@@ -50,6 +56,9 @@ export interface VaultTransaction {
   readonly profileMetadata: ProfileMetadataWriter;
   readonly folders: FolderWriter;
   readonly notes: NoteWriter;
+  readonly tags: TagWriter;
+  readonly favorites: FavoriteWriter;
+  readonly history: HistoryWriter;
 }
 
 export interface NoteReader {
@@ -71,6 +80,45 @@ export interface NormalizedSearchText {
     start: number;
     end: number;
   }>[];
+}
+
+export interface TagReader {
+  get(id: TagId): Tag | undefined;
+  list(page: PageRequest): Page<Tag>;
+  listForNote(noteId: NoteId): readonly Tag[];
+}
+
+export interface TagWriter extends TagReader {
+  insert(tag: Tag): void;
+  replace(tag: Tag): void;
+  delete(id: TagId): void;
+  addToNote(value: NoteTag): void;
+  removeFromNote(noteId: NoteId, tagId: TagId): void;
+}
+
+export interface FavoriteReader {
+  list(page: PageRequest): Page<Favorite>;
+}
+
+export interface FavoriteWriter extends FavoriteReader {
+  insert(value: Favorite): void;
+  delete(noteId: NoteId): void;
+  replaceSortOrders(values: readonly Favorite[]): void;
+}
+
+export interface HistoryReader {
+  get(id: NoteVersionId): NoteVersion | undefined;
+  listForNote(noteId: NoteId, page: PageRequest): Page<NoteVersion>;
+}
+
+export interface HistoryWriter extends HistoryReader {
+  insert(version: NoteVersion): void;
+  restore(
+    version: NoteVersion,
+    protectionVersion: NoteVersion,
+    restoredNote: Note,
+    expectedContentVersion: ContentVersion,
+  ): void;
 }
 
 export interface CreateVaultDatabaseOptions {
