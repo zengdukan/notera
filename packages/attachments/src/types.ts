@@ -35,9 +35,29 @@ export interface ImportedBlob {
   readonly plaintextLength: number;
 }
 
+export interface OpenBlobReaderInput {
+  readonly vaultId: VaultId;
+  readonly blobId: BlobId;
+  readonly fileKey: Uint8Array;
+  readonly manifest: Uint8Array;
+  readonly signal?: AbortSignal;
+}
+
+export interface BlobReader {
+  stream(): AsyncIterable<Uint8Array>;
+  readChunk(index: number): Promise<Uint8Array>;
+  streamRange(
+    start: number,
+    endExclusive: number,
+  ): AsyncIterable<Uint8Array>;
+  close(): Promise<void>;
+}
+
 export interface AttachmentStore {
   readonly startupRecovery: StartupRecoveryReport;
   importBlob(input: ImportBlobInput): Promise<ImportedBlob>;
+  openReader(input: OpenBlobReaderInput): Promise<BlobReader>;
+  collectBlob(blobId: BlobId): Promise<void>;
   close(): Promise<void>;
 }
 import type { BlobId, VaultId } from '@notera/domain';

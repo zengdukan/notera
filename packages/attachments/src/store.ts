@@ -1,12 +1,18 @@
+import { unlink } from 'node:fs/promises';
+import { asBlobId, type BlobId } from '@notera/domain';
 import { AttachmentStorageError, mapAttachmentError } from './errors';
 import { combineAbortSignals } from './cancellation';
 import { importEncryptedBlob } from './importer';
+import { BlobLeaseRegistry } from './leases';
 import { createAttachmentPaths } from './paths';
+import { openBlobReader } from './reader';
 import { recoverStaging } from './recovery';
 import type {
   AttachmentStore,
+  BlobReader,
   ImportBlobInput,
   ImportedBlob,
+  OpenBlobReaderInput,
   StartupRecoveryReport,
 } from './types';
 
@@ -18,6 +24,10 @@ class LocalAttachmentStore implements AttachmentStore {
   private readonly closeController = new AbortController();
 
   private readonly activeImports = new Set<Promise<ImportedBlob>>();
+
+  private readonly readers = new Set<BlobReader>();
+
+  private readonly leases = new BlobLeaseRegistry();
 
   private closed = false;
 
@@ -52,15 +62,58 @@ class LocalAttachmentStore implements AttachmentStore {
     return operation;
   }
 
+  async openReader(input: OpenBlobReaderInput): Promise<BlobReader> {
+    if (this.closed) throw new AttachmentStorageError('STORE_CLOSED');
+    const reader = await openBlobReader(
+      {
+        paths: this.paths,
+        leases: this.leases,
+        storeSignal: this.closeController.signal,
+        onClosed: (closedReader) => this.readers.delete(closedReader),
+      },
+      input,
+    );
+    this.readers.add(reader);
+    return reader;
+  }
+
+  async collectBlob(value: BlobId): Promise<void> {
+    if (this.closed) throw new AttachmentStorageError('STORE_CLOSED');
+    let blobId: BlobId;
+    try {
+      blobId = asBlobId(value);
+    } catch {
+      throw new AttachmentStorageError('INVALID_ATTACHMENT_INPUT');
+    }
+    const finishDelete = this.leases.beginDelete(blobId);
+    try {
+      await unlink(this.paths.blobFile(blobId));
+    } catch (error) {
+      if (
+        typeof error !== 'object' ||
+        error === null ||
+        !('code' in error) ||
+        (error as Record<string, unknown>).code !== 'ENOENT'
+      ) {
+        throw mapAttachmentError(error);
+      }
+    } finally {
+      finishDelete();
+    }
+  }
+
   close(): Promise<void> {
     if (this.closeOperation) return this.closeOperation;
     this.closed = true;
     this.closeController.abort();
-    this.closeOperation = Promise.allSettled([...this.activeImports]).then(
-      () => {
-        openRoots.delete(this.paths.profileRoot);
-      },
-    );
+    const closeReaders = [...this.readers].map((reader) => reader.close());
+    this.closeOperation = Promise.allSettled([
+      ...this.activeImports,
+      ...closeReaders,
+    ]).then(() => {
+      this.leases.close();
+      openRoots.delete(this.paths.profileRoot);
+    });
     return this.closeOperation;
   }
 }
