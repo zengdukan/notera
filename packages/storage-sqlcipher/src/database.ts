@@ -4,6 +4,7 @@ import type { VaultId } from '@notera/domain';
 
 import { openNativeConnection, type SqlcipherConnection } from './connection';
 import { mapNativeError, StorageError } from './errors';
+import { checkIntegrity } from './integrity';
 import { PRODUCTION_MIGRATIONS } from './migrations/registry';
 import { runMigrations } from './migrations/runner';
 import {
@@ -38,6 +39,7 @@ import type {
   TagReader,
   FavoriteReader,
   HistoryReader,
+  IntegrityReport,
   TrashReader,
   AttachmentReader,
   SearchIndexReport,
@@ -251,6 +253,10 @@ export class VaultDatabase {
 
   checkSearchIndex(): SearchIndexReport {
     return checkSearchIndex(this.requireConnection(), this.vaultId);
+  }
+
+  checkIntegrity(): IntegrityReport {
+    return checkIntegrity(this.requireConnection(), this.vaultId);
   }
 
   rebuildSearchIndex(): void {

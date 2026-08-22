@@ -17,4 +17,19 @@ describe('workspace package resolution', () => {
       expect(workspacePackage).toBeDefined();
     },
   );
+
+  it('exposes storage integrity through the package without native internals', () => {
+    expect(storageSqlcipher.VaultDatabase.prototype.checkIntegrity).toBeInstanceOf(
+      Function,
+    );
+    expect(
+      (storageSqlcipher as Record<string, unknown>).openNativeConnection,
+    ).toBeUndefined();
+    expect(
+      (storageSqlcipher as Record<string, unknown>).CURRENT_SCHEMA_SQL,
+    ).toBeUndefined();
+    expect(
+      (storageSqlcipher as Record<string, unknown>).runMigrations,
+    ).toBeUndefined();
+  });
 });

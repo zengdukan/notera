@@ -129,6 +129,31 @@ export interface SearchIndexReport {
   readonly issues: readonly SearchIndexIssueCode[];
 }
 
+export type IntegrityIssueCode =
+  | 'SQLITE_INTEGRITY_FAILED'
+  | 'METADATA_INVALID'
+  | 'VAULT_MISMATCH'
+  | 'ROOT_FOLDER_INVALID'
+  | 'FOLDER_PARENT_MISSING'
+  | 'FOLDER_CYCLE'
+  | 'RELATION_ORPHANED'
+  | 'ENTITY_INVALID'
+  | 'ADF_INVALID'
+  | 'HISTORY_HASH_MISMATCH'
+  | 'ATTACHMENT_METADATA_INVALID'
+  | 'SEARCH_INDEX_INVALID';
+
+export interface IntegrityIssue {
+  readonly code: IntegrityIssueCode;
+  readonly table: string;
+  readonly entityId?: string;
+}
+
+export interface IntegrityReport {
+  readonly ok: boolean;
+  readonly issues: readonly IntegrityIssue[];
+}
+
 export interface TagReader {
   get(id: TagId): Tag | undefined;
   list(page: PageRequest): Page<Tag>;
