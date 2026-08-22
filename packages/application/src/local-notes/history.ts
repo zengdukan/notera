@@ -176,8 +176,7 @@ export function restoreHistory(
   const noteId = asNoteId(input?.noteId);
   const expected = asContentVersion(input?.expectedContentVersion);
   return database.transaction((transaction) => {
-    const note = transaction.notes.get(noteId);
-    if (note === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
+    const note = getActiveNoteEntity(database, noteId);
     const version = transaction.history.get(asNoteVersionId(input?.versionId));
     if (version === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
     const plan = restoreNoteVersion({

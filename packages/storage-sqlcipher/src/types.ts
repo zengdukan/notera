@@ -222,6 +222,8 @@ export interface HistoryWriter extends HistoryReader {
 export interface TrashReader {
   get(id: TrashEntryId): TrashEntry | undefined;
   list(page: PageRequest): Page<TrashEntry>;
+  listGroup(rootEntryId: TrashEntryId): readonly TrashEntry[];
+  listExpiredGroups(now: Timestamp): readonly TrashEntry[];
 }
 
 export interface TrashRestoreStoragePlan {

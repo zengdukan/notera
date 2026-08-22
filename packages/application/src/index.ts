@@ -16,6 +16,7 @@ export type {
   SortDirection,
   TreeEntrySummary,
   TagSummary,
+  TrashItem,
   VersionRef,
 } from './local-notes/types';
 export type {

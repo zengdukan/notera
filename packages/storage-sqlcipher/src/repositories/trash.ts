@@ -3,6 +3,7 @@ import type {
   TrashEntry,
   TrashEntryId,
   TrashPlan,
+  Timestamp,
   VaultId,
 } from '@notera/domain';
 
@@ -56,7 +57,7 @@ export class TrashRepository implements TrashWriter {
       TRASH_CURSOR,
       `vault:${this.vaultId}`,
     );
-    const parameters: unknown[] = [this.vaultId];
+    const parameters: unknown[] = [this.vaultId, this.vaultId];
     let keyset = '';
     if (cursor) {
       keyset = 'AND (deleted_at > ? OR (deleted_at = ? AND id > ?))';
@@ -65,7 +66,13 @@ export class TrashRepository implements TrashWriter {
     parameters.push(page.limit + 1);
     const rows = this.connection()
       .prepare<TrashEntryRow>(
-        `SELECT ${TRASH_COLUMNS} FROM trash_entries WHERE vault_id = ? ${keyset}
+        `SELECT ${TRASH_COLUMNS.replaceAll(/\b([a-z_]+)\b/g, 't.$1')}
+         FROM trash_entries t WHERE t.vault_id = ?
+         AND NOT EXISTS (
+           SELECT 1 FROM trash_entries parent
+           WHERE parent.vault_id = ? AND parent.object_type = 'FOLDER'
+             AND parent.object_id = t.original_parent_id
+         ) ${keyset}
        ORDER BY deleted_at, id LIMIT ?`,
       )
       .all(...parameters);
@@ -82,6 +89,99 @@ export class TrashRepository implements TrashWriter {
           }
         : {}),
     };
+  }
+
+  private topLevel(id: TrashEntryId): TrashEntry | undefined {
+    const row = this.connection()
+      .prepare<TrashEntryRow>(
+        `SELECT ${TRASH_COLUMNS.replaceAll(/\b([a-z_]+)\b/g, 't.$1')}
+         FROM trash_entries t WHERE t.id = ? AND t.vault_id = ?
+         AND NOT EXISTS (
+           SELECT 1 FROM trash_entries parent
+           WHERE parent.vault_id = t.vault_id
+             AND parent.object_type = 'FOLDER'
+             AND parent.object_id = t.original_parent_id
+         )`,
+      )
+      .get(id, this.vaultId);
+    return row ? hydrateTrashEntry(row) : undefined;
+  }
+
+  listGroup(rootEntryId: TrashEntryId): readonly TrashEntry[] {
+    this.guard();
+    const root = this.topLevel(rootEntryId);
+    if (root === undefined) return Object.freeze([]);
+    if (root.objectType === 'NOTE') return Object.freeze([root]);
+    const rows = this.connection()
+      .prepare<TrashEntryRow>(
+        `WITH RECURSIVE subtree(id) AS (
+           SELECT id FROM folders WHERE id = ? AND vault_id = ?
+           UNION
+           SELECT f.id FROM folders f JOIN subtree s ON f.parent_id = s.id
+           WHERE f.vault_id = ?
+         )
+         SELECT ${TRASH_COLUMNS.replaceAll(/\b([a-z_]+)\b/g, 't.$1')}
+         FROM trash_entries t
+         WHERE t.vault_id = ? AND (
+           (t.object_type = 'FOLDER' AND t.object_id IN (SELECT id FROM subtree))
+           OR
+           (t.object_type = 'NOTE' AND EXISTS (
+             SELECT 1 FROM notes n WHERE n.id = t.object_id
+               AND n.vault_id = t.vault_id
+               AND n.folder_id IN (SELECT id FROM subtree)
+           ))
+         )
+         ORDER BY t.deleted_at, t.id`,
+      )
+      .all(root.objectId, this.vaultId, this.vaultId, this.vaultId);
+    return Object.freeze(rows.map(hydrateTrashEntry));
+  }
+
+  listExpiredGroups(now: Timestamp): readonly TrashEntry[] {
+    this.guard();
+    const roots = this.connection()
+      .prepare<TrashEntryRow>(
+        `SELECT ${TRASH_COLUMNS.replaceAll(/\b([a-z_]+)\b/g, 't.$1')}
+         FROM trash_entries t WHERE t.vault_id = ? AND t.expires_at <= ?
+         AND NOT EXISTS (
+           SELECT 1 FROM trash_entries parent
+           WHERE parent.vault_id = t.vault_id
+             AND parent.object_type = 'FOLDER'
+             AND parent.object_id = t.original_parent_id
+         ) ORDER BY t.deleted_at, t.id`,
+      )
+      .all(this.vaultId, now)
+      .map(hydrateTrashEntry);
+    return Object.freeze(roots.flatMap((root) => this.listGroup(root.id)));
+  }
+
+  private assertCompleteGroups(entries: readonly TrashEntry[]): void {
+    if (entries.length === 0) return;
+    const ids = new Set(entries.map(({ id }) => id));
+    if (ids.size !== entries.length) relationViolation();
+    const roots = entries.filter(({ id }) => this.topLevel(id) !== undefined);
+    const expected = roots.flatMap(({ id }) => this.listGroup(id));
+    if (
+      roots.length === 0 ||
+      expected.length !== entries.length ||
+      expected.some(({ id }) => !ids.has(id))
+    ) {
+      relationViolation();
+    }
+    entries.forEach((entry) => {
+      const stored = this.get(entry.id);
+      if (
+        stored === undefined ||
+        stored.vaultId !== entry.vaultId ||
+        stored.objectType !== entry.objectType ||
+        stored.objectId !== entry.objectId ||
+        stored.originalParentId !== entry.originalParentId ||
+        stored.deletedAt !== entry.deletedAt ||
+        stored.expiresAt !== entry.expiresAt
+      ) {
+        relationViolation();
+      }
+    });
   }
 
   apply(plan: TrashPlan): void {
@@ -144,22 +244,46 @@ export class TrashRepository implements TrashWriter {
 
   restore(input: TrashRestoreStoragePlan): void {
     this.guard();
+    this.assertCompleteGroups(input.entries);
+    const groupFolderIds = new Set(
+      input.entries
+        .filter(({ objectType }) => objectType === 'FOLDER')
+        .map(({ objectId }) => objectId),
+    );
     input.entries.forEach((entry) => {
       const stored = this.get(entry.id);
       const targetId = input.targetFolderIds.get(entry.id);
       if (!stored || !targetId || input.now >= stored.expiresAt)
         relationViolation();
-      const target = this.connection()
-        .prepare(
-          `SELECT 1 FROM folders f WHERE f.id = ? AND f.vault_id = ?
-         AND NOT EXISTS (SELECT 1 FROM trash_entries t
-           WHERE t.vault_id = f.vault_id AND t.object_type = 'FOLDER'
-             AND t.object_id = f.id)`,
-        )
-        .get(targetId, this.vaultId);
+      const target = groupFolderIds.has(targetId)
+        ? { found: 1 }
+        : this.connection()
+            .prepare(
+              `SELECT 1 FROM folders f WHERE f.id = ? AND f.vault_id = ?
+               AND NOT EXISTS (SELECT 1 FROM trash_entries t
+                 WHERE t.vault_id = f.vault_id AND t.object_type = 'FOLDER'
+                   AND t.object_id = f.id)`,
+            )
+            .get(targetId, this.vaultId);
       if (!target) relationViolation();
     });
-    input.entries.forEach((entry) => {
+    const pendingFolders = input.entries.filter(
+      ({ objectType }) => objectType === 'FOLDER',
+    );
+    const ordered: TrashEntry[] = [];
+    while (pendingFolders.length > 0) {
+      const pendingIds = new Set(pendingFolders.map(({ objectId }) => objectId));
+      const index = pendingFolders.findIndex((entry) => {
+        const target = input.targetFolderIds.get(entry.id);
+        return target !== undefined && !pendingIds.has(target);
+      });
+      if (index < 0) relationViolation();
+      ordered.push(...pendingFolders.splice(index, 1));
+    }
+    ordered.push(
+      ...input.entries.filter(({ objectType }) => objectType === 'NOTE'),
+    );
+    ordered.forEach((entry) => {
       const targetId = input.targetFolderIds.get(entry.id) as FolderId;
       if (entry.objectType === 'NOTE') {
         this.connection()
@@ -190,6 +314,7 @@ export class TrashRepository implements TrashWriter {
 
   deletePermanent(entries: readonly TrashEntry[]): void {
     this.guard();
+    this.assertCompleteGroups(entries);
     const folderIds = new Set<string>(
       entries
         .filter(({ objectType }) => objectType === 'FOLDER')

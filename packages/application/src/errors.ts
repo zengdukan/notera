@@ -10,6 +10,8 @@ export type ApplicationErrorCode =
   | 'CONTENT_VERSION_OVERFLOW'
   | 'VERSION_NOTE_MISMATCH'
   | 'INVALID_ENTITY_STATE'
+  | 'TRASH_ENTRY_EXPIRED'
+  | 'TRASH_TARGET_REQUIRED'
   | 'WRONG_PASSWORD'
   | 'VAULT_META_INVALID'
   | 'CRYPTO_UNAVAILABLE'
@@ -34,6 +36,8 @@ const SAFE_MESSAGES: Readonly<Record<ApplicationErrorCode, string>> = {
   CONTENT_VERSION_OVERFLOW: 'The note content version cannot be incremented.',
   VERSION_NOTE_MISMATCH: 'The version does not belong to the note.',
   INVALID_ENTITY_STATE: 'The item is in an invalid state.',
+  TRASH_ENTRY_EXPIRED: 'The trash entry has expired.',
+  TRASH_TARGET_REQUIRED: 'An explicit restore target is required.',
   WRONG_PASSWORD: 'The password is incorrect.',
   VAULT_META_INVALID: 'The profile metadata is invalid.',
   CRYPTO_UNAVAILABLE: 'Encryption is unavailable.',

@@ -57,9 +57,7 @@ export function createNote(
 }
 
 export function getNote(database: VaultDatabase, value: unknown): NoteDetail {
-  const note = database.notes.get(asNoteId(value));
-  if (note === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
-  return noteDetail(database, note);
+  return noteDetail(database, getActiveNoteEntity(database, value));
 }
 
 export function getActiveNoteEntity(
@@ -71,14 +69,25 @@ export function getActiveNoteEntity(
   if (note === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
   let cursor: string | undefined;
   do {
-    const page = database.notes.listByFolder(note.folderId, {
+    const page = database.trash.list({
       limit: 100,
       ...(cursor === undefined ? {} : { cursor }),
     });
-    if (page.items.some(({ id }) => id === note.id)) return note;
+    if (
+      page.items.some((root) =>
+        database.trash
+          .listGroup(root.id)
+          .some(
+            (entry) =>
+              entry.objectType === 'NOTE' && entry.objectId === note.id,
+          ),
+      )
+    ) {
+      throw new ApplicationError('ENTITY_NOT_FOUND');
+    }
     cursor = page.nextCursor;
   } while (cursor !== undefined);
-  throw new ApplicationError('ENTITY_NOT_FOUND');
+  return note;
 }
 
 export function saveDraft(
@@ -98,8 +107,7 @@ export function saveDraft(
   const title = checkedTitle(input?.title);
   const document = asAdfDocument(input?.document);
   const updated = database.transaction((transaction) => {
-    const current = transaction.notes.get(noteId);
-    if (current === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
+    const current = getActiveNoteEntity(database, noteId);
     const next = updateNoteContent(current, { title, document, updatedAt: now });
     transaction.notes.replaceContent(next, expectedContentVersion);
     return next;
@@ -119,8 +127,7 @@ export function moveNote(
   const noteId = asNoteId(input?.noteId);
   const targetFolderId = asFolderId(input?.targetFolderId);
   const moved = database.transaction((transaction) => {
-    const current = transaction.notes.get(noteId);
-    if (current === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
+    const current = getActiveNoteEntity(database, noteId);
     const targetFolder = transaction.folders.get(targetFolderId);
     if (targetFolder === undefined) {
       throw new ApplicationError('PARENT_FOLDER_INVALID');
@@ -146,8 +153,7 @@ export function copyNote(
   const noteId = asNoteId(input?.noteId);
   const targetFolderId = asFolderId(input?.targetFolderId);
   const copied = database.transaction((transaction) => {
-    const source = transaction.notes.get(noteId);
-    if (source === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
+    const source = getActiveNoteEntity(database, noteId);
     const targetFolder = transaction.folders.get(targetFolderId);
     if (targetFolder === undefined) {
       throw new ApplicationError('PARENT_FOLDER_INVALID');

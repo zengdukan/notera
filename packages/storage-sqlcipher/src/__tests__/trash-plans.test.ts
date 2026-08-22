@@ -1,17 +1,22 @@
 import type {
   CurrentNoteAttachmentReference,
+  Folder,
   Note,
   TrashEntry,
   VaultIdentity,
 } from '@notera/domain';
 import {
   asAdfDocument,
+  asFolderId,
+  asFolderName,
   asNoteId,
   asSortOrder,
   asTimestamp,
   asTrashEntryId,
   createNote,
   createCurrentNoteAttachmentReference,
+  createRegularFolder,
+  trashFolderTree,
   trashNote,
 } from '@notera/domain';
 
@@ -31,6 +36,10 @@ interface TrashApi {
   list(page: { cursor?: string; limit: number }): {
     items: readonly TrashEntry[];
   };
+  listGroup(
+    rootEntryId: ReturnType<typeof asTrashEntryId>,
+  ): readonly TrashEntry[];
+  listExpiredGroups(now: ReturnType<typeof asTimestamp>): readonly TrashEntry[];
   apply(plan: { entries: readonly TrashEntry[] }): void;
   restore(input: {
     entries: readonly TrashEntry[];
@@ -41,10 +50,11 @@ interface TrashApi {
 }
 
 interface VaultApi {
-  readonly trash: Pick<TrashApi, 'list'>;
+  readonly trash: Pick<TrashApi, 'list' | 'listGroup' | 'listExpiredGroups'>;
   readonly notes: { get(id: ReturnType<typeof asNoteId>): Note | undefined };
   transaction<Result>(
     callback: (transaction: {
+      folders: { insert(folder: Folder): void };
       notes: { insert(note: Note): void };
       trash: TrashApi;
       contentPlans: {
@@ -127,6 +137,59 @@ afterEach(() => {
 });
 
 describe('trash and content plans', () => {
+  it('lists only top-level entries and expands complete expired groups', () => {
+    const { database } = createVault();
+    const parent = createRegularFolder({
+      id: asFolderId('74000000-0000-4000-8000-000000000001'),
+      vaultId: TEST_VAULT_ID,
+      parentId: TEST_ROOT_FOLDER_ID,
+      name: asFolderName('Parent'),
+      sortOrder: asSortOrder(0),
+      createdAt: asTimestamp(1),
+      updatedAt: asTimestamp(1),
+    });
+    const child = createRegularFolder({
+      id: asFolderId('74000000-0000-4000-8000-000000000002'),
+      vaultId: TEST_VAULT_ID,
+      parentId: parent.id,
+      name: asFolderName('Child'),
+      sortOrder: asSortOrder(0),
+      createdAt: asTimestamp(2),
+      updatedAt: asTimestamp(2),
+    });
+    const nested = { ...note(1), folderId: child.id };
+    const plan = trashFolderTree({
+      sourceFolderId: parent.id,
+      folders: [parent, child],
+      notes: [nested],
+      folderTrashEntryIds: new Map([
+        [parent.id, asTrashEntryId('75000000-0000-4000-8000-000000000001')],
+        [child.id, asTrashEntryId('75000000-0000-4000-8000-000000000002')],
+      ]),
+      noteTrashEntryIds: new Map([
+        [nested.id, asTrashEntryId('75000000-0000-4000-8000-000000000003')],
+      ]),
+      deletedAt: asTimestamp(10),
+    });
+    database.transaction((transaction) => {
+      transaction.folders.insert(parent);
+      transaction.folders.insert(child);
+      transaction.notes.insert(nested);
+      transaction.trash.apply(plan);
+    });
+
+    const root = plan.entries.find(({ objectId }) => objectId === parent.id);
+    const internal = plan.entries.find(({ objectId }) => objectId === child.id);
+    if (root === undefined || internal === undefined) throw new Error('entries');
+    expect(database.trash.list({ limit: 10 }).items).toEqual([root]);
+    expect(database.trash.listGroup(root.id)).toHaveLength(3);
+    expect(database.trash.listGroup(internal.id)).toEqual([]);
+    expect(
+      database.trash.listExpiredGroups(asTimestamp(root.expiresAt - 1)),
+    ).toEqual([]);
+    expect(database.trash.listExpiredGroups(root.expiresAt)).toHaveLength(3);
+  });
+
   it('trashes and restores a Note with its FTS row atomically', () => {
     const { database, filePath } = createVault();
     const stored = note(1);

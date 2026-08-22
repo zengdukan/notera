@@ -91,6 +91,16 @@ export interface HistoryRestoreResult {
   readonly protectionVersionId: NoteVersionId;
 }
 
+export interface TrashItem {
+  readonly trashEntryId: TrashEntryId;
+  readonly objectId: FolderId | NoteId;
+  readonly kind: 'folder' | 'note';
+  readonly displayName: string;
+  readonly deletedAt: Timestamp;
+  readonly expiresAt: Timestamp;
+  readonly originalParentAvailable: boolean;
+}
+
 export type TreeEntrySummary = FolderSummary | NoteSummary;
 
 export interface ListChildrenInput {
@@ -114,6 +124,9 @@ export interface LocalNotesService {
     readonly folderId: FolderId;
     readonly targetParentId: FolderId;
   }): Promise<FolderSummary>;
+  trashFolder(
+    folderId: FolderId,
+  ): Promise<{ readonly trashEntryId: TrashEntryId }>;
   createNote(input: {
     readonly folderId: FolderId;
     readonly title?: string;
@@ -192,4 +205,13 @@ export interface LocalNotesService {
     readonly versionId: NoteVersionId;
     readonly targetFolderId: FolderId;
   }): Promise<NoteSummary>;
+  listTrash(input: PageRequest): Promise<Page<TrashItem>>;
+  restoreTrash(input: {
+    readonly trashEntryId: TrashEntryId;
+    readonly targetFolderId?: FolderId;
+  }): Promise<void>;
+  deleteTrashPermanent(
+    trashEntryId: TrashEntryId,
+  ): Promise<{ readonly deletedCount: number }>;
+  purgeExpiredTrash(): Promise<{ readonly deletedCount: number }>;
 }

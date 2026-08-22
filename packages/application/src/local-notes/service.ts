@@ -44,6 +44,13 @@ import {
   removeTagFromNote,
   renameTag,
 } from './tags';
+import {
+  deleteTrashPermanent,
+  listTrash,
+  purgeExpiredTrash,
+  restoreTrash,
+  trashFolder,
+} from './trash';
 import type {
   FolderSummary,
   ListChildrenInput,
@@ -101,6 +108,12 @@ class SessionLocalNotesService implements LocalNotesService {
   moveFolder(input: Parameters<LocalNotesService['moveFolder']>[0]) {
     return this.run('WRITE', (database) =>
       moveFolder(database, input, this.now()),
+    );
+  }
+
+  trashFolder(folderId: Parameters<LocalNotesService['trashFolder']>[0]) {
+    return this.run('WRITE', (database) =>
+      trashFolder(database, folderId, this.randomId, this.now()),
     );
   }
 
@@ -229,6 +242,30 @@ class SessionLocalNotesService implements LocalNotesService {
   copyHistory(input: Parameters<LocalNotesService['copyHistory']>[0]) {
     return this.run('WRITE', (database) =>
       copyHistory(database, input, this.randomId(), this.now()),
+    );
+  }
+
+  listTrash(input: Parameters<LocalNotesService['listTrash']>[0]) {
+    return this.run('READ', (database) => listTrash(database, input));
+  }
+
+  restoreTrash(input: Parameters<LocalNotesService['restoreTrash']>[0]) {
+    return this.run('WRITE', (database) =>
+      restoreTrash(database, input, this.now()),
+    );
+  }
+
+  deleteTrashPermanent(
+    trashEntryId: Parameters<LocalNotesService['deleteTrashPermanent']>[0],
+  ) {
+    return this.run('WRITE', (database) =>
+      deleteTrashPermanent(database, trashEntryId),
+    );
+  }
+
+  purgeExpiredTrash() {
+    return this.run('WRITE', (database) =>
+      purgeExpiredTrash(database, this.now()),
     );
   }
 }
