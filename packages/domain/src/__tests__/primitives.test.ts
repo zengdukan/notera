@@ -122,4 +122,25 @@ describe('domain primitives', () => {
 
     expect(() => asAdfDocument(cyclic)).toThrow(DomainError);
   });
+
+  it('clones and freezes ADF deeper than the former nesting limit', () => {
+    const levels = 20_000;
+    let nested: unknown = 'leaf';
+    for (let index = 0; index < levels; index += 1) {
+      nested = [nested];
+    }
+
+    const document = asAdfDocument({
+      type: 'doc',
+      version: 1,
+      content: [nested],
+    });
+    let cursor: unknown = document.content?.[0];
+    for (let index = 0; index < levels; index += 1) {
+      expect(Object.isFrozen(cursor)).toBe(true);
+      cursor = (cursor as readonly unknown[])[0];
+    }
+
+    expect(cursor).toBe('leaf');
+  });
 });

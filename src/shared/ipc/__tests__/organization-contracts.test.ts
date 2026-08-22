@@ -223,6 +223,23 @@ describe('search contract', () => {
     expect(searchResultSchema.parse(validResult)).toEqual(validResult);
   });
 
+  it('accepts an optional folder subtree scope', () => {
+    expect(
+      searchContracts.query.request.parse({
+        query: 'roadmap',
+        folderId: uuid(2),
+        limit: 10,
+      }),
+    ).toEqual({ query: 'roadmap', folderId: uuid(2), limit: 10 });
+    expect(
+      searchContracts.query.request.safeParse({
+        query: 'roadmap',
+        folderId: 'not-a-uuid',
+        limit: 10,
+      }).success,
+    ).toBe(false);
+  });
+
   it('rejects empty queries, query internals and invalid highlights', () => {
     expect(
       searchContracts.query.request.safeParse({ query: '', limit: 10 }).success,

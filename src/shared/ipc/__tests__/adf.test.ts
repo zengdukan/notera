@@ -1,9 +1,8 @@
-import {
-  adfDocumentSchema,
-  MAX_ADF_BYTES,
-  MAX_ADF_DEPTH,
-  MAX_ADF_NODES,
-} from '../adf';
+import { adfDocumentSchema } from '../adf';
+
+const LEGACY_MAX_ADF_BYTES = 8 * 1024 * 1024;
+const LEGACY_MAX_ADF_NODES = 100_000;
+const LEGACY_MAX_ADF_DEPTH = 128;
 
 function nestedArray(levels: number): unknown {
   let value: unknown = 'leaf';
@@ -69,49 +68,44 @@ describe('ADF document schema', () => {
     expect(() => adfDocumentSchema.parse(accessor)).toThrow();
   });
 
-  it('enforces the exact UTF-8 byte limit', () => {
-    const overhead = new TextEncoder().encode(
-      JSON.stringify({ type: 'doc', version: 1, content: [''] }),
-    ).byteLength;
-    const atLimit = {
+  it('accepts documents larger than the former UTF-8 byte limit', () => {
+    const document = {
       type: 'doc',
       version: 1,
-      content: ['x'.repeat(MAX_ADF_BYTES - overhead)],
-    };
-    const overLimit = {
-      ...atLimit,
-      content: ['x'.repeat(MAX_ADF_BYTES - overhead + 1)],
+      content: ['x'.repeat(LEGACY_MAX_ADF_BYTES + 1)],
     };
 
-    expect(adfDocumentSchema.safeParse(atLimit).success).toBe(true);
-    expect(adfDocumentSchema.safeParse(overLimit).success).toBe(false);
+    expect(adfDocumentSchema.safeParse(document).success).toBe(true);
   });
 
-  it('enforces the exact node and nesting limits without stack overflow', () => {
-    const atNodeLimit = {
+  it('accepts documents with more values than the former node limit', () => {
+    const document = {
       type: 'doc',
       version: 1,
-      content: Array.from({ length: MAX_ADF_NODES - 4 }, () => null),
-    };
-    const overNodeLimit = {
-      type: 'doc',
-      version: 1,
-      content: Array.from({ length: MAX_ADF_NODES - 3 }, () => null),
-    };
-    const atDepthLimit = {
-      type: 'doc',
-      version: 1,
-      content: [nestedArray(MAX_ADF_DEPTH - 2)],
-    };
-    const overDepthLimit = {
-      type: 'doc',
-      version: 1,
-      content: [nestedArray(MAX_ADF_DEPTH - 1)],
+      content: Array.from({ length: LEGACY_MAX_ADF_NODES + 1 }, () => null),
     };
 
-    expect(adfDocumentSchema.safeParse(atNodeLimit).success).toBe(true);
-    expect(adfDocumentSchema.safeParse(overNodeLimit).success).toBe(false);
-    expect(adfDocumentSchema.safeParse(atDepthLimit).success).toBe(true);
-    expect(adfDocumentSchema.safeParse(overDepthLimit).success).toBe(false);
+    expect(adfDocumentSchema.safeParse(document).success).toBe(true);
+  });
+
+  it('accepts documents deeper than the former nesting limit', () => {
+    const document = {
+      type: 'doc',
+      version: 1,
+      content: [nestedArray(LEGACY_MAX_ADF_DEPTH + 1)],
+    };
+
+    expect(adfDocumentSchema.safeParse(document).success).toBe(true);
+  });
+
+  it('accepts repeated non-cyclic object references', () => {
+    const paragraph = { type: 'paragraph', content: [] };
+    const document = {
+      type: 'doc',
+      version: 1,
+      content: [paragraph, paragraph],
+    };
+
+    expect(adfDocumentSchema.safeParse(document).success).toBe(true);
   });
 });

@@ -1,9 +1,5 @@
 import { z } from 'zod';
 
-export const MAX_ADF_BYTES = 8 * 1024 * 1024;
-export const MAX_ADF_NODES = 100_000;
-export const MAX_ADF_DEPTH = 128;
-
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue =
   | JsonPrimitive
@@ -17,10 +13,17 @@ export interface AdfDocument {
   readonly [key: string]: JsonValue | undefined;
 }
 
-interface Frame {
+interface VisitFrame {
+  readonly kind: 'VISIT';
   readonly value: unknown;
-  readonly depth: number;
 }
+
+interface ExitFrame {
+  readonly kind: 'EXIT';
+  readonly value: object;
+}
+
+type Frame = VisitFrame | ExitFrame;
 
 function isPlainObject(value: object): boolean {
   const prototype = Object.getPrototypeOf(value);
@@ -30,7 +33,6 @@ function isPlainObject(value: object): boolean {
 function validateArray(
   value: readonly unknown[],
   stack: Frame[],
-  depth: number,
 ) {
   const keys = Reflect.ownKeys(value);
   if (
@@ -48,13 +50,21 @@ function validateArray(
       if (!Object.prototype.hasOwnProperty.call(value, index)) {
         return false;
       }
-      stack.push({ value: value[index], depth: depth + 1 });
+      const descriptor = Object.getOwnPropertyDescriptor(value, index);
+      if (
+        !descriptor ||
+        !descriptor.enumerable ||
+        !Object.prototype.hasOwnProperty.call(descriptor, 'value')
+      ) {
+        return false;
+      }
+      stack.push({ kind: 'VISIT', value: descriptor.value });
       return true;
     },
   );
 }
 
-function validateObject(value: object, stack: Frame[], depth: number): boolean {
+function validateObject(value: object, stack: Frame[]): boolean {
   if (!isPlainObject(value)) {
     return false;
   }
@@ -71,15 +81,14 @@ function validateObject(value: object, stack: Frame[], depth: number): boolean {
     ) {
       return false;
     }
-    stack.push({ value: descriptor.value, depth: depth + 1 });
+    stack.push({ kind: 'VISIT', value: descriptor.value });
     return true;
   });
 }
 
-function isBoundedJson(value: unknown): value is JsonValue {
-  const stack: Frame[] = [{ value, depth: 0 }];
-  const seen = new WeakSet<object>();
-  let nodes = 0;
+function isJsonValue(value: unknown): value is JsonValue {
+  const stack: Frame[] = [{ kind: 'VISIT', value }];
+  const activeAncestors = new WeakSet<object>();
 
   try {
     // An explicit stack is required so malicious deep ADF cannot overflow the
@@ -88,9 +97,9 @@ function isBoundedJson(value: unknown): value is JsonValue {
     // eslint-disable-next-line no-restricted-syntax
     while (stack.length > 0) {
       const frame = stack.pop() as Frame;
-      nodes += 1;
-      if (nodes > MAX_ADF_NODES || frame.depth > MAX_ADF_DEPTH) {
-        return false;
+      if (frame.kind === 'EXIT') {
+        activeAncestors.delete(frame.value);
+        continue;
       }
 
       if (
@@ -104,33 +113,32 @@ function isBoundedJson(value: unknown): value is JsonValue {
           return false;
         }
       } else {
-        if (typeof frame.value !== 'object' || seen.has(frame.value)) {
+        if (
+          typeof frame.value !== 'object' ||
+          activeAncestors.has(frame.value)
+        ) {
           return false;
         }
 
-        seen.add(frame.value);
+        activeAncestors.add(frame.value);
+        stack.push({ kind: 'EXIT', value: frame.value });
         if (Array.isArray(frame.value)) {
-          if (!validateArray(frame.value, stack, frame.depth)) {
+          if (!validateArray(frame.value, stack)) {
             return false;
           }
-        } else if (!validateObject(frame.value, stack, frame.depth)) {
+        } else if (!validateObject(frame.value, stack)) {
           return false;
         }
       }
     }
-
-    const serialized = JSON.stringify(value);
-    return (
-      typeof serialized === 'string' &&
-      new TextEncoder().encode(serialized).byteLength <= MAX_ADF_BYTES
-    );
+    return true;
   } catch {
     return false;
   }
 }
 
 function isAdfDocument(value: unknown): value is AdfDocument {
-  if (!isBoundedJson(value) || value === null || Array.isArray(value)) {
+  if (!isJsonValue(value) || value === null || Array.isArray(value)) {
     return false;
   }
 

@@ -50,9 +50,17 @@ const querySchema = limitedUnicodeString(500).refine(
 export const searchQuery = defineRequestContract({
   key: 'search.query',
   channel: 'notera:search:query',
-  request: cursorPageRequestSchema.extend({ query: querySchema }),
+  request: cursorPageRequestSchema.extend({
+    query: querySchema,
+    folderId: uuidSchema.optional(),
+  }),
   data: cursorPageSchema(searchResultSchema),
-  errors: ['PROFILE_LOCKED', 'INVALID_CURSOR', 'IPC_OPERATION_FAILED'],
+  errors: [
+    'PROFILE_LOCKED',
+    'ENTITY_NOT_FOUND',
+    'INVALID_CURSOR',
+    'IPC_OPERATION_FAILED',
+  ],
 });
 
 export const searchContracts = { query: searchQuery } as const;
