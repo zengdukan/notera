@@ -59,7 +59,7 @@ export function paginateCatalog(
     start = position + 1;
   }
   const selected = entries.slice(start, start + input.limit);
-  const items = selected.map((entry) =>
+  const items = selected.map(({ sortOrder: _sortOrder, ...entry }) =>
     Object.freeze({ ...entry, isCurrent: entry.localProfileId === currentId }),
   );
   const last = selected.at(-1);

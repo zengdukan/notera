@@ -1,6 +1,7 @@
 import type { AttachmentStore } from '@notera/attachments';
 import {
   asLocalProfileId,
+  asFolderId,
   asVaultId,
 } from '@notera/domain';
 import type { VaultDatabase } from '@notera/storage-sqlcipher';
@@ -10,6 +11,7 @@ import { createProfileSession } from '../session';
 
 const LOCAL_ID = asLocalProfileId('30000000-0000-4000-8000-000000000001');
 const VAULT_ID = asVaultId('30000000-0000-4000-8000-000000000002');
+const ROOT_ID = asFolderId('30000000-0000-4000-8000-000000000003');
 
 function deferred(): {
   readonly promise: Promise<void>;
@@ -56,6 +58,7 @@ function create(options: Parameters<typeof resources>[0] = {}) {
     {
       localProfileId: LOCAL_ID,
       vaultId: VAULT_ID,
+      rootFolderId: ROOT_ID,
       displayName: 'Profile',
       databaseKey,
       vaultKey,
@@ -178,6 +181,7 @@ describe('ProfileSession', () => {
       createProfileSession({
         localProfileId: LOCAL_ID,
         vaultId: VAULT_ID,
+        rootFolderId: ROOT_ID,
         displayName: 'Profile',
         databaseKey: new Uint8Array(31),
         vaultKey: new Uint8Array(32),

@@ -4,6 +4,7 @@ import {
   asLocalProfileId,
   asVaultId,
   type LocalProfileId,
+  type FolderId,
   type VaultId,
 } from '@notera/domain';
 import type { VaultDatabase } from '@notera/storage-sqlcipher';
@@ -30,6 +31,7 @@ export interface CreateProfileSessionInput {
   readonly localProfileId: LocalProfileId;
   readonly vaultId: VaultId;
   readonly displayName: string;
+  readonly rootFolderId: FolderId;
   readonly databaseKey: Uint8Array;
   readonly vaultKey: Uint8Array;
   readonly database: VaultDatabase;
@@ -80,6 +82,7 @@ class OwnedProfileSession implements ProfileSession {
         localProfileId: asLocalProfileId(input.localProfileId),
         vaultId: asVaultId(input.vaultId),
         displayName: displayName(input.displayName),
+        rootFolderId: input.rootFolderId,
       });
     } catch (error) {
       if (error instanceof ApplicationError) throw error;

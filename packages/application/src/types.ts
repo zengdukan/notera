@@ -17,7 +17,6 @@ export interface Page<Value> {
 export interface ProfileSummary {
   readonly localProfileId: LocalProfileId;
   readonly displayName: string;
-  readonly sortOrder: number;
   readonly lastUsedAt: Timestamp;
   readonly isCurrent: boolean;
 }
@@ -42,4 +41,27 @@ export interface UnlockedSession {
   readonly localProfileId: LocalProfileId;
   readonly vaultId: VaultId;
   readonly displayName: string;
+  readonly rootFolderId: import('@notera/domain').FolderId;
+}
+
+export type SessionState =
+  | Readonly<{ state: 'LOCKED' }>
+  | Readonly<{
+      state: 'UNLOCKED';
+      localProfileId: LocalProfileId;
+      displayName: string;
+      rootFolderId: import('@notera/domain').FolderId;
+    }>;
+
+export interface ProfileManager {
+  listProfiles(input: PageRequest): Page<ProfileSummary>;
+  getSessionState(): SessionState;
+  createProfile(input: { readonly displayName: string; readonly password: string }): Promise<Extract<SessionState, { state: 'UNLOCKED' }>>;
+  unlockProfile(input: { readonly localProfileId: LocalProfileId; readonly password: string }): Promise<Extract<SessionState, { state: 'UNLOCKED' }>>;
+  lockProfile(): Promise<void>;
+  switchProfile(input: { readonly localProfileId: LocalProfileId; readonly password: string }): Promise<Extract<SessionState, { state: 'UNLOCKED' }>>;
+  renameProfile(displayName: string): Promise<ProfileSummary>;
+  changeProfilePassword(input: { readonly oldPassword: string; readonly newPassword: string }): Promise<void>;
+  removeProfileFromDevice(localProfileId: LocalProfileId): Promise<void>;
+  close(): Promise<void>;
 }
