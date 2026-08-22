@@ -90,10 +90,7 @@ export function addFavorite(
   });
 }
 
-export function removeFavorite(
-  database: VaultDatabase,
-  value: unknown,
-): void {
+export function removeFavorite(database: VaultDatabase, value: unknown): void {
   const noteId = asNoteId(value);
   database.transaction((transaction) => transaction.favorites.delete(noteId));
 }

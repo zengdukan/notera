@@ -86,7 +86,10 @@ describe('LocalNotesService history use cases', () => {
       contentVersion: 4,
       protectionVersionId: expect.any(String),
     });
-    const history = await localNotes.listHistory({ noteId: note.id, limit: 10 });
+    const history = await localNotes.listHistory({
+      noteId: note.id,
+      limit: 10,
+    });
     expect(history.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ kind: 'USER', versionName: '里程碑' }),

@@ -1,10 +1,4 @@
-import type {
-  Favorite,
-  Folder,
-  Note,
-  NoteVersion,
-  Tag,
-} from '@notera/domain';
+import type { Favorite, Folder, Note, NoteVersion, Tag } from '@notera/domain';
 import type { VaultDatabase } from '@notera/storage-sqlcipher';
 
 import { ApplicationError } from '../errors';
@@ -48,7 +42,11 @@ export function noteSummary(note: Note): NoteSummary {
 }
 
 export function tagSummary(tag: Tag): TagSummary {
-  return Object.freeze({ id: tag.id, name: tag.name, updatedAt: tag.updatedAt });
+  return Object.freeze({
+    id: tag.id,
+    name: tag.name,
+    updatedAt: tag.updatedAt,
+  });
 }
 
 export function noteDetail(database: VaultDatabase, note: Note): NoteDetail {
@@ -88,7 +86,5 @@ export function treeEntrySummary(
   database: VaultDatabase,
   value: Folder | Note,
 ): TreeEntrySummary {
-  return 'kind' in value
-    ? folderSummary(database, value)
-    : noteSummary(value);
+  return 'kind' in value ? folderSummary(database, value) : noteSummary(value);
 }

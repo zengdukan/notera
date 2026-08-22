@@ -79,7 +79,10 @@ function normalizeTargets(
   values: readonly EntryRef[],
 ) {
   if (!Array.isArray(values)) invalidState();
-  unique(values.map((value) => value?.id), 500);
+  unique(
+    values.map((value) => value?.id),
+    500,
+  );
   const folders = activeFolders(database);
   const folderById = new Map(folders.map((folder) => [folder.id, folder]));
   const targets = values.map((value) => {
@@ -103,12 +106,12 @@ function normalizeTargets(
       .map((target) => target.folder.id),
   );
   targets.forEach((target) => {
-    let cursor =
-      target.kind === 'folder'
-        ? target.folder.kind === 'REGULAR'
-          ? folderById.get(target.folder.parentId)
-          : undefined
-        : folderById.get(target.note.folderId);
+    let cursor: Folder | undefined;
+    if (target.kind === 'note') {
+      cursor = folderById.get(target.note.folderId);
+    } else if (target.folder.kind === 'REGULAR') {
+      cursor = folderById.get(target.folder.parentId);
+    }
     const visited = new Set<string>();
     while (cursor !== undefined) {
       if (selectedFolders.has(cursor.id)) invalidState();
@@ -121,10 +124,7 @@ function normalizeTargets(
   return { folders, folderById, targets };
 }
 
-function activeTargetFolder(
-  value: unknown,
-  folders: readonly Folder[],
-) {
+function activeTargetFolder(value: unknown, folders: readonly Folder[]) {
   const id = asFolderId(value);
   const target = folders.find((folder) => folder.id === id);
   if (target === undefined) throw new ApplicationError('PARENT_FOLDER_INVALID');
@@ -144,7 +144,10 @@ function checkedIds<T>(
 
 export function batchMove(
   database: VaultDatabase,
-  input: { readonly targets: readonly EntryRef[]; readonly targetFolderId: unknown },
+  input: {
+    readonly targets: readonly EntryRef[];
+    readonly targetFolderId: unknown;
+  },
   now: Timestamp,
 ): void {
   const normalized = normalizeTargets(database, input?.targets);
@@ -180,7 +183,10 @@ export function batchMove(
 
 function batchTags(
   database: VaultDatabase,
-  input: { readonly noteIds: readonly unknown[]; readonly tagIds: readonly unknown[] },
+  input: {
+    readonly noteIds: readonly unknown[];
+    readonly tagIds: readonly unknown[];
+  },
   operation: 'ADD' | 'REMOVE',
 ): void {
   const noteIds = checkedIds(input?.noteIds, 500, asNoteId);
@@ -192,11 +198,13 @@ function batchTags(
     return tag;
   });
   const relations = notes.flatMap((note) =>
-    tags.map((tag) => createNoteTag({
-      vaultId: note.vaultId,
-      noteId: note.id,
-      tagId: tag.id,
-    })),
+    tags.map((tag) =>
+      createNoteTag({
+        vaultId: note.vaultId,
+        noteId: note.id,
+        tagId: tag.id,
+      }),
+    ),
   );
   database.transaction((transaction) =>
     transaction.contentPlans.applyBatchRelations({
@@ -208,27 +216,38 @@ function batchTags(
 
 export function batchAddTags(
   database: VaultDatabase,
-  input: { readonly noteIds: readonly unknown[]; readonly tagIds: readonly unknown[] },
+  input: {
+    readonly noteIds: readonly unknown[];
+    readonly tagIds: readonly unknown[];
+  },
 ): void {
   batchTags(database, input, 'ADD');
 }
 
 export function batchRemoveTags(
   database: VaultDatabase,
-  input: { readonly noteIds: readonly unknown[]; readonly tagIds: readonly unknown[] },
+  input: {
+    readonly noteIds: readonly unknown[];
+    readonly tagIds: readonly unknown[];
+  },
 ): void {
   batchTags(database, input, 'REMOVE');
 }
 
 function noteTags(database: VaultDatabase, note: Note): readonly NoteTag[] {
-  return database.tags.listForNote(note.id).map((tag) =>
-    createNoteTag({ vaultId: note.vaultId, noteId: note.id, tagId: tag.id }),
-  );
+  return database.tags
+    .listForNote(note.id)
+    .map((tag) =>
+      createNoteTag({ vaultId: note.vaultId, noteId: note.id, tagId: tag.id }),
+    );
 }
 
 export function batchCopy(
   database: VaultDatabase,
-  input: { readonly targets: readonly EntryRef[]; readonly targetFolderId: unknown },
+  input: {
+    readonly targets: readonly EntryRef[];
+    readonly targetFolderId: unknown;
+  },
   randomId: () => string,
   now: Timestamp,
 ): void {
@@ -253,7 +272,9 @@ export function batchCopy(
         return false;
       });
       const subtreeIds = new Set(subtree.map(({ id }) => id));
-      const subtreeNotes = notes.filter((note) => subtreeIds.has(note.folderId));
+      const subtreeNotes = notes.filter((note) =>
+        subtreeIds.has(note.folderId),
+      );
       return copyFolderTree({
         sourceFolderId: folder.id,
         targetParent: targetFolder,
@@ -284,7 +305,9 @@ export function batchCopy(
       }),
     );
   database.transaction((transaction) => {
-    folderPlans.forEach((plan) => transaction.contentPlans.insertFolderTreeCopy(plan));
+    folderPlans.forEach((plan) =>
+      transaction.contentPlans.insertFolderTreeCopy(plan),
+    );
     notePlans.forEach((plan) => transaction.contentPlans.insertNoteCopy(plan));
   });
 }
@@ -336,8 +359,11 @@ export function batchTrash(
   });
   const entries: TrashEntry[] = plans.flatMap((plan) => plan.entries);
   const rootIds = normalized.targets.map((target, index) => {
-    const objectId = target.kind === 'folder' ? target.folder.id : target.note.id;
-    const root = plans[index].entries.find((entry) => entry.objectId === objectId);
+    const objectId =
+      target.kind === 'folder' ? target.folder.id : target.note.id;
+    const root = plans[index].entries.find(
+      (entry) => entry.objectId === objectId,
+    );
     if (root === undefined) return invalidState();
     return root.id;
   });

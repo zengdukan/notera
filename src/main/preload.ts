@@ -93,7 +93,6 @@ const noteraApi = {
     createFolder: bindRequest(requestContracts['contentTree.createFolder']),
     renameFolder: bindRequest(requestContracts['contentTree.renameFolder']),
     moveFolder: bindRequest(requestContracts['contentTree.moveFolder']),
-    reorderEntry: bindRequest(requestContracts['contentTree.reorderEntry']),
     trashFolder: bindRequest(requestContracts['contentTree.trashFolder']),
   },
   note: {

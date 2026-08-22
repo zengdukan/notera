@@ -163,11 +163,13 @@ describe('LocalNotesService note relations', () => {
       }),
     ).rejects.toMatchObject({ code: 'ENTITY_NOT_FOUND' });
 
-    for (const summary of [first, second, third]) {
-      expect((await localNotes.getNote(summary.id)).updatedAt).toBe(
-        timestamps.get(summary.id),
-      );
-    }
+    await Promise.all(
+      [first, second, third].map(async (summary) => {
+        expect((await localNotes.getNote(summary.id)).updatedAt).toBe(
+          timestamps.get(summary.id),
+        );
+      }),
+    );
 
     await localNotes.removeFavorite(first.id);
     await localNotes.removeFavorite(first.id);

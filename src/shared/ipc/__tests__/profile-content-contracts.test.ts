@@ -190,7 +190,7 @@ describe('content tree IPC contracts', () => {
   });
 
   it('accepts only the fixed automatic sort options', () => {
-    const request = contentTreeContracts.listChildren.request;
+    const { request } = contentTreeContracts.listChildren;
     const fields = ['CREATED_AT', 'UPDATED_AT', 'TITLE'] as const;
     const directions = ['ASC', 'DESC'] as const;
     fields.forEach((field) => {

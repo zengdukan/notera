@@ -35,10 +35,14 @@ describe('LocalNotesService grouped trash', () => {
         originalParentAvailable: true,
       }),
     ]);
-    expect((await localNotes.listChildren({
-      parentFolderId: profile.rootFolderId,
-      limit: 10,
-    })).items).toEqual([]);
+    expect(
+      (
+        await localNotes.listChildren({
+          parentFolderId: profile.rootFolderId,
+          limit: 10,
+        })
+      ).items,
+    ).toEqual([]);
     await expect(localNotes.getNote(note.id)).rejects.toMatchObject({
       code: 'ENTITY_NOT_FOUND',
     });

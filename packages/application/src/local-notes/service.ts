@@ -18,7 +18,7 @@ import {
   moveFolder,
   renameFolder,
 } from './folders';
-import { mapLocalNotesError } from './errors';
+import mapLocalNotesError from './errors';
 import {
   addFavorite,
   listFavorites,
@@ -34,6 +34,7 @@ import {
   saveDraft,
   trashNote,
 } from './notes';
+import search from './search';
 import {
   compareHistory,
   copyHistory,
@@ -90,7 +91,9 @@ class SessionLocalNotesService implements LocalNotesService {
     }
     return session
       .run(({ database }) => operation(database))
-      .catch((error) => Promise.reject(mapLocalNotesError(error, mode)));
+      .catch((error) => {
+        throw mapLocalNotesError(error, mode);
+      });
   }
 
   listChildren(input: ListChildrenInput) {
@@ -98,7 +101,9 @@ class SessionLocalNotesService implements LocalNotesService {
   }
 
   createFolder(input: {
-    readonly parentFolderId: Parameters<LocalNotesService['createFolder']>[0]['parentFolderId'];
+    readonly parentFolderId: Parameters<
+      LocalNotesService['createFolder']
+    >[0]['parentFolderId'];
     readonly name: string;
   }): Promise<FolderSummary> {
     return this.run('WRITE', (database) =>
@@ -189,9 +194,7 @@ class SessionLocalNotesService implements LocalNotesService {
   removeTagFromNote(
     input: Parameters<LocalNotesService['removeTagFromNote']>[0],
   ) {
-    return this.run('WRITE', (database) =>
-      removeTagFromNote(database, input),
-    );
+    return this.run('WRITE', (database) => removeTagFromNote(database, input));
   }
 
   listFavorites(input: Parameters<LocalNotesService['listFavorites']>[0]) {
@@ -300,6 +303,10 @@ class SessionLocalNotesService implements LocalNotesService {
     return this.run('WRITE', (database) =>
       batchTrash(database, input, this.randomId, this.now()),
     );
+  }
+
+  search(input: Parameters<LocalNotesService['search']>[0]) {
+    return this.run('READ', (database) => search(database, input));
   }
 }
 

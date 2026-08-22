@@ -272,7 +272,9 @@ export class TrashRepository implements TrashWriter {
     );
     const ordered: TrashEntry[] = [];
     while (pendingFolders.length > 0) {
-      const pendingIds = new Set(pendingFolders.map(({ objectId }) => objectId));
+      const pendingIds = new Set(
+        pendingFolders.map(({ objectId }) => objectId),
+      );
       const index = pendingFolders.findIndex((entry) => {
         const target = input.targetFolderIds.get(entry.id);
         return target !== undefined && !pendingIds.has(target);

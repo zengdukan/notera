@@ -78,14 +78,20 @@ function resolveSnapshot(
 ): HistorySnapshot {
   if (ref?.source === 'CURRENT') return snapshotFromNote(note);
   if (ref?.source === 'VERSION') {
-    return snapshotFromVersion(versionForNote(database, note.id, ref.versionId));
+    return snapshotFromVersion(
+      versionForNote(database, note.id, ref.versionId),
+    );
   }
   throw new ApplicationError('OPERATION_FAILED');
 }
 
 export function listHistory(
   database: VaultDatabase,
-  input: { readonly noteId: unknown; readonly cursor?: string; readonly limit: number },
+  input: {
+    readonly noteId: unknown;
+    readonly cursor?: string;
+    readonly limit: number;
+  },
 ): Page<HistorySummary> {
   const note = getActiveNoteEntity(database, input?.noteId);
   const page = database.history.listForNote(note.id, {
@@ -104,7 +110,9 @@ export function getHistory(
 ): HistorySnapshot {
   const noteId = asNoteId(input?.noteId);
   getActiveNoteEntity(database, noteId);
-  return snapshotFromVersion(versionForNote(database, noteId, input?.versionId));
+  return snapshotFromVersion(
+    versionForNote(database, noteId, input?.versionId),
+  );
 }
 
 export function createPermanentVersion(
@@ -138,9 +146,7 @@ export function renameHistoryVersion(
   getActiveNoteEntity(database, noteId);
   const version = versionForNote(database, noteId, input?.versionId);
   const versionName =
-    input?.versionName === null
-      ? null
-      : checkedVersionName(input?.versionName);
+    input?.versionName === null ? null : checkedVersionName(input?.versionName);
   const renamed = renameUserVersion(version, versionName);
   const stored = database.transaction((transaction) =>
     transaction.history.rename(noteId, renamed.id, renamed.versionName),

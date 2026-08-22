@@ -10,7 +10,15 @@ import type {
   TrashEntryId,
 } from '@notera/domain';
 
-import type { Page, PageRequest } from '../types';
+interface PageRequest {
+  readonly cursor?: string;
+  readonly limit: number;
+}
+
+interface Page<Value> {
+  readonly items: readonly Value[];
+  readonly nextCursor?: string;
+}
 
 export type ContentSortField = 'CREATED_AT' | 'UPDATED_AT' | 'TITLE';
 export type SortDirection = 'ASC' | 'DESC';
@@ -99,6 +107,20 @@ export interface TrashItem {
   readonly deletedAt: Timestamp;
   readonly expiresAt: Timestamp;
   readonly originalParentAvailable: boolean;
+}
+
+export interface SearchHighlight {
+  readonly field: 'title' | 'excerpt';
+  readonly start: number;
+  readonly end: number;
+}
+
+export interface SearchResult {
+  readonly noteId: NoteId;
+  readonly title: string;
+  readonly excerpt: string;
+  readonly updatedAt: Timestamp;
+  readonly highlights: readonly SearchHighlight[];
 }
 
 export type TreeEntrySummary = FolderSummary | NoteSummary;
@@ -236,4 +258,10 @@ export interface LocalNotesService {
   batchTrash(input: {
     readonly targets: readonly EntryRef[];
   }): Promise<{ readonly trashEntryIds: readonly TrashEntryId[] }>;
+  search(input: {
+    readonly query: string;
+    readonly folderId?: FolderId;
+    readonly cursor?: string;
+    readonly limit: number;
+  }): Promise<Page<SearchResult>>;
 }

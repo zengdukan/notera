@@ -14,6 +14,8 @@ export type {
   LocalNotesService,
   NoteDetail,
   NoteSummary,
+  SearchHighlight,
+  SearchResult,
   SortDirection,
   TreeEntrySummary,
   TagSummary,

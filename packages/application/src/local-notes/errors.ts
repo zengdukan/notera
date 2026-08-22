@@ -25,7 +25,7 @@ const STORAGE_CODES: Readonly<Partial<Record<string, ApplicationErrorCode>>> = {
   CONTENT_VERSION_CONFLICT: 'CONTENT_VERSION_CONFLICT',
 };
 
-export function mapLocalNotesError(
+export default function mapLocalNotesError(
   error: unknown,
   mode: 'READ' | 'WRITE',
 ): ApplicationError {

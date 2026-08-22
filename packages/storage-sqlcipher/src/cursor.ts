@@ -153,7 +153,11 @@ export function parseTextPageRequest(
     const bytes = Buffer.from(page.cursor, 'base64url');
     if (bytes.toString('base64url') !== page.cursor) return invalidCursor();
     const parsed = JSON.parse(bytes.toString('utf8')) as unknown;
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
       return invalidCursor();
     }
     const record = parsed as Record<string, unknown>;

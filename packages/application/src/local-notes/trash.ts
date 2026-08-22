@@ -1,10 +1,8 @@
 import {
   asFolderId,
-  asNoteId,
   asTrashEntryId,
   resolveTrashRestoreTarget,
   trashFolderTree,
-  type Folder,
   type Note,
   type Timestamp,
   type TrashEntry,
@@ -156,10 +154,7 @@ export function restoreTrash(
   );
 }
 
-export function deleteTrashPermanent(
-  database: VaultDatabase,
-  value: unknown,
-) {
+export function deleteTrashPermanent(database: VaultDatabase, value: unknown) {
   const entries = database.trash.listGroup(asTrashEntryId(value));
   if (entries.length === 0) throw new ApplicationError('ENTITY_NOT_FOUND');
   database.transaction((transaction) =>

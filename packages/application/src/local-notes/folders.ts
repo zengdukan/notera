@@ -63,9 +63,7 @@ export function listChildren(
     items: Object.freeze(
       page.items.map((value) => treeEntrySummary(database, value)),
     ),
-    ...(page.nextCursor === undefined
-      ? {}
-      : { nextCursor: page.nextCursor }),
+    ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }),
   });
 }
 

@@ -56,14 +56,7 @@ export function createNote(
   return noteDetail(database, note);
 }
 
-export function getNote(database: VaultDatabase, value: unknown): NoteDetail {
-  return noteDetail(database, getActiveNoteEntity(database, value));
-}
-
-export function getActiveNoteEntity(
-  database: VaultDatabase,
-  value: unknown,
-) {
+export function getActiveNoteEntity(database: VaultDatabase, value: unknown) {
   const noteId = asNoteId(value);
   const note = database.notes.get(noteId);
   if (note === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
@@ -90,6 +83,10 @@ export function getActiveNoteEntity(
   return note;
 }
 
+export function getNote(database: VaultDatabase, value: unknown): NoteDetail {
+  return noteDetail(database, getActiveNoteEntity(database, value));
+}
+
 export function saveDraft(
   database: VaultDatabase,
   input: {
@@ -108,7 +105,11 @@ export function saveDraft(
   const document = asAdfDocument(input?.document);
   const updated = database.transaction((transaction) => {
     const current = getActiveNoteEntity(database, noteId);
-    const next = updateNoteContent(current, { title, document, updatedAt: now });
+    const next = updateNoteContent(current, {
+      title,
+      document,
+      updatedAt: now,
+    });
     transaction.notes.replaceContent(next, expectedContentVersion);
     return next;
   });
@@ -208,8 +209,6 @@ export function listRecent(
   });
   return Object.freeze({
     items: Object.freeze(page.items.map(noteSummary)),
-    ...(page.nextCursor === undefined
-      ? {}
-      : { nextCursor: page.nextCursor }),
+    ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }),
   });
 }

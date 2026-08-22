@@ -90,7 +90,8 @@ describe('LocalNotesService atomic batches', () => {
     const copiedChild = rootItems.find(
       (item) => item.kind === 'folder' && item.name === 'Child',
     );
-    if (copiedChild?.kind !== 'folder') throw new Error('Missing copied folder');
+    if (copiedChild?.kind !== 'folder')
+      throw new Error('Missing copied folder');
     const copiedNested = (
       await localNotes.listChildren({
         parentFolderId: copiedChild.id,

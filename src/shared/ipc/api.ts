@@ -39,7 +39,6 @@ export interface NoteraApi {
     readonly createFolder: InvokeMethod<Request<'contentTree.createFolder'>>;
     readonly renameFolder: InvokeMethod<Request<'contentTree.renameFolder'>>;
     readonly moveFolder: InvokeMethod<Request<'contentTree.moveFolder'>>;
-    readonly reorderEntry: InvokeMethod<Request<'contentTree.reorderEntry'>>;
     readonly trashFolder: InvokeMethod<Request<'contentTree.trashFolder'>>;
   };
   readonly note: {
