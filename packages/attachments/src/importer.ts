@@ -1,11 +1,5 @@
 import type { FileHandle } from 'node:fs/promises';
-import {
-  lstat,
-  mkdir,
-  open,
-  rename,
-  rm,
-} from 'node:fs/promises';
+import { lstat, mkdir, open, rename, rm } from 'node:fs/promises';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
   encryptAttachmentChunk,
@@ -13,12 +7,7 @@ import {
   generateAttachmentNoncePrefix,
   wipeBytes,
 } from '@notera/crypto';
-import {
-  asBlobId,
-  asVaultId,
-  type BlobId,
-  type VaultId,
-} from '@notera/domain';
+import { asBlobId, asVaultId, type BlobId, type VaultId } from '@notera/domain';
 import { fixedSizeChunks } from './chunker';
 import { throwIfAborted } from './cancellation';
 import { AttachmentStorageError, mapAttachmentError } from './errors';
@@ -62,7 +51,7 @@ function nativeCode(error: unknown): string | undefined {
   if (typeof error !== 'object' || error === null || !('code' in error)) {
     return undefined;
   }
-  const code = (error as Record<string, unknown>).code;
+  const { code } = error as Record<string, unknown>;
   return typeof code === 'string' ? code : undefined;
 }
 

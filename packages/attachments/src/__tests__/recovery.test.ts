@@ -143,9 +143,7 @@ describe('final blob reconciliation', () => {
     const store = await createAttachmentStore({ profileRoot: root });
 
     await expect(
-      store.reconcile(
-        new Set(['not-a-uuid']) as unknown as ReadonlySet<never>,
-      ),
+      store.reconcile(new Set(['not-a-uuid']) as unknown as ReadonlySet<never>),
     ).rejects.toMatchObject({
       code: 'INVALID_ATTACHMENT_INPUT',
       message: 'The attachment input is invalid.',

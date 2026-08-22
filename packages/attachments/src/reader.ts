@@ -24,7 +24,7 @@ function nativeCode(error: unknown): string | undefined {
   if (typeof error !== 'object' || error === null || !('code' in error)) {
     return undefined;
   }
-  const code = (error as Record<string, unknown>).code;
+  const { code } = error as Record<string, unknown>;
   return typeof code === 'string' ? code : undefined;
 }
 
@@ -98,11 +98,9 @@ class LocalBlobReader implements BlobReader {
       ...externalSignals,
       this.closeController.signal,
     ]);
-    this.signalState.signal.addEventListener(
-      'abort',
-      () => void this.close(),
-      { once: true },
-    );
+    this.signalState.signal.addEventListener('abort', () => void this.close(), {
+      once: true,
+    });
   }
 
   private track<T>(operation: () => Promise<T>): Promise<T> {
@@ -239,14 +237,20 @@ export async function openBlobReader(
   environment: OpenBlobReaderEnvironment,
   input: OpenBlobReaderInput,
 ): Promise<BlobReader> {
-  const combined = combineAbortSignals([input?.signal, environment.storeSignal]);
+  const combined = combineAbortSignals([
+    input?.signal,
+    environment.storeSignal,
+  ]);
   let releaseLease: (() => void) | undefined;
   let handle: FileHandle | undefined;
   try {
     throwIfAborted(combined.signal);
     const vaultId = validateVaultId(input?.vaultId);
     const blobId = validateBlobId(input?.blobId);
-    if (!(input?.fileKey instanceof Uint8Array) || input.fileKey.length !== KEY_BYTES) {
+    if (
+      !(input?.fileKey instanceof Uint8Array) ||
+      input.fileKey.length !== KEY_BYTES
+    ) {
       return invalidInput();
     }
     if (!(input.manifest instanceof Uint8Array)) return invalidInput();
@@ -271,8 +275,7 @@ export async function openBlobReader(
       throw new AttachmentStorageError('BLOB_CORRUPT');
     }
     throwIfAborted(combined.signal);
-    let reader!: BlobReader;
-    reader = new LocalBlobReader(
+    const reader: BlobReader = new LocalBlobReader(
       handle,
       vaultId,
       blobId,

@@ -20,6 +20,28 @@ module.exports = {
   },
   overrides: [
     {
+      files: ['packages/attachments/src/**/*.ts'],
+      rules: {
+        'consistent-return': 'off',
+        'import/prefer-default-export': 'off',
+        'no-await-in-loop': 'off',
+        'no-continue': 'off',
+        'no-restricted-syntax': 'off',
+        'no-void': 'off',
+        'promise/always-return': 'off',
+      },
+    },
+    {
+      files: [
+        'packages/attachments/src/__tests__/**/*.ts',
+        'packages/crypto/src/__tests__/attachment-chunks.test.ts',
+      ],
+      rules: {
+        'no-bitwise': 'off',
+        'require-yield': 'off',
+      },
+    },
+    {
       files: ['packages/storage-sqlcipher/src/**/*.ts'],
       rules: {
         'class-methods-use-this': 'off',

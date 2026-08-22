@@ -1,14 +1,6 @@
-import {
-  mkdir,
-  readFile,
-  readdir,
-  writeFile,
-} from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import {
-  ATTACHMENT_CHUNK_BYTES,
-  MAX_ATTACHMENT_BYTES,
-} from '../constants';
+import { ATTACHMENT_CHUNK_BYTES, MAX_ATTACHMENT_BYTES } from '../constants';
 import { fixedSizeChunks } from '../chunker';
 import { publishStagedBlob, writeAll } from '../importer';
 import { createAttachmentPaths } from '../paths';
@@ -40,8 +32,9 @@ describe('attachment store startup', () => {
     const root = await testRoot();
     const staging = join(root, 'staging');
     await mkdir(join(staging, 'unknown-directory'), { recursive: true });
-    const stagedName =
-      '123e4567-e89b-12d3-a456-426614174000.' + `${'ab'.repeat(16)}.part`;
+    const stagedName = `123e4567-e89b-12d3-a456-426614174000.${'ab'.repeat(
+      16,
+    )}.part`;
     await writeFile(join(staging, stagedName), 'ciphertext');
     await writeFile(join(staging, 'keep.txt'), 'user data');
 
@@ -91,11 +84,10 @@ describe('streaming attachment import', () => {
       );
       expect(await readdir(join(root, 'staging'))).toEqual([]);
       const encrypted = await readFile(blobPath(root, imported.blobId));
-      if (plaintext.byteLength >= 32) {
-        expect(encrypted.includes(Buffer.from(plaintext.subarray(0, 32)))).toBe(
-          false,
-        );
-      }
+      expect(
+        plaintext.byteLength < 32 ||
+          !encrypted.includes(Buffer.from(plaintext.subarray(0, 32))),
+      ).toBe(true);
       await store.close();
     },
     30_000,
@@ -119,17 +111,19 @@ describe('streaming attachment import', () => {
       total: MAX_ATTACHMENT_BYTES,
       count: 20,
     });
+    let consumed = 0;
     await expect(async () => {
-      for await (const _chunk of fixedSizeChunks(source(true))) {
-        // Consume until the size guard rejects the extra byte.
+      for await (const chunk of fixedSizeChunks(source(true))) {
+        consumed += chunk.byteLength;
       }
     }).rejects.toMatchObject({ code: 'ATTACHMENT_TOO_LARGE' });
+    expect(consumed).toBe(MAX_ATTACHMENT_BYTES);
   });
 
   test('cleans staging after source failure and cancellation', async () => {
     const root = await testRoot();
     const store = await createAttachmentStore({ profileRoot: root });
-    const failedSource = async function* () {
+    const failedSource = async function* failedAttachmentSource() {
       yield new Uint8Array([1, 2, 3]);
       throw new Error('sensitive source failure');
     };
@@ -141,7 +135,7 @@ describe('streaming attachment import', () => {
     });
 
     const controller = new AbortController();
-    const cancelledSource = async function* () {
+    const cancelledSource = async function* cancelledAttachmentSource() {
       yield new Uint8Array([1, 2, 3]);
       controller.abort();
       yield new Uint8Array([4]);
@@ -169,7 +163,9 @@ describe('streaming attachment import', () => {
     const source = {
       async *[Symbol.asyncIterator]() {
         announceStarted();
-        await new Promise(() => undefined);
+        await new Promise<never>(() => {
+          // Keep the source pending until store closure aborts iteration.
+        });
       },
     };
     const importing = store.importBlob({
@@ -180,7 +176,9 @@ describe('streaming attachment import', () => {
 
     await store.close();
 
-    await expect(importing).rejects.toMatchObject({ code: 'OPERATION_ABORTED' });
+    await expect(importing).rejects.toMatchObject({
+      code: 'OPERATION_ABORTED',
+    });
     await expect(
       store.importBlob({
         vaultId: TEST_VAULT_ID,
@@ -213,7 +211,11 @@ describe('atomic blob file helpers', () => {
     ]);
     await expect(
       writeAll(
-        { async write() { return { bytesWritten: 0 }; } },
+        {
+          async write() {
+            return { bytesWritten: 0 };
+          },
+        },
         new Uint8Array(1),
       ),
     ).rejects.toMatchObject({ code: 'ATTACHMENT_IO_FAILED' });
@@ -224,7 +226,10 @@ describe('atomic blob file helpers', () => {
     const paths = await createAttachmentPaths(root);
     const blobId = '123e4567-e89b-12d3-a456-426614174000';
     const finalPath = blobPath(root, blobId);
-    const stagingPath = join(paths.stagingRoot, `${blobId}.${'ab'.repeat(16)}.part`);
+    const stagingPath = join(
+      paths.stagingRoot,
+      `${blobId}.${'ab'.repeat(16)}.part`,
+    );
     await mkdir(join(root, 'blobs', '12'), { recursive: true });
     await writeFile(finalPath, 'original');
     await writeFile(stagingPath, 'replacement');

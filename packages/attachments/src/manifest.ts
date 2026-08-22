@@ -1,7 +1,4 @@
-import {
-  ATTACHMENT_NONCE_PREFIX_BYTES,
-  AUTH_TAG_BYTES,
-} from '@notera/crypto';
+import { ATTACHMENT_NONCE_PREFIX_BYTES, AUTH_TAG_BYTES } from '@notera/crypto';
 import {
   ATTACHMENT_CHUNK_BYTES,
   ATTACHMENT_MANIFEST_VERSION,
@@ -12,10 +9,7 @@ import {
   MAX_ATTACHMENT_BYTES,
 } from './constants';
 import { AttachmentStorageError } from './errors';
-import type {
-  AttachmentManifestChunk,
-  AttachmentManifestV1,
-} from './types';
+import type { AttachmentManifestChunk, AttachmentManifestV1 } from './types';
 
 export interface ManifestChunkInput {
   readonly plaintextLength: number;
@@ -98,8 +92,7 @@ function validateInput(input: ManifestInput): void {
 export function encodeManifestV1(input: ManifestInput): Uint8Array {
   validateInput(input);
   const result = new Uint8Array(
-    MANIFEST_HEADER_BYTES +
-      input.chunks.length * MANIFEST_CHUNK_RECORD_BYTES,
+    MANIFEST_HEADER_BYTES + input.chunks.length * MANIFEST_CHUNK_RECORD_BYTES,
   );
   const view = new DataView(result.buffer);
   result.set(MANIFEST_MAGIC, 0);

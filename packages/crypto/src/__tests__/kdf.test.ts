@@ -118,17 +118,16 @@ describe('key derivation', () => {
       vaultKey,
       attachmentFileKey,
       attachmentNoncePrefix,
-    ] =
-      await Promise.all([
-        generateSalt(),
-        generateSalt(),
-        generateNonce(),
-        generateNonce(),
-        generateDatabaseKey(),
-        generateVaultKey(),
-        generateAttachmentFileKey(),
-        generateAttachmentNoncePrefix(),
-      ]);
+    ] = await Promise.all([
+      generateSalt(),
+      generateSalt(),
+      generateNonce(),
+      generateNonce(),
+      generateDatabaseKey(),
+      generateVaultKey(),
+      generateAttachmentFileKey(),
+      generateAttachmentNoncePrefix(),
+    ]);
 
     expect(saltA).toHaveLength(SALT_BYTES);
     expect(saltB).toHaveLength(SALT_BYTES);

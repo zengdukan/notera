@@ -1,9 +1,4 @@
-import {
-  readFile,
-  stat,
-  truncate,
-  writeFile,
-} from 'node:fs/promises';
+import { readFile, stat, truncate, writeFile } from 'node:fs/promises';
 import { asBlobId, asVaultId } from '@notera/domain';
 import { ATTACHMENT_CHUNK_BYTES } from '../constants';
 import { BlobLeaseRegistry } from '../leases';
@@ -74,46 +69,39 @@ async function openImported(
 }
 
 describe('authenticated blob reading', () => {
-  test(
-    'reads complete, individual, and ranged plaintext across chunks',
-    async () => {
-      const root = await testRoot();
-      const plaintext = patternBytes(ATTACHMENT_CHUNK_BYTES + 257);
-      const { store, imported } = await importBytes(root, plaintext);
-      const reader = await openImported(store, imported);
+  test('reads complete, individual, and ranged plaintext across chunks', async () => {
+    const root = await testRoot();
+    const plaintext = patternBytes(ATTACHMENT_CHUNK_BYTES + 257);
+    const { store, imported } = await importBytes(root, plaintext);
+    const reader = await openImported(store, imported);
 
-      await expect(collect(reader.stream())).resolves.toEqual(plaintext);
-      await expect(reader.readChunk(0)).resolves.toEqual(
-        plaintext.slice(0, ATTACHMENT_CHUNK_BYTES),
-      );
-      await expect(reader.readChunk(1)).resolves.toEqual(
-        plaintext.slice(ATTACHMENT_CHUNK_BYTES),
-      );
-      await expect(collect(reader.streamRange(31, 129))).resolves.toEqual(
-        plaintext.slice(31, 129),
-      );
-      await expect(
-        collect(
-          reader.streamRange(
-            ATTACHMENT_CHUNK_BYTES - 19,
-            ATTACHMENT_CHUNK_BYTES + 23,
-          ),
-        ),
-      ).resolves.toEqual(
-        plaintext.slice(
+    await expect(collect(reader.stream())).resolves.toEqual(plaintext);
+    await expect(reader.readChunk(0)).resolves.toEqual(
+      plaintext.slice(0, ATTACHMENT_CHUNK_BYTES),
+    );
+    await expect(reader.readChunk(1)).resolves.toEqual(
+      plaintext.slice(ATTACHMENT_CHUNK_BYTES),
+    );
+    await expect(collect(reader.streamRange(31, 129))).resolves.toEqual(
+      plaintext.slice(31, 129),
+    );
+    await expect(
+      collect(
+        reader.streamRange(
           ATTACHMENT_CHUNK_BYTES - 19,
           ATTACHMENT_CHUNK_BYTES + 23,
         ),
-      );
-      await expect(collect(reader.streamRange(10, 10))).resolves.toEqual(
-        new Uint8Array(),
-      );
+      ),
+    ).resolves.toEqual(
+      plaintext.slice(ATTACHMENT_CHUNK_BYTES - 19, ATTACHMENT_CHUNK_BYTES + 23),
+    );
+    await expect(collect(reader.streamRange(10, 10))).resolves.toEqual(
+      new Uint8Array(),
+    );
 
-      await reader.close();
-      await store.close();
-    },
-    60_000,
-  );
+    await reader.close();
+    await store.close();
+  }, 60_000);
 
   test('authenticates an empty blob and validates read arguments', async () => {
     const root = await testRoot();

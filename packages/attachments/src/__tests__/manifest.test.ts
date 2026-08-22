@@ -5,20 +5,14 @@ import {
   MANIFEST_HEADER_BYTES,
   MAX_ATTACHMENT_BYTES,
 } from '../constants';
-import {
-  AttachmentStorageError,
-  mapAttachmentError,
-} from '../errors';
+import { AttachmentStorageError, mapAttachmentError } from '../errors';
 import {
   decodeManifest,
   encodeManifestV1,
   type ManifestChunkInput,
 } from '../manifest';
 
-const noncePrefix = Uint8Array.from(
-  { length: 16 },
-  (_value, index) => index,
-);
+const noncePrefix = Uint8Array.from({ length: 16 }, (_value, index) => index);
 
 function chunksFor(plaintextLength: number): ManifestChunkInput[] {
   const chunkCount = Math.max(
@@ -48,42 +42,45 @@ function encodedFor(plaintextLength: number): Uint8Array {
 }
 
 describe('attachment manifest v1', () => {
-  test.each([0, 1, ATTACHMENT_CHUNK_BYTES, ATTACHMENT_CHUNK_BYTES + 1, 100 * 1024 * 1024])(
-    'round-trips offsets for %i plaintext bytes',
-    (plaintextLength) => {
-      const encoded = encodedFor(plaintextLength);
-      const manifest = decodeManifest(encoded);
-      const expectedCount = Math.max(
-        1,
-        Math.ceil(plaintextLength / ATTACHMENT_CHUNK_BYTES),
-      );
+  test.each([
+    0,
+    1,
+    ATTACHMENT_CHUNK_BYTES,
+    ATTACHMENT_CHUNK_BYTES + 1,
+    100 * 1024 * 1024,
+  ])('round-trips offsets for %i plaintext bytes', (plaintextLength) => {
+    const encoded = encodedFor(plaintextLength);
+    const manifest = decodeManifest(encoded);
+    const expectedCount = Math.max(
+      1,
+      Math.ceil(plaintextLength / ATTACHMENT_CHUNK_BYTES),
+    );
 
-      expect(encoded).toHaveLength(
-        MANIFEST_HEADER_BYTES + expectedCount * MANIFEST_CHUNK_RECORD_BYTES,
+    expect(encoded).toHaveLength(
+      MANIFEST_HEADER_BYTES + expectedCount * MANIFEST_CHUNK_RECORD_BYTES,
+    );
+    expect(manifest).toMatchObject({
+      version: 1,
+      chunkSize: ATTACHMENT_CHUNK_BYTES,
+      plaintextLength,
+    });
+    expect(manifest.chunks).toHaveLength(expectedCount);
+    expect(manifest.ciphertextLength).toBe(
+      manifest.chunks.reduce(
+        (total, chunk) => total + chunk.ciphertextLength,
+        0,
+      ),
+    );
+    manifest.chunks.forEach((chunk, index) => {
+      expect(chunk.index).toBe(index);
+      expect(chunk.plaintextOffset).toBe(index * ATTACHMENT_CHUNK_BYTES);
+      expect(chunk.ciphertextOffset).toBe(
+        manifest.chunks
+          .slice(0, index)
+          .reduce((total, item) => total + item.ciphertextLength, 0),
       );
-      expect(manifest).toMatchObject({
-        version: 1,
-        chunkSize: ATTACHMENT_CHUNK_BYTES,
-        plaintextLength,
-      });
-      expect(manifest.chunks).toHaveLength(expectedCount);
-      expect(manifest.ciphertextLength).toBe(
-        manifest.chunks.reduce(
-          (total, chunk) => total + chunk.ciphertextLength,
-          0,
-        ),
-      );
-      manifest.chunks.forEach((chunk, index) => {
-        expect(chunk.index).toBe(index);
-        expect(chunk.plaintextOffset).toBe(index * ATTACHMENT_CHUNK_BYTES);
-        expect(chunk.ciphertextOffset).toBe(
-          manifest.chunks
-            .slice(0, index)
-            .reduce((total, item) => total + item.ciphertextLength, 0),
-        );
-      });
-    },
-  );
+    });
+  });
 
   test('uses a deterministic big-endian byte layout', () => {
     const encoded = encodedFor(0);
@@ -128,7 +125,12 @@ describe('attachment manifest v1', () => {
   });
 
   test.each([
-    ['magic', (bytes: Uint8Array) => (bytes[0] ^= 1)],
+    [
+      'magic',
+      (bytes: Uint8Array) => {
+        bytes[0] ^= 1;
+      },
+    ],
     [
       'chunk size',
       (bytes: Uint8Array) =>
@@ -166,9 +168,9 @@ describe('attachment manifest v1', () => {
       false,
     );
 
-    expect(() => decodeManifest(encoded.subarray(0, encoded.length - 1))).toThrow(
-      expect.objectContaining({ code: 'MANIFEST_CORRUPT' }),
-    );
+    expect(() =>
+      decodeManifest(encoded.subarray(0, encoded.length - 1)),
+    ).toThrow(expect.objectContaining({ code: 'MANIFEST_CORRUPT' }));
     expect(() => decodeManifest(trailing)).toThrow(
       expect.objectContaining({ code: 'MANIFEST_CORRUPT' }),
     );

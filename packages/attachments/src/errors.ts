@@ -41,7 +41,10 @@ export class AttachmentStorageError extends Error {
   }
 }
 
-function errorField(error: unknown, field: 'code' | 'name'): string | undefined {
+function errorField(
+  error: unknown,
+  field: 'code' | 'name',
+): string | undefined {
   if (typeof error !== 'object' || error === null || !(field in error)) {
     return undefined;
   }

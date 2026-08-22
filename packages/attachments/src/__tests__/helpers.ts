@@ -6,9 +6,7 @@ import { asVaultId } from '@notera/domain';
 import { decodeManifest } from '../manifest';
 import type { ImportedBlob } from '../types';
 
-export const TEST_VAULT_ID = asVaultId(
-  '01890f47-6abc-7def-8abc-0123456789ab',
-);
+export const TEST_VAULT_ID = asVaultId('01890f47-6abc-7def-8abc-0123456789ab');
 
 export async function createTestProfile(): Promise<string> {
   return mkdtemp(join(tmpdir(), 'notera-attachments-'));

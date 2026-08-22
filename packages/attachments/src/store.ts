@@ -105,9 +105,7 @@ class LocalAttachmentStore implements AttachmentStore {
     }
   }
 
-  async reconcile(
-    knownBlobIds: ReadonlySet<BlobId>,
-  ): Promise<ReconcileReport> {
+  async reconcile(knownBlobIds: ReadonlySet<BlobId>): Promise<ReconcileReport> {
     if (this.closed) throw new AttachmentStorageError('STORE_CLOSED');
     if (!(knownBlobIds instanceof Set)) {
       throw new AttachmentStorageError('INVALID_ATTACHMENT_INPUT');

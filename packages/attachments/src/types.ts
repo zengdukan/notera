@@ -1,3 +1,5 @@
+import type { BlobId, VaultId } from '@notera/domain';
+
 export interface AttachmentManifestChunk {
   readonly index: number;
   readonly plaintextOffset: number;
@@ -46,10 +48,7 @@ export interface OpenBlobReaderInput {
 export interface BlobReader {
   stream(): AsyncIterable<Uint8Array>;
   readChunk(index: number): Promise<Uint8Array>;
-  streamRange(
-    start: number,
-    endExclusive: number,
-  ): AsyncIterable<Uint8Array>;
+  streamRange(start: number, endExclusive: number): AsyncIterable<Uint8Array>;
   close(): Promise<void>;
 }
 
@@ -67,4 +66,3 @@ export interface AttachmentStore {
   reconcile(knownBlobIds: ReadonlySet<BlobId>): Promise<ReconcileReport>;
   close(): Promise<void>;
 }
-import type { BlobId, VaultId } from '@notera/domain';

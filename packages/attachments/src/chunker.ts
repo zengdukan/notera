@@ -1,7 +1,4 @@
-import {
-  ATTACHMENT_CHUNK_BYTES,
-  MAX_ATTACHMENT_BYTES,
-} from './constants';
+import { ATTACHMENT_CHUNK_BYTES, MAX_ATTACHMENT_BYTES } from './constants';
 import { throwIfAborted } from './cancellation';
 import { AttachmentStorageError } from './errors';
 

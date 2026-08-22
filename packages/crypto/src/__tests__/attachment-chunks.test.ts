@@ -51,9 +51,7 @@ describe('attachment chunk encryption', () => {
     );
     expect(
       toHex(
-        encodeAttachmentChunkAad(
-          context({ plaintextLength: 1024 * 1024 }),
-        ),
+        encodeAttachmentChunkAad(context({ plaintextLength: 1024 * 1024 })),
       ),
     ).toBe(
       [
@@ -101,12 +99,7 @@ describe('attachment chunk encryption', () => {
 
       expect(ciphertext).toHaveLength(plaintextLength + AUTH_TAG_BYTES);
       await expect(
-        decryptAttachmentChunk(
-          ciphertext,
-          fileKey,
-          prefix,
-          chunkContext,
-        ),
+        decryptAttachmentChunk(ciphertext, fileKey, prefix, chunkContext),
       ).resolves.toEqual(plaintext);
     },
   );
@@ -153,20 +146,10 @@ describe('attachment chunk encryption', () => {
     changedCiphertext[0] ^= 1;
 
     await expect(
-      decryptAttachmentChunk(
-        ciphertext,
-        fileKey,
-        changedPrefix,
-        context(),
-      ),
+      decryptAttachmentChunk(ciphertext, fileKey, changedPrefix, context()),
     ).rejects.toMatchObject({ code: 'AUTHENTICATION_FAILED' });
     await expect(
-      decryptAttachmentChunk(
-        changedCiphertext,
-        fileKey,
-        prefix,
-        context(),
-      ),
+      decryptAttachmentChunk(changedCiphertext, fileKey, prefix, context()),
     ).rejects.toMatchObject({ code: 'AUTHENTICATION_FAILED' });
     await expect(
       decryptAttachmentChunk(
@@ -206,20 +189,10 @@ describe('attachment chunk encryption', () => {
       ),
     ).rejects.toMatchObject({ code: 'UNSUPPORTED_CRYPTO_VERSION' });
     await expect(
-      encryptAttachmentChunk(
-        plaintext,
-        fileKey.subarray(1),
-        prefix,
-        context(),
-      ),
+      encryptAttachmentChunk(plaintext, fileKey.subarray(1), prefix, context()),
     ).rejects.toMatchObject({ code: 'INVALID_CRYPTO_INPUT' });
     await expect(
-      encryptAttachmentChunk(
-        plaintext,
-        fileKey,
-        prefix.subarray(1),
-        context(),
-      ),
+      encryptAttachmentChunk(plaintext, fileKey, prefix.subarray(1), context()),
     ).rejects.toMatchObject({ code: 'INVALID_CRYPTO_INPUT' });
     await expect(
       encryptAttachmentChunk(
