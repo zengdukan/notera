@@ -1,4 +1,5 @@
 import type { ExportFormat, ExportPackaging } from '@notera/export';
+import type { AdfDocument } from '@notera/domain';
 
 export interface ExportDialogPort {
   chooseExportPath(input: {
@@ -29,4 +30,24 @@ export interface ExportFileAccess {
     readonly format: ExportFormat;
     readonly packaging: ExportPackaging;
   }): Promise<ExportSelection | null>;
+}
+
+export interface PdfRenderAsset {
+  readonly id: string;
+  readonly fileName: string;
+  readonly mimeType: string;
+  readonly byteLength: number;
+  readonly relativePath: `assets/${string}`;
+}
+
+export interface PdfRenderHost {
+  render(input: {
+    readonly operationId: string;
+    readonly title: string;
+    readonly document: AdfDocument;
+    readonly assets: readonly PdfRenderAsset[];
+    readonly signal: AbortSignal;
+    readonly onResourceBytes: (completed: number) => void;
+  }): Promise<{ readonly bytes: Uint8Array; readonly lossyNodeCount: number }>;
+  close(): Promise<void>;
 }
