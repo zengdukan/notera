@@ -18,11 +18,13 @@ import {
   asTagId,
   asTagName,
   asTimestamp,
+  asVersionName,
   createFavorite,
   createNote,
   createNoteTag,
   createTag,
   createUserVersion,
+  renameUserVersion,
   restoreNoteVersion,
 } from '@notera/domain';
 
@@ -68,6 +70,11 @@ interface HistoryWriterApi {
     page: { cursor?: string; limit: number },
   ): Page<NoteVersion>;
   insert(version: NoteVersion): void;
+  rename(
+    noteId: NoteId,
+    versionId: NoteVersionId,
+    versionName: ReturnType<typeof asVersionName> | null,
+  ): NoteVersion;
   restore(
     version: NoteVersion,
     protectionVersion: NoteVersion,
@@ -325,7 +332,12 @@ describe('organization and immutable history repositories', () => {
   it('stores uncompressed verified history and restores it atomically with FTS', () => {
     const { database, filePath } = createVault();
     const current = note();
-    const historical = createUserVersion(current, versionId(1), asTimestamp(2));
+    const historical = createUserVersion(
+      current,
+      versionId(1),
+      asTimestamp(2),
+      asVersionName('Checkpoint'),
+    );
     database.transaction((transaction) => {
       transaction.notes.insert(current);
       transaction.history.insert(historical);
@@ -335,15 +347,27 @@ describe('organization and immutable history repositories', () => {
       database.history.listForNote(current.id, { limit: 10 }).items,
     ).toEqual([historical]);
 
+    const renamed = renameUserVersion(historical, asVersionName('Renamed'));
+    database.transaction((transaction) => {
+      expect(
+        transaction.history.rename(
+          current.id,
+          historical.id,
+          renamed.versionName,
+        ),
+      ).toEqual(renamed);
+    });
+    expect(database.history.get(historical.id)).toEqual(renamed);
+
     const plan = restoreNoteVersion({
       note: current,
-      version: historical,
+      version: renamed,
       protectionVersionId: versionId(2),
       restoredAt: asTimestamp(10),
     });
     database.transaction((transaction) => {
       transaction.history.restore(
-        historical,
+        renamed,
         plan.protectionVersion,
         plan.note,
         current.contentVersion,

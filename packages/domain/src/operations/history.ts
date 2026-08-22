@@ -1,4 +1,4 @@
-import { assertDomain } from '../errors';
+import { assertDomain, failDomain } from '../errors';
 import type { NoteVersionId } from '../ids';
 import {
   createNoteVersion,
@@ -8,12 +8,17 @@ import {
   type UserNoteVersion,
 } from '../models/history';
 import { rehydrateNote, type Note } from '../models/note';
-import { nextContentVersion, type Timestamp } from '../values';
+import {
+  nextContentVersion,
+  type Timestamp,
+  type VersionName,
+} from '../values';
 
 export function createUserVersion(
   note: Note,
   id: NoteVersionId,
   createdAt: Timestamp,
+  versionName: VersionName | null = null,
 ): UserNoteVersion {
   return createNoteVersion({
     id,
@@ -24,6 +29,7 @@ export function createUserVersion(
     document: note.document,
     kind: 'USER',
     protectionReason: null,
+    versionName,
     createdAt,
   }) as UserNoteVersion;
 }
@@ -43,8 +49,17 @@ export function createProtectionVersion(
     document: note.document,
     kind: 'SYSTEM_PROTECTION',
     protectionReason: reason,
+    versionName: null,
     createdAt,
   }) as ProtectionNoteVersion;
+}
+
+export function renameUserVersion(
+  version: NoteVersion,
+  versionName: VersionName | null,
+): UserNoteVersion {
+  if (version.kind !== 'USER') failDomain('INVALID_ENTITY_STATE');
+  return createNoteVersion({ ...version, versionName }) as UserNoteVersion;
 }
 
 export interface RestoreNoteVersionInput {

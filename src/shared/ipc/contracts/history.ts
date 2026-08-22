@@ -11,18 +11,40 @@ import { cursorPageRequestSchema, cursorPageSchema } from '../pagination';
 import { noteSummarySchema } from './content-tree';
 
 export const versionKindSchema = z.enum(['USER', 'SYSTEM_PROTECTION']);
+const protectionReasonSchema = z.enum([
+  'BEFORE_HISTORY_RESTORE',
+  'BEFORE_MIGRATION',
+]);
+const versionNameSchema = limitedUnicodeString(100).refine(
+  (value) => value.trim().length > 0,
+  { message: 'Version name cannot be blank.' },
+);
 export const versionRefSchema = z.discriminatedUnion('source', [
   z.strictObject({ source: z.literal('CURRENT') }),
   z.strictObject({ source: z.literal('VERSION'), versionId: uuidSchema }),
 ]);
 
-export const historySummarySchema = z.strictObject({
+const historySummaryBase = {
   versionId: uuidSchema,
   noteId: uuidSchema,
-  kind: versionKindSchema,
   displayTitle: limitedUnicodeString(1000),
   createdAt: timestampSchema,
-});
+} as const;
+
+export const historySummarySchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    ...historySummaryBase,
+    kind: z.literal('USER'),
+    protectionReason: z.null(),
+    versionName: versionNameSchema.nullable(),
+  }),
+  z.strictObject({
+    ...historySummaryBase,
+    kind: z.literal('SYSTEM_PROTECTION'),
+    protectionReason: protectionReasonSchema,
+    versionName: z.null(),
+  }),
+]);
 
 export const historySnapshotSchema = z.strictObject({
   ref: versionRefSchema,
@@ -36,6 +58,8 @@ const historyMutationErrors = [
   'PROFILE_LOCKED',
   'ENTITY_NOT_FOUND',
   'VERSION_NOTE_MISMATCH',
+  'INVALID_NAME',
+  'INVALID_ENTITY_STATE',
   'SAVE_FAILED',
   'DISK_FULL',
   'IPC_OPERATION_FAILED',
@@ -65,7 +89,22 @@ export const historyGet = defineRequestContract({
 export const historyCreatePermanent = defineRequestContract({
   key: 'history.createPermanent',
   channel: 'notera:history:create-permanent',
-  request: z.strictObject({ noteId: uuidSchema }),
+  request: z.strictObject({
+    noteId: uuidSchema,
+    versionName: versionNameSchema.optional(),
+  }),
+  data: historySummarySchema,
+  errors: historyMutationErrors,
+});
+
+export const historyRename = defineRequestContract({
+  key: 'history.rename',
+  channel: 'notera:history:rename',
+  request: z.strictObject({
+    noteId: uuidSchema,
+    versionId: uuidSchema,
+    versionName: versionNameSchema.nullable(),
+  }),
   data: historySummarySchema,
   errors: historyMutationErrors,
 });
@@ -121,6 +160,7 @@ export const historyContracts = {
   list: historyList,
   get: historyGet,
   createPermanent: historyCreatePermanent,
+  rename: historyRename,
   compare: historyCompare,
   restore: historyRestore,
   copy: historyCopy,

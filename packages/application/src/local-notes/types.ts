@@ -3,6 +3,7 @@ import type {
   ContentVersion,
   FolderId,
   NoteId,
+  NoteVersionId,
   SortOrder,
   TagId,
   Timestamp,
@@ -51,6 +52,43 @@ export interface NoteDetail extends NoteSummary {
 
 export interface FavoriteNoteSummary extends NoteSummary {
   readonly favoriteSortOrder: SortOrder;
+}
+
+export type SystemProtectionReason =
+  | 'BEFORE_HISTORY_RESTORE'
+  | 'BEFORE_MIGRATION';
+
+export interface HistorySummary {
+  readonly versionId: NoteVersionId;
+  readonly noteId: NoteId;
+  readonly kind: 'USER' | 'SYSTEM_PROTECTION';
+  readonly protectionReason: SystemProtectionReason | null;
+  readonly versionName: string | null;
+  readonly displayTitle: string;
+  readonly createdAt: Timestamp;
+}
+
+export type VersionRef =
+  | Readonly<{ source: 'CURRENT' }>
+  | Readonly<{ source: 'VERSION'; versionId: NoteVersionId }>;
+
+export interface HistorySnapshot {
+  readonly ref: VersionRef;
+  readonly noteId: NoteId;
+  readonly title: string;
+  readonly document: AdfDocument;
+  readonly createdAt: Timestamp;
+}
+
+export interface HistoryComparison {
+  readonly left: HistorySnapshot;
+  readonly right: HistorySnapshot;
+}
+
+export interface HistoryRestoreResult {
+  readonly noteId: NoteId;
+  readonly contentVersion: ContentVersion;
+  readonly protectionVersionId: NoteVersionId;
 }
 
 export type TreeEntrySummary = FolderSummary | NoteSummary;
@@ -123,4 +161,35 @@ export interface LocalNotesService {
     readonly noteId: NoteId;
     readonly beforeNoteId?: NoteId;
   }): Promise<void>;
+  listHistory(
+    input: PageRequest & { readonly noteId: NoteId },
+  ): Promise<Page<HistorySummary>>;
+  getHistory(input: {
+    readonly noteId: NoteId;
+    readonly versionId: NoteVersionId;
+  }): Promise<HistorySnapshot>;
+  createPermanentVersion(input: {
+    readonly noteId: NoteId;
+    readonly versionName?: string;
+  }): Promise<HistorySummary>;
+  renameHistoryVersion(input: {
+    readonly noteId: NoteId;
+    readonly versionId: NoteVersionId;
+    readonly versionName: string | null;
+  }): Promise<HistorySummary>;
+  compareHistory(input: {
+    readonly noteId: NoteId;
+    readonly left: VersionRef;
+    readonly right: VersionRef;
+  }): Promise<HistoryComparison>;
+  restoreHistory(input: {
+    readonly noteId: NoteId;
+    readonly versionId: NoteVersionId;
+    readonly expectedContentVersion: ContentVersion;
+  }): Promise<HistoryRestoreResult>;
+  copyHistory(input: {
+    readonly noteId: NoteId;
+    readonly versionId: NoteVersionId;
+    readonly targetFolderId: FolderId;
+  }): Promise<NoteSummary>;
 }

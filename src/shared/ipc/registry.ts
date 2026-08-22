@@ -32,6 +32,7 @@ import {
   historyCreatePermanent,
   historyGet,
   historyList,
+  historyRename,
   historyRestore,
 } from './contracts/history';
 import {
@@ -117,6 +118,7 @@ export const requestContracts = {
   'history.list': historyList,
   'history.get': historyGet,
   'history.createPermanent': historyCreatePermanent,
+  'history.rename': historyRename,
   'history.compare': historyCompare,
   'history.restore': historyRestore,
   'history.copy': historyCopy,

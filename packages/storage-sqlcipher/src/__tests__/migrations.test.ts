@@ -58,6 +58,10 @@ interface SchemaV2Module {
   readonly V2_PENDING_VAULT_META_DIGEST: Migration;
 }
 
+interface SchemaV3Module {
+  readonly V3_NOTE_VERSION_NAME: Migration;
+}
+
 interface SnapshotDatabaseModule {
   createVaultDatabase(options: {
     filePath: string;
@@ -92,6 +96,11 @@ function baselineV1Module(): BaselineV1Module {
 function schemaV2Module(): SchemaV2Module {
   // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
   return require('../schema/v2') as SchemaV2Module;
+}
+
+function schemaV3Module(): SchemaV3Module {
+  // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
+  return require('../schema/v3') as SchemaV3Module;
 }
 
 function databaseModuleWithProductionMigrations(
@@ -185,11 +194,15 @@ afterEach(() => {
 describe('schema migrations', () => {
   it('derives the current version and selects only the continuous suffix', () => {
     const registry = registryModule();
-    expect(registry.CURRENT_SCHEMA_VERSION).toBe(2);
+    expect(registry.CURRENT_SCHEMA_VERSION).toBe(3);
     expect(registry.selectProductionMigrations(1)).toEqual([
       schemaV2Module().V2_PENDING_VAULT_META_DIGEST,
+      schemaV3Module().V3_NOTE_VERSION_NAME,
     ]);
-    expect(registry.selectProductionMigrations(2)).toEqual([]);
+    expect(registry.selectProductionMigrations(2)).toEqual([
+      schemaV3Module().V3_NOTE_VERSION_NAME,
+    ]);
+    expect(registry.selectProductionMigrations(3)).toEqual([]);
 
     const v2 = migration(2);
     const v3 = migration(3);
@@ -479,7 +492,7 @@ describe('schema migrations', () => {
       );
       INSERT INTO schema_metadata VALUES (1, 0);
     `);
-    runnerModule().runMigrations(migrated, 0, 2, [
+    runnerModule().runMigrations(migrated, 0, 3, [
       migration(1, (database) => {
         database.exec('DROP TABLE schema_metadata');
         baselineV1Module().createBaselineV1(database, {
@@ -490,6 +503,7 @@ describe('schema migrations', () => {
         });
       }),
       schemaV2Module().V2_PENDING_VAULT_META_DIGEST,
+      schemaV3Module().V3_NOTE_VERSION_NAME,
     ]);
 
     const fresh = openTestConnection(freshPath);

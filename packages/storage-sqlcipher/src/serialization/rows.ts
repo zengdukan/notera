@@ -23,6 +23,7 @@ import {
   type NoteVersion,
   type Tag,
   asTrashEntryId,
+  asVersionName,
   createTrashEntry,
   type TrashEntry,
 } from '@notera/domain';
@@ -75,6 +76,7 @@ export interface NoteVersionRow {
   readonly note_id: unknown;
   readonly kind: unknown;
   readonly protection_reason: unknown;
+  readonly version_name: unknown;
   readonly source_content_version: unknown;
   readonly title: unknown;
   readonly adf_json: unknown;
@@ -213,6 +215,8 @@ export function hydrateNoteVersion(row: NoteVersionRow): NoteVersion {
       kind: row.kind as NoteVersion['kind'],
       protectionReason:
         row.protection_reason as NoteVersion['protectionReason'],
+      versionName:
+        row.version_name === null ? null : asVersionName(row.version_name),
       sourceContentVersion: asContentVersion(row.source_content_version),
       title: row.title,
       document: parseAdf(row.adf_json),

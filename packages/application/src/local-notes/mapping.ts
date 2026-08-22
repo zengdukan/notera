@@ -1,10 +1,17 @@
-import type { Favorite, Folder, Note, Tag } from '@notera/domain';
+import type {
+  Favorite,
+  Folder,
+  Note,
+  NoteVersion,
+  Tag,
+} from '@notera/domain';
 import type { VaultDatabase } from '@notera/storage-sqlcipher';
 
 import { ApplicationError } from '../errors';
 import type {
   FolderSummary,
   FavoriteNoteSummary,
+  HistorySummary,
   NoteDetail,
   NoteSummary,
   TagSummary,
@@ -62,6 +69,18 @@ export function favoriteNoteSummary(
   return Object.freeze({
     ...noteSummary(note),
     favoriteSortOrder: favorite.sortOrder,
+  });
+}
+
+export function historySummary(version: NoteVersion): HistorySummary {
+  return Object.freeze({
+    versionId: version.id,
+    noteId: version.noteId,
+    kind: version.kind,
+    protectionReason: version.protectionReason,
+    versionName: version.versionName,
+    displayTitle: version.title,
+    createdAt: version.createdAt,
   });
 }
 

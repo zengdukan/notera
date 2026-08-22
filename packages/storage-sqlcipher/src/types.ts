@@ -21,6 +21,7 @@ import type {
   AttachmentReference,
   VaultId,
   VaultIdentity,
+  VersionName,
 } from '@notera/domain';
 
 export interface PageRequest {
@@ -205,6 +206,11 @@ export interface HistoryReader {
 
 export interface HistoryWriter extends HistoryReader {
   insert(version: NoteVersion): void;
+  rename(
+    noteId: NoteId,
+    versionId: NoteVersionId,
+    versionName: VersionName | null,
+  ): NoteVersion;
   restore(
     version: NoteVersion,
     protectionVersion: NoteVersion,

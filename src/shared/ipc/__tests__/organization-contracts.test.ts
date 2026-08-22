@@ -39,6 +39,7 @@ describe('organization contract catalog', () => {
       'notera:history:list',
       'notera:history:get',
       'notera:history:create-permanent',
+      'notera:history:rename',
       'notera:history:compare',
       'notera:history:restore',
       'notera:history:copy',
@@ -152,9 +153,30 @@ describe('history and trash contracts', () => {
     expect(
       historyContracts.createPermanent.request.safeParse({
         noteId: uuid(1),
-        kind: 'SYSTEM_PROTECTION',
+        versionName: '  发布前  ',
       }).success,
-    ).toBe(false);
+    ).toBe(true);
+    expect(
+      historyContracts.rename.request.parse({
+        noteId: uuid(1),
+        versionId: uuid(2),
+        versionName: null,
+      }),
+    ).toEqual({ noteId: uuid(1), versionId: uuid(2), versionName: null });
+    expect(
+      historyContracts.createPermanent.response.safeParse({
+        ret: true,
+        data: {
+          versionId: uuid(2),
+          noteId: uuid(1),
+          kind: 'SYSTEM_PROTECTION',
+          protectionReason: 'BEFORE_MIGRATION',
+          versionName: null,
+          displayTitle: 'Snapshot',
+          createdAt: 1,
+        },
+      }).success,
+    ).toBe(true);
   });
 
   it('requires expected content version for history restore', () => {

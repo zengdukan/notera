@@ -5,6 +5,10 @@ export type {
   ContentSortField,
   FavoriteNoteSummary,
   FolderSummary,
+  HistoryComparison,
+  HistoryRestoreResult,
+  HistorySnapshot,
+  HistorySummary,
   ListChildrenInput,
   LocalNotesService,
   NoteDetail,
@@ -12,6 +16,7 @@ export type {
   SortDirection,
   TreeEntrySummary,
   TagSummary,
+  VersionRef,
 } from './local-notes/types';
 export type {
   Page,

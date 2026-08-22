@@ -303,7 +303,7 @@ class IntegrityScanner {
 
   private history(): void {
     this.rows<NoteVersionRow>(
-      `SELECT id, vault_id, note_id, kind, protection_reason,
+      `SELECT id, vault_id, note_id, kind, protection_reason, version_name,
               source_content_version, title, adf_json, adf_bytes,
               adf_sha256, created_at
        FROM note_versions ORDER BY id`,

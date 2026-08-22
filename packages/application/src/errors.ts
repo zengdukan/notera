@@ -8,6 +8,8 @@ export type ApplicationErrorCode =
   | 'INVALID_CURSOR'
   | 'CONTENT_VERSION_CONFLICT'
   | 'CONTENT_VERSION_OVERFLOW'
+  | 'VERSION_NOTE_MISMATCH'
+  | 'INVALID_ENTITY_STATE'
   | 'WRONG_PASSWORD'
   | 'VAULT_META_INVALID'
   | 'CRYPTO_UNAVAILABLE'
@@ -30,6 +32,8 @@ const SAFE_MESSAGES: Readonly<Record<ApplicationErrorCode, string>> = {
   INVALID_CURSOR: 'The page cursor is invalid.',
   CONTENT_VERSION_CONFLICT: 'The note content has changed.',
   CONTENT_VERSION_OVERFLOW: 'The note content version cannot be incremented.',
+  VERSION_NOTE_MISMATCH: 'The version does not belong to the note.',
+  INVALID_ENTITY_STATE: 'The item is in an invalid state.',
   WRONG_PASSWORD: 'The password is incorrect.',
   VAULT_META_INVALID: 'The profile metadata is invalid.',
   CRYPTO_UNAVAILABLE: 'Encryption is unavailable.',

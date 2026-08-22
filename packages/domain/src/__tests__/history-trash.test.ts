@@ -9,12 +9,15 @@ import {
   asTimestamp,
   asTrashEntryId,
   asVaultId,
+  asVersionName,
+  createProtectionVersion,
   createNote,
   createRegularFolder,
   createRootFolder,
   createUserVersion,
   expiredTrashEntries,
   resolveTrashRestoreTarget,
+  renameUserVersion,
   restoreNoteVersion,
   trashFolderTree,
   trashNote,
@@ -65,6 +68,7 @@ describe('history and trash rules', () => {
       note,
       asNoteVersionId(uuid('6')),
       asTimestamp(11_000),
+      asVersionName('  提交前  '),
     );
 
     expect(version).toMatchObject({
@@ -72,8 +76,39 @@ describe('history and trash rules', () => {
       title: note.title,
       sourceContentVersion: 1,
       protectionReason: null,
+      versionName: '提交前',
     });
     expect(note.contentVersion).toBe(1);
+  });
+
+  it('renames only user-version metadata and rejects protected versions', () => {
+    const version = createUserVersion(
+      note,
+      asNoteVersionId(uuid('22')),
+      asTimestamp(11_000),
+    );
+    const renamed = renameUserVersion(version, asVersionName('里程碑'));
+
+    expect(renamed).toMatchObject({ kind: 'USER', versionName: '里程碑' });
+    expect({ ...renamed, versionName: null }).toEqual(version);
+    expect(renameUserVersion(renamed, null).versionName).toBeNull();
+    expect(() => asVersionName('   ')).toThrow(
+      expect.objectContaining({ code: 'INVALID_NAME' }),
+    );
+    expect(() => asVersionName('x'.repeat(101))).toThrow(
+      expect.objectContaining({ code: 'INVALID_NAME' }),
+    );
+
+    const protection = createProtectionVersion(
+      note,
+      asNoteVersionId(uuid('23')),
+      'BEFORE_MIGRATION',
+      asTimestamp(12_000),
+    );
+    expect(protection.versionName).toBeNull();
+    expect(() => renameUserVersion(protection, null)).toThrow(
+      expect.objectContaining({ code: 'INVALID_ENTITY_STATE' }),
+    );
   });
 
   it('protects current content before restoring a historical snapshot', () => {

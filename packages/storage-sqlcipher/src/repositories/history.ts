@@ -6,6 +6,7 @@ import type {
   NoteId,
   NoteVersion,
   NoteVersionId,
+  VersionName,
   VaultId,
 } from '@notera/domain';
 
@@ -18,7 +19,7 @@ import type { HistoryReader, HistoryWriter, Page, PageRequest } from '../types';
 import type { NoteRepository } from './notes';
 
 const HISTORY_COLUMNS = `
-  id, vault_id, note_id, kind, protection_reason, source_content_version,
+  id, vault_id, note_id, kind, protection_reason, version_name, source_content_version,
   title, adf_json, adf_bytes, adf_sha256, created_at
 `;
 const HISTORY_CURSOR = 'history.for-note';
@@ -91,10 +92,10 @@ export class HistoryRepository implements HistoryWriter {
     this.connection()
       .prepare(
         `INSERT INTO note_versions(
-         id, vault_id, note_id, kind, protection_reason,
+         id, vault_id, note_id, kind, protection_reason, version_name,
          source_content_version, title, adf_json, adf_bytes,
          adf_sha256, created_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         version.id,
@@ -102,6 +103,7 @@ export class HistoryRepository implements HistoryWriter {
         version.noteId,
         version.kind,
         version.protectionReason,
+        version.versionName,
         version.sourceContentVersion,
         version.title,
         json,
@@ -109,6 +111,24 @@ export class HistoryRepository implements HistoryWriter {
         hash,
         version.createdAt,
       );
+  }
+
+  rename(
+    noteId: NoteId,
+    versionId: NoteVersionId,
+    versionName: VersionName | null,
+  ): NoteVersion {
+    this.guard();
+    const result = this.connection()
+      .prepare(
+        `UPDATE note_versions SET version_name = ?
+         WHERE id = ? AND vault_id = ? AND note_id = ? AND kind = 'USER'`,
+      )
+      .run(versionName, versionId, this.vaultId, noteId);
+    if (result.changes !== 1) relationViolation();
+    const renamed = this.get(versionId);
+    if (renamed === undefined) relationViolation();
+    return renamed;
   }
 
   restore(

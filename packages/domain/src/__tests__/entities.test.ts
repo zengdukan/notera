@@ -147,6 +147,7 @@ describe('offline entities', () => {
       document,
       kind: 'USER',
       protectionReason: null,
+      versionName: null,
       createdAt: now,
     });
 

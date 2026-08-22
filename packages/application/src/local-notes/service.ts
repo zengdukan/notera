@@ -28,6 +28,15 @@ import {
   trashNote,
 } from './notes';
 import {
+  compareHistory,
+  copyHistory,
+  createPermanentVersion,
+  getHistory,
+  listHistory,
+  renameHistoryVersion,
+  restoreHistory,
+} from './history';
+import {
   addTagToNote,
   createTag,
   deleteTag,
@@ -181,6 +190,46 @@ class SessionLocalNotesService implements LocalNotesService {
 
   reorderFavorite(input: Parameters<LocalNotesService['reorderFavorite']>[0]) {
     return this.run('WRITE', (database) => reorderFavorite(database, input));
+  }
+
+  listHistory(input: Parameters<LocalNotesService['listHistory']>[0]) {
+    return this.run('READ', (database) => listHistory(database, input));
+  }
+
+  getHistory(input: Parameters<LocalNotesService['getHistory']>[0]) {
+    return this.run('READ', (database) => getHistory(database, input));
+  }
+
+  createPermanentVersion(
+    input: Parameters<LocalNotesService['createPermanentVersion']>[0],
+  ) {
+    return this.run('WRITE', (database) =>
+      createPermanentVersion(database, input, this.randomId(), this.now()),
+    );
+  }
+
+  renameHistoryVersion(
+    input: Parameters<LocalNotesService['renameHistoryVersion']>[0],
+  ) {
+    return this.run('WRITE', (database) =>
+      renameHistoryVersion(database, input),
+    );
+  }
+
+  compareHistory(input: Parameters<LocalNotesService['compareHistory']>[0]) {
+    return this.run('READ', (database) => compareHistory(database, input));
+  }
+
+  restoreHistory(input: Parameters<LocalNotesService['restoreHistory']>[0]) {
+    return this.run('WRITE', (database) =>
+      restoreHistory(database, input, this.randomId(), this.now()),
+    );
+  }
+
+  copyHistory(input: Parameters<LocalNotesService['copyHistory']>[0]) {
+    return this.run('WRITE', (database) =>
+      copyHistory(database, input, this.randomId(), this.now()),
+    );
   }
 }
 
