@@ -90,11 +90,25 @@ function setup(input: {
     chooseImport: jest.fn(async () => input.importSelection ?? null),
     chooseSave: jest.fn(async () => input.saveSelection ?? null),
   };
+  const previewUrlProvider = {
+    issue: jest.fn(async () => ({
+      url: 'notera-media://preview/token',
+      expiresAt: Date.now() + 300_000,
+    })),
+  };
+  const gateRun = jest.fn();
+  const gate: AttachmentHandlerDependencies['gate'] = {
+    run: <Result>(operation: () => Promise<Result> | Result) => {
+      gateRun();
+      return Promise.resolve().then(operation);
+    },
+  };
   const dependencies: AttachmentHandlerDependencies = {
     service,
     files,
     operations,
-    gate: { run: (operation) => Promise.resolve().then(operation) },
+    gate,
+    previewUrlProvider,
     now: () => 9,
   };
   return {
@@ -105,6 +119,8 @@ function setup(input: {
     progress,
     completed,
     opened,
+    gateRun,
+    previewUrlProvider,
   };
 }
 
@@ -118,16 +134,31 @@ function binding(
 }
 
 describe('attachment and operation IPC handlers', () => {
-  it('binds four non-preview attachment requests and two operation requests', () => {
+  it('binds five attachment requests and two operation requests', () => {
     const { bindings } = setup();
     expect(bindings.map((value) => value.key)).toEqual([
       'attachment.listForNote',
       'attachment.startImport',
       'attachment.removeFromNote',
+      'attachment.getPreviewUrl',
       'attachment.startSaveAs',
       'operation.getStatus',
       'operation.cancel',
     ]);
+  });
+
+  it('issues preview URLs through the session gate', async () => {
+    const { bindings, gateRun, previewUrlProvider } = setup();
+    const result = await binding(bindings, 'attachment.getPreviewUrl').invoke({
+      attachmentId,
+    });
+
+    expect(result).toEqual({
+      url: 'notera-media://preview/token',
+      expiresAt: expect.any(Number),
+    });
+    expect(previewUrlProvider.issue).toHaveBeenCalledWith(attachmentId);
+    expect(gateRun).toHaveBeenCalledTimes(1);
   });
 
   it('returns cancelled without creating an operation', async () => {

@@ -2,6 +2,7 @@ import type { LocalAttachmentsService } from '@notera/application';
 
 import { requestContracts } from '../../shared';
 import type { AttachmentFileAccess } from '../attachments/file-access';
+import type { MediaGateway } from '../attachments/media-gateway';
 import { OperationRegistry } from '../operations/registry';
 import type { SessionCommandGate } from './local-notes-handlers';
 import { MainIpcError, toIpcError } from './errors';
@@ -12,6 +13,7 @@ export interface AttachmentHandlerDependencies {
   readonly files: AttachmentFileAccess;
   readonly operations: OperationRegistry;
   readonly gate: SessionCommandGate;
+  readonly previewUrlProvider: Pick<MediaGateway, 'issue'>;
   readonly now: () => number;
 }
 
@@ -81,6 +83,9 @@ export function createAttachmentBindings(
         );
         return {};
       }),
+    ),
+    defineIpcBinding('attachment.getPreviewUrl', (value) =>
+      input.gate.run(() => input.previewUrlProvider.issue(value.attachmentId)),
     ),
     defineIpcBinding('attachment.startSaveAs', (value) =>
       input.gate.run(async () => {
