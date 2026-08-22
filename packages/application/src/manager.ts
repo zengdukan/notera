@@ -8,6 +8,7 @@ import {
 } from '@notera/attachments';
 import {
   createProfileKeyPackage,
+  changeProfilePassword as changePasswordPackage,
   CryptoError,
   unlockProfileKeyPackage,
   wipeBytes,
@@ -39,6 +40,7 @@ import type {
   SessionState,
 } from './types';
 import { VaultMetaStore } from './vault-meta';
+import type { ReadVaultMeta } from './vault-meta';
 
 const lockedState = Object.freeze({ state: 'LOCKED' as const });
 
@@ -84,6 +86,45 @@ function sessionState(session: ProfileSession | undefined): SessionState {
   if (session === undefined) return lockedState;
   const { localProfileId, displayName, rootFolderId } = session.summary;
   return Object.freeze({ state: 'UNLOCKED', localProfileId, displayName, rootFolderId });
+}
+
+function sameDigest(left: Uint8Array, right: Uint8Array): boolean {
+  return left.byteLength === right.byteLength && Buffer.from(left).equals(Buffer.from(right));
+}
+
+async function settleMetaDigest(
+  database: VaultDatabase,
+  meta: ReadVaultMeta,
+  store: VaultMetaStore,
+): Promise<void> {
+  const stored = database.profileMetadata.get();
+  const currentMatches = sameDigest(stored.vaultMetaDigest, meta.digest);
+  const pendingMatches =
+    stored.pendingVaultMetaDigest !== undefined &&
+    sameDigest(stored.pendingVaultMetaDigest, meta.digest);
+  if (pendingMatches && stored.pendingVaultMetaDigest !== undefined) {
+    database.transaction((transaction) =>
+      transaction.profileMetadata.finalizeVaultMetaDigest({
+        currentDigest: stored.vaultMetaDigest,
+        pendingDigest: stored.pendingVaultMetaDigest as Uint8Array,
+      }),
+    );
+    await store.discardNext();
+    return;
+  }
+  if (currentMatches) {
+    if (stored.pendingVaultMetaDigest !== undefined) {
+      database.transaction((transaction) =>
+        transaction.profileMetadata.cancelVaultMetaDigest({
+          currentDigest: stored.vaultMetaDigest,
+          pendingDigest: stored.pendingVaultMetaDigest as Uint8Array,
+        }),
+      );
+    }
+    await store.discardNext();
+    return;
+  }
+  throw new ApplicationError('DB_CORRUPT');
 }
 
 class LocalProfileManager implements ProfileManager {
@@ -221,11 +262,13 @@ class LocalProfileManager implements ProfileManager {
     let vaultKey: Uint8Array | undefined;
     let createdSession: ProfileSession | undefined;
     try {
-      const meta = await new VaultMetaStore(profile, () => randomBytes(16).toString('hex')).read();
+      const store = new VaultMetaStore(profile, () => randomBytes(16).toString('hex'));
+      const meta = await store.read();
       const keys = await unlockProfileKeyPackage(masterPassword, id, meta.value.keyPackage);
       databaseKey = keys.databaseKey;
       vaultKey = keys.vaultKey;
       database = openVaultDatabase({ filePath: profile.database, databaseKey, expectedVaultId: meta.value.vaultId, expectedVaultMetaDigest: meta.digest });
+      await settleMetaDigest(database, meta, store);
       const roots = database.folders.listAll().filter((folder) => folder.kind === 'ROOT');
       if (roots.length !== 1) throw new ApplicationError('DB_CORRUPT');
       const stored = database.profileMetadata.get();
@@ -297,7 +340,74 @@ class LocalProfileManager implements ProfileManager {
     });
   }
 
-  changeProfilePassword(): Promise<void> { return Promise.reject(new ApplicationError('OPERATION_FAILED')); }
+  changeProfilePassword(input: { readonly oldPassword: string; readonly newPassword: string }): Promise<void> {
+    return this.enqueue(async () => {
+      const oldPassword = password(input?.oldPassword);
+      const newPassword = password(input?.newPassword);
+      const current = this.session;
+      if (current === undefined) throw new ApplicationError('PROFILE_LOCKED');
+      const profile = this.paths.profile(current.summary.localProfileId);
+      const store = new VaultMetaStore(profile, () => randomBytes(16).toString('hex'));
+      try {
+        await current.run(async ({ database }) => {
+          let prepared = false;
+          let promoted = false;
+          const currentMeta = await store.read();
+          await settleMetaDigest(database, currentMeta, store);
+          const nextPackage = await changePasswordPackage(
+            oldPassword,
+            newPassword,
+            current.summary.localProfileId,
+            currentMeta.value.keyPackage,
+          );
+          const nextMeta = await store.writeNext({
+            ...currentMeta.value,
+            keyPackage: nextPackage,
+          });
+          try {
+            database.transaction((transaction) =>
+              transaction.profileMetadata.prepareVaultMetaDigest({
+                currentDigest: currentMeta.digest,
+                pendingDigest: nextMeta.digest,
+              }),
+            );
+            prepared = true;
+            await store.promoteNext();
+            promoted = true;
+            try {
+              database.transaction((transaction) =>
+                transaction.profileMetadata.finalizeVaultMetaDigest({
+                  currentDigest: currentMeta.digest,
+                  pendingDigest: nextMeta.digest,
+                }),
+              );
+            } catch {
+              // The new Meta is committed; the next operation will finalize it.
+            }
+          } catch (error) {
+            if (!promoted) {
+              if (prepared) {
+                try {
+                  database.transaction((transaction) =>
+                    transaction.profileMetadata.cancelVaultMetaDigest({
+                      currentDigest: currentMeta.digest,
+                      pendingDigest: nextMeta.digest,
+                    }),
+                  );
+                } catch {
+                  // Preserve the first pre-commit failure.
+                }
+              }
+              await store.discardNext().catch(() => undefined);
+              throw error;
+            }
+          }
+        });
+      } catch (error) {
+        throw mapError(error);
+      }
+    });
+  }
   removeProfileFromDevice(): Promise<void> { return Promise.reject(new ApplicationError('OPERATION_FAILED')); }
 
   close(): Promise<void> {
