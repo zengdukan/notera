@@ -2,6 +2,10 @@ export type ApplicationErrorCode =
   | 'PROFILE_LOCKED'
   | 'ENTITY_NOT_FOUND'
   | 'INVALID_NAME'
+  | 'ROOT_FOLDER_IMMUTABLE'
+  | 'FOLDER_CYCLE'
+  | 'PARENT_FOLDER_INVALID'
+  | 'INVALID_CURSOR'
   | 'WRONG_PASSWORD'
   | 'VAULT_META_INVALID'
   | 'CRYPTO_UNAVAILABLE'
@@ -18,6 +22,10 @@ const SAFE_MESSAGES: Readonly<Record<ApplicationErrorCode, string>> = {
   PROFILE_LOCKED: 'The profile is locked.',
   ENTITY_NOT_FOUND: 'The requested entity does not exist.',
   INVALID_NAME: 'The name is invalid.',
+  ROOT_FOLDER_IMMUTABLE: 'The root folder cannot be changed.',
+  FOLDER_CYCLE: 'The folder move would create a cycle.',
+  PARENT_FOLDER_INVALID: 'The parent folder is invalid.',
+  INVALID_CURSOR: 'The page cursor is invalid.',
   WRONG_PASSWORD: 'The password is incorrect.',
   VAULT_META_INVALID: 'The profile metadata is invalid.',
   CRYPTO_UNAVAILABLE: 'Encryption is unavailable.',

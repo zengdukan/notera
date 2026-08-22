@@ -52,6 +52,8 @@ import type {
 } from './types';
 import { VaultMetaStore } from './vault-meta';
 import type { ReadVaultMeta } from './vault-meta';
+import { createLocalNotesService } from './local-notes/service';
+import type { LocalNotesService } from './local-notes/types';
 
 const lockedState = Object.freeze({ state: 'LOCKED' as const });
 
@@ -171,6 +173,8 @@ async function settleMetaDigest(
 }
 
 class LocalProfileManager implements ProfileManager {
+  readonly localNotes: LocalNotesService;
+
   private readonly paths: ApplicationPaths;
 
   private readonly catalog: ProfileCatalog;
@@ -186,6 +190,9 @@ class LocalProfileManager implements ProfileManager {
   constructor(paths: ApplicationPaths, catalog: ProfileCatalog) {
     this.paths = paths;
     this.catalog = catalog;
+    this.localNotes = createLocalNotesService({
+      getSession: () => this.session,
+    });
   }
 
   private ensureOpen(): void {

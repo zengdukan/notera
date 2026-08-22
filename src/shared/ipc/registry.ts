@@ -17,7 +17,6 @@ import {
   contentTreeListChildren,
   contentTreeMoveFolder,
   contentTreeRenameFolder,
-  contentTreeReorderEntry,
   contentTreeTrashFolder,
 } from './contracts/content-tree';
 import { exportStartNote } from './contracts/export';
@@ -92,7 +91,6 @@ export const requestContracts = {
   'contentTree.createFolder': contentTreeCreateFolder,
   'contentTree.renameFolder': contentTreeRenameFolder,
   'contentTree.moveFolder': contentTreeMoveFolder,
-  'contentTree.reorderEntry': contentTreeReorderEntry,
   'contentTree.trashFolder': contentTreeTrashFolder,
   'note.create': noteCreate,
   'note.get': noteGet,

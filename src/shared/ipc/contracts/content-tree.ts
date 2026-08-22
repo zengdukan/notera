@@ -1,9 +1,7 @@
 import { z } from 'zod';
 import {
   contentVersionSchema,
-  emptyObjectSchema,
   limitedUnicodeString,
-  sortOrderSchema,
   timestampSchema,
   uuidSchema,
 } from '../common';
@@ -15,6 +13,10 @@ const folderNameSchema = limitedUnicodeString(255).refine(
   { message: 'Folder name cannot be blank.' },
 );
 export const noteTitleSchema = limitedUnicodeString(1000);
+export const contentSortSchema = z.strictObject({
+  field: z.enum(['CREATED_AT', 'UPDATED_AT', 'TITLE']),
+  direction: z.enum(['ASC', 'DESC']),
+});
 
 export const entryRefSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('folder'), id: uuidSchema }),
@@ -26,7 +28,6 @@ export const folderSummarySchema = z.strictObject({
   id: uuidSchema,
   name: folderNameSchema,
   parentId: uuidSchema,
-  sortOrder: sortOrderSchema,
   updatedAt: timestampSchema,
   hasChildren: z.boolean(),
 });
@@ -36,7 +37,6 @@ export const noteSummarySchema = z.strictObject({
   id: uuidSchema,
   title: noteTitleSchema,
   folderId: uuidSchema,
-  sortOrder: sortOrderSchema,
   contentVersion: contentVersionSchema,
   updatedAt: timestampSchema,
 });
@@ -49,7 +49,10 @@ export const treeEntrySummarySchema = z.discriminatedUnion('kind', [
 export const contentTreeListChildren = defineRequestContract({
   key: 'contentTree.listChildren',
   channel: 'notera:content-tree:list-children',
-  request: cursorPageRequestSchema.extend({ parentFolderId: uuidSchema }),
+  request: cursorPageRequestSchema.extend({
+    parentFolderId: uuidSchema,
+    sort: contentSortSchema.optional(),
+  }),
   data: cursorPageSchema(treeEntrySummarySchema),
   errors: [
     'PROFILE_LOCKED',
@@ -111,26 +114,6 @@ export const contentTreeMoveFolder = defineRequestContract({
   ],
 });
 
-export const contentTreeReorderEntry = defineRequestContract({
-  key: 'contentTree.reorderEntry',
-  channel: 'notera:content-tree:reorder-entry',
-  request: z.strictObject({
-    parentFolderId: uuidSchema,
-    entry: entryRefSchema,
-    beforeEntry: entryRefSchema.optional(),
-  }),
-  data: emptyObjectSchema,
-  errors: [
-    'PROFILE_LOCKED',
-    'ENTITY_NOT_FOUND',
-    'PARENT_FOLDER_INVALID',
-    'INVALID_ENTITY_STATE',
-    'SAVE_FAILED',
-    'DISK_FULL',
-    'IPC_OPERATION_FAILED',
-  ],
-});
-
 const trashResultSchema = z.strictObject({ trashEntryId: uuidSchema });
 
 export const contentTreeTrashFolder = defineRequestContract({
@@ -153,6 +136,5 @@ export const contentTreeContracts = {
   createFolder: contentTreeCreateFolder,
   renameFolder: contentTreeRenameFolder,
   moveFolder: contentTreeMoveFolder,
-  reorderEntry: contentTreeReorderEntry,
   trashFolder: contentTreeTrashFolder,
 } as const;

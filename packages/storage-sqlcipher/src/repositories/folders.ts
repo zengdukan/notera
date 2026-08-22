@@ -1,7 +1,12 @@
 import type { Folder, FolderId, Note, VaultId } from '@notera/domain';
 
 import type { SqlcipherConnection } from '../connection';
-import { encodeCursor, parsePageRequest } from '../cursor';
+import {
+  encodeCursor,
+  encodeTextCursor,
+  parsePageRequest,
+  parseTextPageRequest,
+} from '../cursor';
 import { StorageError } from '../errors';
 import {
   hydrateFolder,
@@ -9,13 +14,23 @@ import {
   type FolderRow,
   type NoteRow,
 } from '../serialization/rows';
-import type { FolderReader, FolderWriter, Page, PageRequest } from '../types';
+import type {
+  ContentSort,
+  FolderReader,
+  FolderWriter,
+  Page,
+  PageRequest,
+} from '../types';
 
 const FOLDER_COLUMNS = `
   id, vault_id, kind, parent_id, name, sort_order, created_at, updated_at
 `;
 const CHILDREN_CURSOR_KIND = 'folders.children';
 const CONTENT_CURSOR_KIND = 'folders.content';
+const DEFAULT_CONTENT_SORT: ContentSort = Object.freeze({
+  field: 'CREATED_AT',
+  direction: 'DESC',
+});
 
 interface ContentRow {
   readonly entity_kind: 'FOLDER' | 'NOTE';
@@ -37,6 +52,19 @@ type UseGuard = () => void;
 
 function relationViolation(): never {
   throw new StorageError('RELATION_INTEGRITY_VIOLATION');
+}
+
+function checkedContentSort(value: ContentSort | undefined): ContentSort {
+  const sort = value ?? DEFAULT_CONTENT_SORT;
+  if (
+    (sort.field !== 'CREATED_AT' &&
+      sort.field !== 'UPDATED_AT' &&
+      sort.field !== 'TITLE') ||
+    (sort.direction !== 'ASC' && sort.direction !== 'DESC')
+  ) {
+    throw new StorageError('INVALID_CURSOR');
+  }
+  return sort;
 }
 
 export class FolderRepository implements FolderWriter {
@@ -127,13 +155,26 @@ export class FolderRepository implements FolderWriter {
       .map(hydrateFolder);
   }
 
-  listContent(folderId: FolderId, page: PageRequest): Page<Folder | Note> {
+  listContent(
+    folderId: FolderId,
+    page: PageRequest,
+    requestedSort?: ContentSort,
+  ): Page<Folder | Note> {
     this.guard();
     if (this.get(folderId) === undefined) {
       throw new StorageError('ENTITY_NOT_FOUND');
     }
-    const fingerprint = `folder:${folderId}`;
-    const cursor = parsePageRequest(page, CONTENT_CURSOR_KIND, fingerprint);
+    const sort = checkedContentSort(requestedSort);
+    const fingerprint = `folder:${folderId}:sort:${sort.field}:${sort.direction}`;
+    const numericCursor =
+      sort.field === 'TITLE'
+        ? undefined
+        : parsePageRequest(page, CONTENT_CURSOR_KIND, fingerprint);
+    const textCursor =
+      sort.field === 'TITLE'
+        ? parseTextPageRequest(page, CONTENT_CURSOR_KIND, fingerprint)
+        : undefined;
+    const cursor = numericCursor ?? textCursor;
     if (
       cursor?.secondary !== undefined &&
       cursor.secondary !== 'FOLDER' &&
@@ -141,6 +182,12 @@ export class FolderRepository implements FolderWriter {
     ) {
       throw new StorageError('INVALID_CURSOR');
     }
+    const sortColumn = {
+      CREATED_AT: 'created_at',
+      UPDATED_AT: 'updated_at',
+      TITLE: 'name_or_title COLLATE NOCASE',
+    }[sort.field];
+    const comparison = sort.direction === 'ASC' ? '>' : '<';
     let keyset = '';
     const parameters: unknown[] = [
       this.vaultId,
@@ -155,16 +202,22 @@ export class FolderRepository implements FolderWriter {
         throw new StorageError('INVALID_CURSOR');
       }
       keyset = `WHERE (
-        sort_order > ?
-        OR (sort_order = ? AND entity_kind > ?)
-        OR (sort_order = ? AND entity_kind = ? AND entity_id > ?)
+        entity_kind > ?
+        OR (
+          entity_kind = ?
+          AND (
+            ${sortColumn} ${comparison} ?
+            OR (${sortColumn} = ? AND entity_id > ?)
+          )
+        )
       )`;
+      const cursorValue =
+        'sortText' in cursor ? cursor.sortText : cursor.sortOrder;
       parameters.push(
-        cursor.sortOrder,
-        cursor.sortOrder,
         cursor.secondary,
-        cursor.sortOrder,
         cursor.secondary,
+        cursorValue,
+        cursorValue,
         cursor.lastId,
       );
     }
@@ -198,7 +251,8 @@ export class FolderRepository implements FolderWriter {
              )
          )
          SELECT * FROM content ${keyset}
-         ORDER BY sort_order, entity_kind, entity_id LIMIT ?`,
+         ORDER BY entity_kind ASC, ${sortColumn} ${sort.direction}, entity_id ASC
+         LIMIT ?`,
       )
       .all(...parameters);
     const hasMore = rows.length > page.limit;
@@ -233,11 +287,21 @@ export class FolderRepository implements FolderWriter {
       items,
       ...(hasMore && lastRow
         ? {
-            nextCursor: encodeCursor(CONTENT_CURSOR_KIND, fingerprint, {
-              sortOrder: lastRow.sort_order,
-              secondary: lastRow.entity_kind,
-              lastId: lastRow.entity_id,
-            }),
+            nextCursor:
+              sort.field === 'TITLE'
+                ? encodeTextCursor(CONTENT_CURSOR_KIND, fingerprint, {
+                    sortText: lastRow.name_or_title,
+                    secondary: lastRow.entity_kind,
+                    lastId: lastRow.entity_id,
+                  })
+                : encodeCursor(CONTENT_CURSOR_KIND, fingerprint, {
+                    sortOrder:
+                      sort.field === 'CREATED_AT'
+                        ? lastRow.created_at
+                        : lastRow.updated_at,
+                    secondary: lastRow.entity_kind,
+                    lastId: lastRow.entity_id,
+                  }),
           }
         : {}),
     };

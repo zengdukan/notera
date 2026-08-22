@@ -1,15 +1,21 @@
 import type {
+  AdfDocument,
   Folder,
   FolderId,
+  Note,
+  NoteId,
   RegularFolder,
   VaultId,
   VaultIdentity,
 } from '@notera/domain';
 import {
+  asAdfDocument,
   asFolderId,
   asFolderName,
+  asNoteId,
   asSortOrder,
   asTimestamp,
+  createNote,
   createRegularFolder,
 } from '@notera/domain';
 
@@ -31,6 +37,16 @@ interface PageRequest {
   readonly limit: number;
 }
 
+interface Page<Value> {
+  readonly items: readonly Value[];
+  readonly nextCursor?: string;
+}
+
+interface ContentSort {
+  readonly field: 'CREATED_AT' | 'UPDATED_AT' | 'TITLE';
+  readonly direction: 'ASC' | 'DESC';
+}
+
 interface FolderReaderApi {
   get(id: FolderId): Folder | undefined;
   listAll(): readonly Folder[];
@@ -39,12 +55,21 @@ interface FolderReaderApi {
     page: PageRequest,
   ): { readonly items: readonly Folder[]; readonly nextCursor?: string };
   listSubtree(rootId: FolderId): readonly Folder[];
+  listContent(
+    folderId: FolderId,
+    page: PageRequest,
+    sort?: ContentSort,
+  ): Page<Folder | Note>;
 }
 
 interface FolderWriterApi extends FolderReaderApi {
   insert(folder: Folder): void;
   replace(folder: Folder): void;
   replaceSortOrders(folders: readonly Folder[]): void;
+}
+
+interface NoteWriterApi {
+  insert(note: Note): void;
 }
 
 interface ProfileMetadataReaderApi {
@@ -74,6 +99,7 @@ interface ProfileMetadataWriterApi extends ProfileMetadataReaderApi {
 interface VaultTransactionApi {
   readonly profileMetadata: ProfileMetadataWriterApi;
   readonly folders: FolderWriterApi;
+  readonly notes: NoteWriterApi;
 }
 
 interface VaultDatabaseApi {
@@ -152,6 +178,35 @@ function regularFolder(
     sortOrder: asSortOrder(sortOrder),
     createdAt: asTimestamp(index),
     updatedAt: asTimestamp(index),
+  });
+}
+
+const emptyDocument: AdfDocument = asAdfDocument({
+  type: 'doc',
+  version: 1,
+});
+
+function noteId(index: number): NoteId {
+  return asNoteId(
+    `10000000-0000-4000-8000-${index.toString().padStart(12, '0')}`,
+  );
+}
+
+function note(input: {
+  readonly index: number;
+  readonly title: string;
+  readonly createdAt: number;
+  readonly updatedAt: number;
+}): Note {
+  return createNote({
+    id: noteId(input.index),
+    vaultId: TEST_VAULT_ID,
+    folderId: TEST_ROOT_FOLDER_ID,
+    title: input.title,
+    document: emptyDocument,
+    sortOrder: asSortOrder(input.index),
+    createdAt: asTimestamp(input.createdAt),
+    updatedAt: asTimestamp(input.updatedAt),
   });
 }
 
@@ -405,6 +460,96 @@ describe('vault transactions and folder repositories', () => {
           cursor: invalidPosition,
           limit: 2,
         }),
+      'INVALID_CURSOR',
+    );
+  });
+
+  it('sorts mixed content with folders first and binds cursors to sort options', () => {
+    const { database } = createVault();
+    const zulu = createRegularFolder({
+      ...regularFolder(31, TEST_ROOT_FOLDER_ID),
+      name: asFolderName('Zulu'),
+      createdAt: asTimestamp(10),
+      updatedAt: asTimestamp(40),
+    });
+    const alpha = createRegularFolder({
+      ...regularFolder(32, TEST_ROOT_FOLDER_ID),
+      name: asFolderName('alpha'),
+      createdAt: asTimestamp(20),
+      updatedAt: asTimestamp(30),
+    });
+    const beta = note({
+      index: 31,
+      title: 'Beta',
+      createdAt: 4,
+      updatedAt: 10,
+    });
+    const aardvark = note({
+      index: 32,
+      title: 'aardvark',
+      createdAt: 3,
+      updatedAt: 20,
+    });
+    database.transaction((transaction) => {
+      transaction.folders.insert(zulu);
+      transaction.folders.insert(alpha);
+      transaction.notes.insert(beta);
+      transaction.notes.insert(aardvark);
+    });
+
+    const ids = (sort?: ContentSort) =>
+      database.folders
+        .listContent(TEST_ROOT_FOLDER_ID, { limit: 10 }, sort)
+        .items.map(({ id }) => id);
+    expect(ids()).toEqual([alpha.id, zulu.id, beta.id, aardvark.id]);
+    expect(ids({ field: 'CREATED_AT', direction: 'ASC' })).toEqual([
+      zulu.id,
+      alpha.id,
+      aardvark.id,
+      beta.id,
+    ]);
+    expect(ids({ field: 'UPDATED_AT', direction: 'ASC' })).toEqual([
+      alpha.id,
+      zulu.id,
+      beta.id,
+      aardvark.id,
+    ]);
+    expect(ids({ field: 'TITLE', direction: 'ASC' })).toEqual([
+      alpha.id,
+      zulu.id,
+      aardvark.id,
+      beta.id,
+    ]);
+    expect(ids({ field: 'TITLE', direction: 'DESC' })).toEqual([
+      zulu.id,
+      alpha.id,
+      beta.id,
+      aardvark.id,
+    ]);
+
+    const first = database.folders.listContent(
+      TEST_ROOT_FOLDER_ID,
+      { limit: 1 },
+      { field: 'TITLE', direction: 'ASC' },
+    );
+    expect(first.items.map(({ id }) => id)).toEqual([alpha.id]);
+    expect(first.nextCursor).toEqual(expect.any(String));
+    expect(
+      database.folders
+        .listContent(
+          TEST_ROOT_FOLDER_ID,
+          { cursor: first.nextCursor, limit: 10 },
+          { field: 'TITLE', direction: 'ASC' },
+        )
+        .items.map(({ id }) => id),
+    ).toEqual([zulu.id, aardvark.id, beta.id]);
+    expectStorageCode(
+      () =>
+        database.folders.listContent(
+          TEST_ROOT_FOLDER_ID,
+          { cursor: first.nextCursor, limit: 10 },
+          { field: 'UPDATED_AT', direction: 'ASC' },
+        ),
       'INVALID_CURSOR',
     );
   });

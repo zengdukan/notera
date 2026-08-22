@@ -7,6 +7,9 @@ export { StorageError, type StorageErrorCode } from './errors';
 export { CURRENT_SCHEMA_VERSION } from './migrations/registry';
 export type {
   CreateVaultDatabaseOptions,
+  ContentSort,
+  ContentSortField,
+  SortDirection,
   FolderReader,
   FolderWriter,
   NormalizedSearchText,

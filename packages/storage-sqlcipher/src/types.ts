@@ -60,7 +60,18 @@ export interface FolderReader {
   listAll(): readonly Folder[];
   listChildren(parentId: FolderId, page: PageRequest): Page<Folder>;
   listSubtree(rootId: FolderId): readonly Folder[];
-  listContent(folderId: FolderId, page: PageRequest): Page<Folder | Note>;
+  listContent(
+    folderId: FolderId,
+    page: PageRequest,
+    sort?: ContentSort,
+  ): Page<Folder | Note>;
+}
+
+export type ContentSortField = 'CREATED_AT' | 'UPDATED_AT' | 'TITLE';
+export type SortDirection = 'ASC' | 'DESC';
+export interface ContentSort {
+  readonly field: ContentSortField;
+  readonly direction: SortDirection;
 }
 
 export interface FolderWriter extends FolderReader {

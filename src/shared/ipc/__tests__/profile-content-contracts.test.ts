@@ -1,7 +1,6 @@
 import { ipcFailure } from '../common';
 import {
   contentTreeContracts,
-  entryRefSchema,
   treeEntrySummarySchema,
 } from '../contracts/content-tree';
 import { noteContracts, noteDetailSchema } from '../contracts/note';
@@ -138,7 +137,6 @@ describe('content tree IPC contracts', () => {
       'notera:content-tree:create-folder',
       'notera:content-tree:rename-folder',
       'notera:content-tree:move-folder',
-      'notera:content-tree:reorder-entry',
       'notera:content-tree:trash-folder',
     ]);
   });
@@ -149,7 +147,6 @@ describe('content tree IPC contracts', () => {
       id: ids.folder,
       name: 'Folder',
       parentId: ids.root,
-      sortOrder: 0,
       updatedAt: 1,
       hasChildren: true,
     };
@@ -158,7 +155,6 @@ describe('content tree IPC contracts', () => {
       id: ids.note,
       title: 'Note',
       folderId: ids.folder,
-      sortOrder: 0,
       contentVersion: 1,
       updatedAt: 1,
     };
@@ -175,29 +171,53 @@ describe('content tree IPC contracts', () => {
       contentTreeContracts.listChildren.request.parse({
         parentFolderId: ids.root,
         limit: 100,
+        sort: { field: 'TITLE', direction: 'ASC' },
       }),
-    ).toEqual({ parentFolderId: ids.root, limit: 100 });
-  });
-
-  it('requires typed entry references for reorder operations', () => {
-    expect(entryRefSchema.parse({ kind: 'note', id: ids.note })).toEqual({
-      kind: 'note',
-      id: ids.note,
+    ).toEqual({
+      parentFolderId: ids.root,
+      limit: 100,
+      sort: { field: 'TITLE', direction: 'ASC' },
     });
     expect(
-      contentTreeContracts.reorderEntry.request.safeParse({
-        parentFolderId: ids.folder,
-        entry: { kind: 'note', id: ids.note },
-        beforeEntry: { kind: 'folder', id: ids.root },
-      }).success,
-    ).toBe(true);
-    expect(() =>
-      entryRefSchema.parse({
-        kind: 'note',
-        id: ids.note,
-        folderId: ids.folder,
+      contentTreeContracts.listChildren.request.parse({
+        parentFolderId: ids.root,
+        limit: 100,
       }),
+    ).toEqual({ parentFolderId: ids.root, limit: 100 });
+    expect(() =>
+      treeEntrySummarySchema.parse({ ...folder, sortOrder: 0 }),
     ).toThrow();
+  });
+
+  it('accepts only the fixed automatic sort options', () => {
+    const request = contentTreeContracts.listChildren.request;
+    const fields = ['CREATED_AT', 'UPDATED_AT', 'TITLE'] as const;
+    const directions = ['ASC', 'DESC'] as const;
+    fields.forEach((field) => {
+      directions.forEach((direction) => {
+        expect(
+          request.safeParse({
+            parentFolderId: ids.root,
+            limit: 20,
+            sort: { field, direction },
+          }).success,
+        ).toBe(true);
+      });
+    });
+    expect(
+      request.safeParse({
+        parentFolderId: ids.root,
+        limit: 20,
+        sort: { field: 'SORT_ORDER', direction: 'ASC' },
+      }).success,
+    ).toBe(false);
+    expect(
+      request.safeParse({
+        parentFolderId: ids.root,
+        limit: 20,
+        sort: { field: 'TITLE', direction: 'NEWEST' },
+      }).success,
+    ).toBe(false);
   });
 });
 
@@ -253,7 +273,6 @@ describe('note IPC contracts', () => {
       folderId: ids.folder,
       document: emptyDocument,
       contentVersion: 1,
-      sortOrder: 0,
       createdAt: 1,
       updatedAt: 1,
       tags: [{ id: ids.tag, name: 'tag', updatedAt: 1 }],

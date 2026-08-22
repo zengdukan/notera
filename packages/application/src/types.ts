@@ -1,4 +1,5 @@
 import type { LocalProfileId, Timestamp, VaultId } from '@notera/domain';
+import type { LocalNotesService } from './local-notes/types';
 
 export type InternalSessionName = string & {
   readonly __internalSessionName: unique symbol;
@@ -54,6 +55,7 @@ export type SessionState =
     }>;
 
 export interface ProfileManager {
+  readonly localNotes: LocalNotesService;
   listProfiles(input: PageRequest): Page<ProfileSummary>;
   getSessionState(): SessionState;
   createProfile(input: {
