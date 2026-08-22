@@ -7,7 +7,7 @@ import { mapNativeError, StorageError } from './errors';
 import { checkIntegrity } from './integrity';
 import {
   CURRENT_SCHEMA_VERSION,
-  PRODUCTION_MIGRATIONS,
+  selectProductionMigrations,
 } from './migrations/registry';
 import { runMigrations } from './migrations/runner';
 import { asFolderReader, FolderRepository } from './repositories/folders';
@@ -62,6 +62,24 @@ function removeCreatedDatabaseFiles(filePath: string): void {
       // Preserve the initialization failure.
     }
   });
+}
+
+function migrateToCurrentSchema(
+  connection: SqlcipherConnection,
+  actualVersion: number,
+): void {
+  if (actualVersion > CURRENT_SCHEMA_VERSION) {
+    throw new StorageError('DB_SCHEMA_TOO_NEW');
+  }
+  runMigrations(
+    connection,
+    actualVersion,
+    CURRENT_SCHEMA_VERSION,
+    selectProductionMigrations(actualVersion),
+  );
+  if (readSchemaVersion(connection) !== CURRENT_SCHEMA_VERSION) {
+    throw new StorageError('DB_CORRUPT');
+  }
 }
 
 export class VaultDatabase {
@@ -292,6 +310,12 @@ export function createVaultDatabase(
         createdAt: Date.now(),
       });
     })();
+    migrateToCurrentSchema(connection, readSchemaVersion(connection));
+    validateVaultMetadata(
+      connection,
+      options.identity.id,
+      options.vaultMetaDigest,
+    );
     return new VaultDatabase(connection, options.identity.id);
   } catch (error) {
     closeAfterFailure(connection);
@@ -311,20 +335,7 @@ export function openVaultDatabase(
 
   try {
     const schemaVersion = readSchemaVersion(connection);
-    if (schemaVersion > CURRENT_SCHEMA_VERSION) {
-      throw new StorageError('DB_SCHEMA_TOO_NEW');
-    }
-    if (schemaVersion < CURRENT_SCHEMA_VERSION) {
-      runMigrations(
-        connection,
-        schemaVersion,
-        CURRENT_SCHEMA_VERSION,
-        PRODUCTION_MIGRATIONS,
-      );
-    }
-    if (readSchemaVersion(connection) !== CURRENT_SCHEMA_VERSION) {
-      throw new StorageError('DB_CORRUPT');
-    }
+    migrateToCurrentSchema(connection, schemaVersion);
     validateVaultMetadata(
       connection,
       options.expectedVaultId,

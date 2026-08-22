@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+
 import type { SqlcipherConnection } from '../connection';
 import type { StorageError } from '../errors';
 import {
@@ -60,6 +62,12 @@ interface SnapshotDatabaseModule {
     profileName: string;
     vaultMetaDigest: Uint8Array;
   }): { close(): void };
+  openVaultDatabase(options: {
+    filePath: string;
+    databaseKey: Uint8Array;
+    expectedVaultId: typeof TEST_IDENTITY.id;
+    expectedVaultMetaDigest: Uint8Array;
+  }): { close(): void };
 }
 
 function registryModule(): RegistryModule {
@@ -75,6 +83,41 @@ function runnerModule(): RunnerModule {
 function baselineV1Module(): BaselineV1Module {
   // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
   return require('../schema/baseline-v1') as BaselineV1Module;
+}
+
+function databaseModuleWithProductionMigrations(
+  migrations: readonly Migration[],
+): SnapshotDatabaseModule {
+  const currentVersion = migrations.at(-1)?.targetVersion ?? 1;
+  jest.resetModules();
+  jest.doMock('../migrations/registry', () => {
+    const actual = jest.requireActual(
+      '../migrations/registry',
+    ) as RegistryModule;
+    return {
+      ...actual,
+      PRODUCTION_MIGRATIONS: Object.freeze([...migrations]),
+      CURRENT_SCHEMA_VERSION: currentVersion,
+      selectProductionMigrations(fromVersion: number) {
+        return actual.selectMigrationRange(migrations, 1, fromVersion);
+      },
+    };
+  });
+  // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
+  return require('../database') as SnapshotDatabaseModule;
+}
+
+function createBaselineDatabase(filePath: string): void {
+  const connection = openNewConnection(filePath);
+  connection.transaction(() => {
+    baselineV1Module().createBaselineV1(connection, {
+      identity: TEST_IDENTITY,
+      profileName: 'Profile',
+      vaultMetaDigest: vaultMetaDigest(),
+      createdAt: 1,
+    });
+  })();
+  connection.close();
 }
 
 function createMigrationDatabase(version: number): {
@@ -124,7 +167,11 @@ function expectMigrationFailure(operation: () => unknown): void {
   }
 }
 
-afterEach(cleanupTempDatabases);
+afterEach(() => {
+  jest.dontMock('../migrations/registry');
+  jest.resetModules();
+  cleanupTempDatabases();
+});
 
 describe('schema migrations', () => {
   it('derives the current version and selects only the continuous suffix', () => {
@@ -156,7 +203,11 @@ describe('schema migrations', () => {
 
     [0, 4, Number.NaN, Number.MAX_SAFE_INTEGER + 1].forEach((fromVersion) => {
       expectMigrationFailure(() =>
-        registry.selectMigrationRange([migration(2), migration(3)], 1, fromVersion),
+        registry.selectMigrationRange(
+          [migration(2), migration(3)],
+          1,
+          fromVersion,
+        ),
       );
     });
   });
@@ -252,6 +303,142 @@ describe('schema migrations', () => {
     expect(
       connection.prepare('SELECT value FROM migration_audit').all(),
     ).toEqual([]);
+    connection.close();
+  });
+
+  it('creates the v1 baseline before replaying production migrations', () => {
+    const v2 = migration(
+      2,
+      (database) => {
+        database.exec(`
+          CREATE TABLE lifecycle_audit(value TEXT NOT NULL);
+          INSERT INTO lifecycle_audit VALUES ('v2');
+        `);
+      },
+      (database) => {
+        const row = database.prepare('SELECT value FROM lifecycle_audit').get();
+        if ((row as { value?: unknown } | undefined)?.value !== 'v2') {
+          throw new Error('v2 validation failed');
+        }
+      },
+    );
+    const filePath = tempDatabasePath('create-replay.db');
+    databaseModuleWithProductionMigrations([v2])
+      .createVaultDatabase({
+        filePath,
+        databaseKey: databaseKey(),
+        identity: TEST_IDENTITY,
+        profileName: 'Profile',
+        vaultMetaDigest: vaultMetaDigest(),
+      })
+      .close();
+
+    const connection = openTestConnection(filePath);
+    try {
+      expect(
+        connection.prepare('SELECT schema_version FROM schema_metadata').get(),
+      ).toEqual({ schema_version: 2 });
+      expect(
+        connection.prepare('SELECT value FROM lifecycle_audit').all(),
+      ).toEqual([{ value: 'v2' }]);
+    } finally {
+      connection.close();
+    }
+  });
+
+  it('opens from an intermediate version with only the remaining suffix', () => {
+    const filePath = tempDatabasePath('open-suffix.db');
+    createBaselineDatabase(filePath);
+    const v2 = migration(2, (database) => {
+      database.exec(`
+        CREATE TABLE lifecycle_audit(value TEXT NOT NULL);
+        INSERT INTO lifecycle_audit VALUES ('v2');
+      `);
+    });
+    const connection = openTestConnection(filePath);
+    runnerModule().runMigrations(connection, 1, 2, [v2]);
+    connection.close();
+
+    const v3 = migration(3, (database) => {
+      database.prepare('INSERT INTO lifecycle_audit VALUES (?)').run('v3');
+    });
+    databaseModuleWithProductionMigrations([v2, v3])
+      .openVaultDatabase({
+        filePath,
+        databaseKey: databaseKey(),
+        expectedVaultId: TEST_IDENTITY.id,
+        expectedVaultMetaDigest: vaultMetaDigest(),
+      })
+      .close();
+
+    const migrated = openTestConnection(filePath);
+    expect(
+      migrated.prepare('SELECT schema_version FROM schema_metadata').get(),
+    ).toEqual({ schema_version: 3 });
+    expect(
+      migrated
+        .prepare('SELECT value FROM lifecycle_audit ORDER BY value')
+        .all(),
+    ).toEqual([{ value: 'v2' }, { value: 'v3' }]);
+    migrated.close();
+  });
+
+  it('removes a new database when a production migration fails', () => {
+    const filePath = tempDatabasePath('create-failure.db');
+    const failingV2 = migration(2, () => {
+      throw new Error('injected create migration failure');
+    });
+    let created: { close(): void } | undefined;
+    try {
+      expectMigrationFailure(() => {
+        created = databaseModuleWithProductionMigrations([
+          failingV2,
+        ]).createVaultDatabase({
+          filePath,
+          databaseKey: databaseKey(),
+          identity: TEST_IDENTITY,
+          profileName: 'Profile',
+          vaultMetaDigest: vaultMetaDigest(),
+        });
+        created.close();
+      });
+    } finally {
+      created?.close();
+    }
+    expect(existsSync(filePath)).toBe(false);
+    expect(existsSync(`${filePath}-wal`)).toBe(false);
+    expect(existsSync(`${filePath}-shm`)).toBe(false);
+  });
+
+  it('keeps an existing database when a production migration fails', () => {
+    const filePath = tempDatabasePath('open-failure.db');
+    createBaselineDatabase(filePath);
+    const failingV2 = migration(2, (database) => {
+      database.exec('CREATE TABLE rolled_back(value TEXT NOT NULL)');
+      throw new Error('injected open migration failure');
+    });
+
+    expectMigrationFailure(() =>
+      databaseModuleWithProductionMigrations([failingV2]).openVaultDatabase({
+        filePath,
+        databaseKey: databaseKey(),
+        expectedVaultId: TEST_IDENTITY.id,
+        expectedVaultMetaDigest: vaultMetaDigest(),
+      }),
+    );
+    expect(existsSync(filePath)).toBe(true);
+    const connection = openTestConnection(filePath);
+    expect(
+      connection.prepare('SELECT schema_version FROM schema_metadata').get(),
+    ).toEqual({ schema_version: 1 });
+    expect(
+      connection
+        .prepare(
+          `SELECT name FROM sqlite_master
+           WHERE type = 'table' AND name = 'rolled_back'`,
+        )
+        .get(),
+    ).toBeUndefined();
     connection.close();
   });
 
