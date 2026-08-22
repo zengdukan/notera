@@ -116,11 +116,32 @@ class ManagedSqlcipherConnection implements SqlcipherConnection {
   transaction<Arguments extends unknown[], Result>(
     operation: (...arguments_: Arguments) => Result,
   ): (...arguments_: Arguments) => Result {
+    let callbackThrew = false;
+    let callbackError: unknown;
     const transaction = this.runNative((database) =>
-      database.transaction(operation),
+      database.transaction((...arguments_: Arguments): Result => {
+        try {
+          return operation(...arguments_);
+        } catch (error) {
+          callbackThrew = true;
+          callbackError = error;
+          throw error;
+        }
+      }),
     );
-    return (...arguments_: Arguments): Result =>
-      this.runNative(() => transaction(...arguments_));
+    return (...arguments_: Arguments): Result => {
+      this.assertOpen();
+      callbackThrew = false;
+      callbackError = undefined;
+      try {
+        return transaction(...arguments_);
+      } catch (error) {
+        if (callbackThrew) {
+          throw callbackError;
+        }
+        throw mapNativeError(error);
+      }
+    };
   }
 
   close(): void {
