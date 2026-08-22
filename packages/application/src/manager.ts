@@ -1,5 +1,15 @@
 import { randomBytes, randomUUID } from 'node:crypto';
-import { mkdir, rm, unlink, writeFile } from 'node:fs/promises';
+import {
+  lstat,
+  mkdir,
+  readdir,
+  realpath,
+  rename,
+  rm,
+  unlink,
+  writeFile,
+} from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 
 import {
   AttachmentStorageError,
@@ -90,6 +100,17 @@ function sessionState(session: ProfileSession | undefined): SessionState {
 
 function sameDigest(left: Uint8Array, right: Uint8Array): boolean {
   return left.byteLength === right.byteLength && Buffer.from(left).equals(Buffer.from(right));
+}
+
+async function verifiedDirectory(path: string, parent: string): Promise<boolean> {
+  try {
+    const status = await lstat(path);
+    if (!status.isDirectory() || status.isSymbolicLink()) return false;
+    const actual = await realpath(path);
+    return actual === path && dirname(actual) === parent;
+  } catch {
+    return false;
+  }
 }
 
 async function settleMetaDigest(
@@ -408,7 +429,64 @@ class LocalProfileManager implements ProfileManager {
       }
     });
   }
-  removeProfileFromDevice(): Promise<void> { return Promise.reject(new ApplicationError('OPERATION_FAILED')); }
+  removeProfileFromDevice(value: LocalProfileId): Promise<void> {
+    return this.enqueue(async () => {
+      let id: LocalProfileId;
+      try { id = asLocalProfileId(value); } catch { throw new ApplicationError('ENTITY_NOT_FOUND'); }
+      await mkdir(this.paths.deletingRoot, { recursive: true });
+      const deletingRoot = await realpath(this.paths.deletingRoot);
+      const isolatedPrefix = `${id}.`;
+      const existingIsolation = (await readdir(deletingRoot, { withFileTypes: true }))
+        .filter((entry) => entry.name.startsWith(isolatedPrefix))
+        .map((entry) => ({ entry, path: join(deletingRoot, entry.name) }))
+        .filter(({ entry }) =>
+          entry.isDirectory() &&
+          !entry.isSymbolicLink() &&
+          new RegExp(`^${id}\\.[0-9a-f]{32}$`, 'u').test(entry.name),
+        );
+
+      if (!this.catalog.has(id)) {
+        const valid: string[] = [];
+        for (const candidate of existingIsolation) {
+          if (await verifiedDirectory(candidate.path, deletingRoot)) valid.push(candidate.path);
+        }
+        if (valid.length === 0) throw new ApplicationError('ENTITY_NOT_FOUND');
+        try {
+          for (const target of valid) await rm(target, { force: true, recursive: true });
+          return;
+        } catch {
+          throw new ApplicationError('REMOVE_FAILED');
+        }
+      }
+
+      if (this.session?.summary.localProfileId === id) await this.lockCurrent();
+      const source = this.paths.profile(id).root;
+      if (!(await verifiedDirectory(source, this.paths.profilesRoot))) {
+        throw new ApplicationError('REMOVE_FAILED');
+      }
+      const target = join(deletingRoot, `${id}.${randomBytes(16).toString('hex')}`);
+      try {
+        await rename(source, target);
+      } catch {
+        throw new ApplicationError('REMOVE_FAILED');
+      }
+
+      try {
+        await this.catalog.remove(id);
+      } catch {
+        this.catalog.hide(id);
+        throw new ApplicationError('REMOVE_FAILED');
+      }
+      if (!(await verifiedDirectory(target, deletingRoot))) {
+        throw new ApplicationError('REMOVE_FAILED');
+      }
+      try {
+        await rm(target, { force: true, recursive: true });
+      } catch {
+        throw new ApplicationError('REMOVE_FAILED');
+      }
+    });
+  }
 
   close(): Promise<void> {
     if (this.closePromise !== undefined) return this.closePromise;

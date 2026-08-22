@@ -38,6 +38,7 @@ export interface ProfileCatalog {
   add(entry: CatalogEntry): Promise<void>;
   updateCache(entry: CatalogEntry): Promise<void>;
   remove(id: LocalProfileId): Promise<void>;
+  hide(id: LocalProfileId): void;
 }
 
 export interface CreateProfileCatalogOptions {
@@ -151,6 +152,10 @@ class Catalog implements ProfileCatalog {
   async remove(id: LocalProfileId): Promise<void> {
     if (!this.has(id)) throw new ApplicationError('ENTITY_NOT_FOUND');
     await this.commit(this.entries.filter((entry) => entry.localProfileId !== id));
+  }
+  hide(id: LocalProfileId): void {
+    this.entries = this.entries.filter((entry) => entry.localProfileId !== id);
+    this.bytes = encode(this.entries);
   }
 }
 

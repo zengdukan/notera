@@ -44,4 +44,16 @@ describe('workspace package resolution', () => {
     expect(attachmentApi.BlobLeaseRegistry).toBeUndefined();
     expect(attachmentApi.encryptAead).toBeUndefined();
   });
+
+  it('exposes only the safe application lifecycle entry point', () => {
+    expect(application.createProfileManager).toBeInstanceOf(Function);
+    expect(application.ApplicationError).toBeInstanceOf(Function);
+    const applicationApi = application as Record<string, unknown>;
+    expect(applicationApi.ProfileSession).toBeUndefined();
+    expect(applicationApi.ProfileCatalog).toBeUndefined();
+    expect(applicationApi.VaultMetaStore).toBeUndefined();
+    expect(applicationApi.createApplicationPaths).toBeUndefined();
+    expect(applicationApi.createVaultDatabase).toBeUndefined();
+    expect(applicationApi.createAttachmentStore).toBeUndefined();
+  });
 });
