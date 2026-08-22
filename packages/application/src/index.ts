@@ -23,6 +23,14 @@ export type {
   VersionRef,
 } from './local-notes/types';
 export type {
+  AttachmentAvailability,
+  AttachmentContentReader,
+  AttachmentSummary,
+  ImportAttachmentInput,
+  ListAttachmentsForNoteInput,
+  LocalAttachmentsService,
+} from './local-attachments/types';
+export type {
   Page,
   PageRequest,
   ProfileManager,

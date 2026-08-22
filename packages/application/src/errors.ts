@@ -13,6 +13,11 @@ export type ApplicationErrorCode =
   | 'TRASH_ENTRY_EXPIRED'
   | 'TRASH_TARGET_REQUIRED'
   | 'DUPLICATE_TARGET_ID'
+  | 'ATTACHMENT_TOO_LARGE'
+  | 'ATTACHMENT_IMPORT_FAILED'
+  | 'BLOB_MISSING'
+  | 'BLOB_CORRUPT'
+  | 'OPERATION_ABORTED'
   | 'WRONG_PASSWORD'
   | 'VAULT_META_INVALID'
   | 'CRYPTO_UNAVAILABLE'
@@ -40,6 +45,11 @@ const SAFE_MESSAGES: Readonly<Record<ApplicationErrorCode, string>> = {
   TRASH_ENTRY_EXPIRED: 'The trash entry has expired.',
   TRASH_TARGET_REQUIRED: 'An explicit restore target is required.',
   DUPLICATE_TARGET_ID: 'A target identifier is duplicated.',
+  ATTACHMENT_TOO_LARGE: 'The attachment exceeds the size limit.',
+  ATTACHMENT_IMPORT_FAILED: 'The attachment could not be imported.',
+  BLOB_MISSING: 'The attachment content is missing.',
+  BLOB_CORRUPT: 'The attachment content is corrupt.',
+  OPERATION_ABORTED: 'The operation was cancelled.',
   WRONG_PASSWORD: 'The password is incorrect.',
   VAULT_META_INVALID: 'The profile metadata is invalid.',
   CRYPTO_UNAVAILABLE: 'Encryption is unavailable.',
