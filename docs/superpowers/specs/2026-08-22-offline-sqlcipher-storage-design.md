@@ -220,6 +220,228 @@ v1 没有历史生产迁移文件，但迁移注册表、连续性校验和执�
 
 普通 Schema 迁移不得隐式重建 FTS。搜索规范化规则通过 `normalizer_version` 独立管理；规则变化使索引进入 `NEEDS_REBUILD`，不伪装成数据库 Schema 迁移。
 
+### 7.1 何时递增 Schema 版本
+
+只有持久化数据库结构或数据解释方式发生变化时，才递增 `schema_version`。典型情况包括：
+
+- 新增、删除或重建普通表、列、索引、唯一约束或 `CHECK`；
+- 已有列的含义、编码、枚举集合或空值规则改变；
+- Repository 读取新版本数据前必须完成一次性数据回填；
+- 新代码不能继续安全读取旧结构，需要用迁移建立明确兼容边界。
+
+以下变化不使用普通 Schema 版本：
+
+- 搜索规范化或分词规则变化：递增 `normalizer_version`，把索引标记为 `NEEDS_REBUILD`，再走搜索索引重建；
+- SQLCipher 页面、KDF 或数据库文件级格式变化：单独设计 `file_format_version` 升级，不得假装成普通 DDL 迁移；
+- 仅 TypeScript 类型重命名、Repository 内部重构或不改变持久化表示的行为调整；
+- 同步、Outbox、冲突或远端附件字段：当前离线阶段不纳入 Schema。
+
+版本号必须是从 1 开始的连续安全整数。不能跳过 v2 直接发布 v3，也不能用日期、构建号或应用版本代替 Schema 版本。
+
+### 7.2 新增 v2 时的文件与职责
+
+本节描述未来首次真实升级的开发流程，不表示仓库已经发布 v2；在具体 v2 产品结构获得批准并完成实现前，生产常量和注册表继续保持 v1 状态。
+
+真实 v2 建议增加一个不可变的版本文件：
+
+```text
+packages/storage-sqlcipher/src/
+  schema/
+    current.ts                 # 更新为“全新数据库直接创建 v2”的完整快照
+  migrations/
+    types.ts                   # Migration 协议，不因单个版本变化
+    v2.ts                      # 只负责 v1 -> v2
+    registry.ts                # 按 targetVersion 连续注册生产迁移
+    runner.ts                  # 每版本独立事务、校验和版本提交
+  database.ts                  # 打开旧库时选择当前版本之后的迁移区间
+  __tests__/
+    schema.test.ts             # 全新 v2 快照、结构和公开边界
+    migrations.test.ts         # v1 -> v2、回滚、续迁和快照等价
+```
+
+各文件的边界固定如下：
+
+- `migrations/v2.ts` 只描述从 v1 到 v2 的增量，不包含 v3 预留逻辑，也不创建连接或提交事务；
+- `schema/current.ts` 始终是最新完整快照，不是历史 SQL 的拼接，也不重放 `v2.ts`；
+- `registry.ts` 只维护有序生产迁移和连续性选择，不放任意业务 SQL；
+- `runner.ts` 统一负责事务、调用 `validate()`、成功后更新 `schema_metadata` 和安全错误映射；
+- `database.ts` 只把数据库当前版本之后、应用当前版本之前的连续迁移交给 runner；
+- 测试可以构造历史 Schema 或注入测试迁移，但公开包入口不得暴露迁移注入、原生连接或任意 SQL。
+
+已发布的迁移文件是用户数据库历史的一部分。v2 发布后不得改写 `v2.ts` 来迎合 v3；后续变化必须新增 `v3.ts`。
+
+### 7.3 v2 实施顺序
+
+新增 v2 时按以下顺序工作，测试与实现属于同一个完整功能模块：
+
+1. 明确 v2 的结构差异、旧数据回填规则、不可逆变化和验证条件；破坏性变化必须先设计保护版本或其他明确的数据保留策略；
+2. 在 `migrations.test.ts` 建立真实 v1 历史库夹具，先表达 v1 数据升级到 v2 后必须满足的行为；
+3. 新建 `migrations/v2.ts`，实现固定 DDL、参数化回填和迁移后验证；
+4. 把 `CURRENT_SCHEMA_VERSION` 从 1 改为 2，并把 `schema/current.ts` 更新为完整 v2 快照；
+5. 在 `registry.ts` 按顺序注册 v2，并确保打开数据库时只选择适用于当前版本的连续区间；
+6. 在 `schema.test.ts` 更新全新数据库的 v2 结构断言；
+7. 比较“全新 v2 快照”和“v1 经 v2 迁移”的规范化 `sqlite_master`，并核对必要数据；
+8. 运行当前模块相关测试和 Storage typecheck，通过后把迁移、快照、注册和测试作为同一个功能提交。
+
+不能先修改生产快照再补迁移测试。测试必须证明旧库确实需要 v2，并证明失败时没有留下半迁移状态。
+
+### 7.4 v2 迁移文件模板
+
+`migrations/v2.ts` 使用现有 `Migration` 协议。结构模板如下；其中四个私有辅助函数必须在同一文件中实现为真实、固定、可验证的 v2 逻辑，不能把 SQL 或校验回调开放给调用方注入：
+
+```ts
+import type { Migration } from './types';
+
+export const migrationToV2: Migration = Object.freeze({
+  targetVersion: 2,
+  migrate(database) {
+    applyV2SchemaDelta(database);
+    backfillV2Data(database);
+  },
+  validate(database) {
+    validateV2Structure(database);
+    validateV2Data(database);
+  },
+});
+```
+
+`applyV2SchemaDelta()`、`backfillV2Data()`、`validateV2Structure()` 和 `validateV2Data()` 代表版本文件内部的职责边界；真实 `v2.ts` 必须实现这些私有函数，不能保留空函数或常量成功结果。实现还必须遵守以下规则：
+
+- DDL 是仓库内固定字符串，数据值通过绑定参数写入；调用方不能提供表名、列名、SQL 或回调；
+- `migrate()` 不调用 `database.transaction()`，不执行 `BEGIN`、`COMMIT`、`ROLLBACK`，也不更新 `schema_metadata`；
+- runner 在同一个版本事务内依次调用 `migrate()`、`validate()`，两者都成功后才把版本更新为 2；
+- `validate()` 不能只判断“SQL 没报错”，必须查询并确认列、索引、约束以及数据回填结果；
+- 不定义或启用外键，不依赖 `PRAGMA foreign_key_check`；关系仍由写入预检查和 `checkIntegrity()` 保证；
+- 迁移错误不得包含 SQL、数据库路径、标题、ADF、附件文件名、Key 或绑定值；runner 对外统一返回 `MIGRATION_FAILED`；
+- 不在普通 v2 迁移中隐式清空或重建 FTS。若 v2 同时改变 Note 数据，必须明确维持现有 FTS 不变量；规范化规则变化仍走独立重建流程。
+
+SQLite 支持事务化的 DDL 应当与回填一起放在当前版本事务中。不要在迁移中使用 `VACUUM`、切换 `journal_mode` 或执行其他不能满足当前事务语义的操作。
+
+### 7.5 更新当前 v2 快照
+
+完成 `v2.ts` 后，`schema/current.ts` 必须表示最终 v2，而不是先创建 v1 再运行迁移：
+
+```ts
+export const CURRENT_SCHEMA_VERSION = 2;
+```
+
+同时直接更新 `CURRENT_SCHEMA_SQL`、初始化元数据以及新库所需的初始行。创建全新数据库时仍只执行一次当前快照，并把 `schema_metadata.schema_version` 写成 2。
+
+快照和迁移必须达到相同的可观察结果：
+
+- 应用表、列、虚拟表、索引、唯一约束和 `CHECK` 一致；
+- 元数据版本和固定单行一致；
+- 必要默认值、回填值和数据类型一致；
+- `sqlite_master.sql` 规范化后结构一致；
+- 两条路径都不包含 `FOREIGN KEY` 或 `REFERENCES`，连接也不启用外键。
+
+“迁移能打开”不等于快照正确。若快照遗漏 v2 结构，新用户和升级用户会得到两种不同数据库，必须由结构等价测试阻止。
+
+### 7.6 注册迁移和选择连续区间
+
+v2 发布时生产注册表变为：
+
+```ts
+import { migrationToV2 } from './v2';
+
+export const PRODUCTION_MIGRATIONS: readonly Migration[] = Object.freeze([
+  migrationToV2,
+]);
+```
+
+注册表必须按 `targetVersion` 严格升序且没有重复或缺口。打开数据库时不能无条件把完整历史数组交给只接受当前迁移区间的 runner；应选择满足以下条件的连续切片：
+
+```text
+databaseVersion < migration.targetVersion <= CURRENT_SCHEMA_VERSION
+```
+
+因此：
+
+- 打开 v1 且应用当前为 v2：执行 `[v2]`；
+- 打开 v2 且应用当前为 v2：不执行迁移；
+- 将来打开 v1 且应用当前为 v3：依次执行 `[v2, v3]`，每个版本单独提交；
+- 将来打开 v2 且应用当前为 v3：只执行 `[v3]`；
+- 打开高于应用当前版本的数据库：在选择迁移前返回 `DB_SCHEMA_TOO_NEW`。
+
+`validateMigrationRegistry()` 继续验证所选区间的数量和目标版本连续性。测试必须覆盖从每个受支持历史版本开始的选择结果，防止 v3 发布后错误地把 `[v2, v3]` 整体交给以 v2 为起点的 runner。
+
+### 7.7 v2 单元测试矩阵
+
+`migrations.test.ts` 至少覆盖以下行为：
+
+1. **成功升级：** 真实 v1 结构和代表性数据升级到 v2，版本恰好变为 2，所有旧数据保持预期语义；
+2. **结构验证：** v2 新增或改变的列、索引、约束及数据不变量全部存在；
+3. **快照等价：** 全新 v2 与 v1→v2 的规范化 `sqlite_master` 一致，必要初始数据也一致；
+4. **当前步骤回滚：** 在 v2 DDL、回填中段和 `validate()` 分别注入失败，v2 的全部变化回滚，版本仍为 1；
+5. **断点续迁：** 若将来 `[v2, v3]` 中 v3 失败，v2 保持已提交；下次打开只从 v3 继续，不重放 v2；
+6. **注册表拒绝：** 重复、缺口、乱序、错误起点和错误终点返回 `MIGRATION_FAILED`；
+7. **数据边界：** 空库、最小数据、代表性旧数据以及可能触发唯一约束或 `CHECK` 的边界值结果明确；
+8. **安全失败：** 迁移错误不回显 SQL、路径、Key 或用户内容，打开失败不删除、替换或重建既有数据库；
+9. **版本边界：** v2 正常打开且不重放迁移，v3 数据库被 v2 应用以 `DB_SCHEMA_TOO_NEW` 拒绝；
+10. **无外键：** 迁移和新快照都不定义或启用外键。
+
+测试夹具应创建真正的历史 v1 结构，不能调用已经更新为 v2 的 `createCurrentSchema()` 后再把版本号手工改回 1；仅改版本号不能代表真实旧库。
+
+### 7.8 失败、回滚与恢复
+
+runner 对每个目标版本建立独立事务，执行顺序固定为：
+
+```text
+确认当前版本 -> migrate() -> validate() -> 更新 schema_metadata -> 提交
+```
+
+任一步失败时：
+
+- 回滚当前目标版本的 DDL、回填和版本更新；
+- 把错误映射为固定 `MIGRATION_FAILED`；
+- 关闭打开失败的连接，但不删除数据库、WAL 或 SHM，不替换文件，不自动创建新库；
+- 已经成功提交的更早版本保持有效，因此下次打开从数据库记录的版本继续；
+- 不自动降级。应用版本过旧时只返回 `DB_SCHEMA_TOO_NEW`，不得尝试反向执行迁移。
+
+如果 SQLite 操作不支持所需事务语义，必须重新设计迁移步骤，不能通过迁移外备份后覆盖原文件来绕开 runner。涉及不可逆删除或内容变换的迁移，还必须在该版本设计中明确保护版本、校验摘要或其他可验证的数据保留策略。
+
+### 7.9 精确验证命令和提交范围
+
+实施 v2 期间只运行当前 Schema/迁移模块相关测试：
+
+```powershell
+npm run test:unit -- packages/storage-sqlcipher/src/__tests__/schema.test.ts packages/storage-sqlcipher/src/__tests__/migrations.test.ts --runInBand
+```
+
+模块完成后按实际修改运行 Storage typecheck；若修改受 lint 约束的文件，再运行对应 lint：
+
+```powershell
+npm run typecheck -w @notera/storage-sqlcipher
+npx eslint packages/storage-sqlcipher/src/schema packages/storage-sqlcipher/src/migrations packages/storage-sqlcipher/src/database.ts packages/storage-sqlcipher/src/__tests__/schema.test.ts packages/storage-sqlcipher/src/__tests__/migrations.test.ts --ext .ts
+git diff --check
+```
+
+同一个 v2 功能提交至少包含：
+
+- `schema/current.ts` 的版本号和完整 v2 快照；
+- 新增的 `migrations/v2.ts`；
+- `migrations/registry.ts` 的生产注册与连续区间选择；
+- 如有需要，`database.ts` 的适用迁移区间调用；
+- `schema.test.ts` 和 `migrations.test.ts` 的全部 v2 行为测试；
+- 真实 v2 设计要求涉及的 Repository 或水合调整。
+
+测试、迁移实现、快照更新和注册属于同一个可独立验证的功能模块，只提交一次；不要拆成“测试提交”“迁移提交”和“快照提交”。
+
+### 7.10 常见错误
+
+- **只递增版本号：** 不能代表真实 v1→v2，既没有结构变化，也没有验证旧数据；
+- **只写迁移、不改当前快照：** 导致新用户与升级用户结构不同；
+- **只改快照、不写迁移：** 已有用户无法升级；
+- **在 `migrate()` 中更新版本号：** 会绕过 runner 的验证后提交规则；
+- **迁移自己管理事务：** 会破坏每个目标版本独立回滚和断点续迁；
+- **发布后修改 v2：** 已升级用户不会重放，必须新增下一版本迁移；
+- **完整注册表不做区间选择：** 从中间版本升级时会因数量或目标版本不匹配而失败；
+- **用当前快照伪造历史夹具：** 无法发现真实旧结构与新结构的差异；
+- **迁移中重建 FTS：** 混淆 Schema 与规范化版本，失败恢复边界不清；
+- **添加或启用外键：** 与当前无外键设计冲突，并改变 Repository 和完整性检查的职责；
+- **吞掉单行回填错误：** 会提交部分语义错误数据；任何一行不满足规则都应使当前版本整体回滚；
+- **在错误中拼接 SQL 或用户数据：** 会破坏存储层的安全错误边界。
+
 ## 8. Repository 设计
 
 ### 8.1 Profile 元数据
