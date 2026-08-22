@@ -1,5 +1,10 @@
 import { CryptoError, isCryptoError } from './errors';
-import { KEY_BYTES, NONCE_BYTES, SALT_BYTES } from './parameters';
+import {
+  ATTACHMENT_NONCE_PREFIX_BYTES,
+  KEY_BYTES,
+  NONCE_BYTES,
+  SALT_BYTES,
+} from './parameters';
 import { getSodium } from './sodium';
 
 async function generateRandomBytes(length: number): Promise<Uint8Array> {
@@ -28,4 +33,12 @@ export async function generateDatabaseKey(): Promise<Uint8Array> {
 
 export async function generateVaultKey(): Promise<Uint8Array> {
   return generateRandomBytes(KEY_BYTES);
+}
+
+export async function generateAttachmentFileKey(): Promise<Uint8Array> {
+  return generateRandomBytes(KEY_BYTES);
+}
+
+export async function generateAttachmentNoncePrefix(): Promise<Uint8Array> {
+  return generateRandomBytes(ATTACHMENT_NONCE_PREFIX_BYTES);
 }

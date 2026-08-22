@@ -12,6 +12,8 @@ import {
   ARGON2_MEMLIMIT,
   ARGON2_OPSLIMIT,
   ARGON2_OUTPUT_BYTES,
+  ATTACHMENT_FORMAT_VERSION,
+  ATTACHMENT_NONCE_PREFIX_BYTES,
   AUTH_TAG_BYTES,
   CRYPTO_FORMAT_VERSION,
   KDF_VERSION,
@@ -99,6 +101,8 @@ describe('crypto primitives', () => {
       ARGON2_OUTPUT_BYTES,
       ARGON2_OPSLIMIT,
       ARGON2_MEMLIMIT,
+      ATTACHMENT_FORMAT_VERSION,
+      ATTACHMENT_NONCE_PREFIX_BYTES,
     }).toEqual({
       CRYPTO_FORMAT_VERSION: 1,
       KDF_VERSION: 1,
@@ -109,6 +113,8 @@ describe('crypto primitives', () => {
       ARGON2_OUTPUT_BYTES: 64,
       ARGON2_OPSLIMIT: 3,
       ARGON2_MEMLIMIT: 64 * 1024 * 1024,
+      ATTACHMENT_FORMAT_VERSION: 1,
+      ATTACHMENT_NONCE_PREFIX_BYTES: 16,
     });
     expect(KeyWrapPurpose).toMatchObject({
       DATABASE_KEY: 1,
@@ -125,5 +131,10 @@ describe('crypto primitives', () => {
     expect('getSodium' in publicApi).toBe(false);
     expect('initializeSodium' in publicApi).toBe(false);
     expect('deriveArgon2id' in publicApi).toBe(false);
+    expect('encryptAead' in publicApi).toBe(false);
+    expect('decryptAead' in publicApi).toBe(false);
+    expect('encodeAttachmentChunkAad' in publicApi).toBe(false);
+    expect('buildAttachmentChunkNonce' in publicApi).toBe(false);
+    expect('generateRandomBytes' in publicApi).toBe(false);
   });
 });

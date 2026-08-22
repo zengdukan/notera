@@ -11,6 +11,8 @@ import {
   SALT_BYTES,
 } from '../parameters';
 import {
+  generateAttachmentFileKey,
+  generateAttachmentNoncePrefix,
   generateDatabaseKey,
   generateNonce,
   generateSalt,
@@ -107,7 +109,16 @@ describe('key derivation', () => {
   });
 
   test('generates independent fixed-length random values', async () => {
-    const [saltA, saltB, nonceA, nonceB, databaseKey, vaultKey] =
+    const [
+      saltA,
+      saltB,
+      nonceA,
+      nonceB,
+      databaseKey,
+      vaultKey,
+      attachmentFileKey,
+      attachmentNoncePrefix,
+    ] =
       await Promise.all([
         generateSalt(),
         generateSalt(),
@@ -115,6 +126,8 @@ describe('key derivation', () => {
         generateNonce(),
         generateDatabaseKey(),
         generateVaultKey(),
+        generateAttachmentFileKey(),
+        generateAttachmentNoncePrefix(),
       ]);
 
     expect(saltA).toHaveLength(SALT_BYTES);
@@ -126,5 +139,7 @@ describe('key derivation', () => {
     expect(databaseKey).toHaveLength(KEY_BYTES);
     expect(vaultKey).toHaveLength(KEY_BYTES);
     expect(databaseKey).not.toEqual(vaultKey);
+    expect(attachmentFileKey).toHaveLength(KEY_BYTES);
+    expect(attachmentNoncePrefix).toHaveLength(16);
   });
 });
