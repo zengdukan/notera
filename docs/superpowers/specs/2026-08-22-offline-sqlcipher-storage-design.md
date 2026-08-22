@@ -250,9 +250,9 @@ v1 没有历史生产迁移文件，但迁移注册表、连续区间选择、�
 packages/storage-sqlcipher/src/
   schema/
     baseline-v1.ts             # 永久只创建首次发布的 v1 基线
+    v2.ts                      # 只负责 v1 -> v2 的结构与数据变化
   migrations/
     types.ts                   # Migration 协议，不因单个版本变化
-    v2.ts                      # 只负责 v1 -> v2
     registry.ts                # 按 targetVersion 连续注册生产迁移
     runner.ts                  # 每版本独立事务、校验和版本提交
   database.ts                  # 新建/打开都选择实际版本之后的迁移区间
@@ -264,7 +264,7 @@ packages/storage-sqlcipher/src/
 各文件的边界固定如下：
 
 - `schema/baseline-v1.ts` 永久只描述 v1 完整结构、元数据和 Root Folder 初始化；发布 v2 后也不得改成 v2；
-- `migrations/v2.ts` 只描述从 v1 到 v2 的增量，不包含 v3 预留逻辑，也不创建连接或提交事务；
+- `schema/v2.ts` 只描述从 v1 到 v2 的结构与数据增量，不包含 v3 预留逻辑，也不创建连接或提交事务；
 - `registry.ts` 维护有序生产迁移、连续区间选择和派生的 `CURRENT_SCHEMA_VERSION`，不放任意业务 SQL；
 - `runner.ts` 统一负责事务、调用 `validate()`、成功后更新 `schema_metadata` 和安全错误映射；
 - `database.ts` 在创建 v1 基线或读取既有版本后，只把该版本之后、应用当前版本之前的连续迁移交给 runner；
@@ -279,7 +279,7 @@ packages/storage-sqlcipher/src/
 
 因此“基线不可变”只冻结历史数据库结构和历史初始值，不冻结应用其他可独立演进的当前策略。
 
-已发布的迁移文件是用户数据库历史的一部分。v2 发布后不得改写 `v2.ts` 来迎合 v3；后续变化必须新增 `v3.ts`。
+已发布的 Schema 版本文件是用户数据库历史的一部分。v2 发布后不得改写 `schema/v2.ts` 来迎合 v3；后续变化必须新增 `schema/v3.ts`。
 
 ### 7.3 v2 实施顺序
 
@@ -287,20 +287,20 @@ packages/storage-sqlcipher/src/
 
 1. 明确 v2 的结构差异、旧数据回填规则、不可逆变化和验证条件；破坏性变化必须先设计保护版本或其他明确的数据保留策略；
 2. 在 `migrations.test.ts` 分别建立空 v1 基线和带代表性数据的真实 v1 历史库，先表达两者升级到 v2 后必须满足的行为；
-3. 新建 `migrations/v2.ts`，实现固定 DDL、参数化回填和迁移后验证；
+3. 新建 `schema/v2.ts`，实现固定 DDL、参数化回填和迁移后验证；
 4. 在 `registry.ts` 按顺序注册 v2，使派生的 `CURRENT_SCHEMA_VERSION` 变为 2，并确保只选择适用于实际版本的连续区间；
 5. 保持 `baseline-v1.ts` 内容不变；新库创建测试应证明基线完成后会自动重放 v2；
-6. 核对空 v1 与带数据 v1 经同一个 `v2.ts` 后得到相同目标结构，并验证旧数据语义；
+6. 核对空 v1 与带数据 v1 经同一个 `schema/v2.ts` 后得到相同目标结构，并验证旧数据语义；
 7. 运行当前模块相关测试和 Storage typecheck，通过后把迁移、注册、创建流程和测试作为同一个功能提交。
 
 不能通过修改 v1 基线让新库跳过 v2。测试必须证明新库和旧库都真实执行同一个生产迁移，并证明失败时没有留下半迁移状态。
 
-### 7.4 v2 迁移文件模板
+### 7.4 v2 Schema 版本文件模板
 
-`migrations/v2.ts` 使用现有 `Migration` 协议。结构模板如下；其中四个私有辅助函数必须在同一文件中实现为真实、固定、可验证的 v2 逻辑，不能把 SQL 或校验回调开放给调用方注入：
+`schema/v2.ts` 使用 `migrations/types.ts` 定义的现有 `Migration` 协议。结构模板如下；其中四个私有辅助函数必须在同一文件中实现为真实、固定、可验证的 v2 逻辑，不能把 SQL 或校验回调开放给调用方注入：
 
 ```ts
-import type { Migration } from './types';
+import type { Migration } from '../migrations/types';
 
 export const migrationToV2: Migration = Object.freeze({
   targetVersion: 2,
@@ -315,7 +315,7 @@ export const migrationToV2: Migration = Object.freeze({
 });
 ```
 
-`applyV2SchemaDelta()`、`backfillV2Data()`、`validateV2Structure()` 和 `validateV2Data()` 代表版本文件内部的职责边界；真实 `v2.ts` 必须实现这些私有函数，不能保留空函数或常量成功结果。实现还必须遵守以下规则：
+`applyV2SchemaDelta()`、`backfillV2Data()`、`validateV2Structure()` 和 `validateV2Data()` 代表版本文件内部的职责边界；真实 `schema/v2.ts` 必须实现这些私有函数，不能保留空函数或常量成功结果。实现还必须遵守以下规则：
 
 - DDL 是仓库内固定字符串，数据值通过绑定参数写入；调用方不能提供表名、列名、SQL 或回调；
 - `migrate()` 不调用 `database.transaction()`，不执行 `BEGIN`、`COMMIT`、`ROLLBACK`，也不更新 `schema_metadata`；
@@ -341,7 +341,7 @@ SQLite 支持事务化的 DDL 应当与回填一起放在当前版本事务中�
 -> 返回 VaultDatabase
 ```
 
-当前注册表为空，所以创建流程止于 v1 基线。发布 v2 后，所有新库也先成为合法空 v1，再真实执行 `v2.ts`。这使新库和旧库共享同一条 v2 结构变化路径，不再需要第二份最新 Schema SQL。
+当前注册表为空，所以创建流程止于 v1 基线。发布 v2 后，所有新库也先成为合法空 v1，再真实执行 `schema/v2.ts`。这使新库和旧库共享同一条 v2 结构变化路径，不再需要第二份最新 Schema SQL。
 
 基线创建事务和版本迁移事务不嵌套：
 
@@ -359,7 +359,7 @@ v2 发布时生产注册表变为：
 ```ts
 import type { Migration } from './types';
 import { BASE_SCHEMA_VERSION } from '../schema/baseline-v1';
-import { migrationToV2 } from './v2';
+import { migrationToV2 } from '../schema/v2';
 
 export const PRODUCTION_MIGRATIONS: readonly Migration[] = Object.freeze([
   migrationToV2,
@@ -392,7 +392,7 @@ databaseVersion < migration.targetVersion <= CURRENT_SCHEMA_VERSION
 
 1. **成功升级：** 真实 v1 结构和代表性数据升级到 v2，版本恰好变为 2，所有旧数据保持预期语义；
 2. **新库重放：** `createVaultDatabase()` 创建 v1 基线后真实执行生产 v2，最终版本和目标结构正确；
-3. **空/有数据一致：** 空 v1 和带代表性数据的旧 v1 使用同一个 `v2.ts`，最终结构一致且旧数据语义保留；
+3. **空/有数据一致：** 空 v1 和带代表性数据的旧 v1 使用同一个 `schema/v2.ts`，最终结构一致且旧数据语义保留；
 4. **结构验证：** v2 新增或改变的列、索引、约束及数据不变量全部存在；
 5. **当前步骤回滚：** 在 v2 DDL、回填中段和 `validate()` 分别注入失败，v2 的全部变化回滚，版本仍为 1；
 6. **新库清理：** 创建期间 v2 失败后，本次新建的精确 DB/WAL/SHM 被清理；
@@ -443,7 +443,7 @@ git diff --check
 
 同一个 v2 功能提交至少包含：
 
-- 新增的 `migrations/v2.ts`；
+- 新增的 `schema/v2.ts`；
 - `migrations/registry.ts` 的生产注册、派生当前版本与连续区间选择；
 - `database.ts` 的新建/打开适用迁移区间调用；
 - `schema.test.ts` 的 v1 基线保护，以及 `migrations.test.ts` 的全部 v2 行为测试；
