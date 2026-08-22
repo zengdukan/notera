@@ -15,3 +15,29 @@ export interface AttachmentManifestV1 {
   readonly ciphertextLength: number;
   readonly chunks: readonly AttachmentManifestChunk[];
 }
+
+export interface StartupRecoveryReport {
+  readonly removedStagingFileCount: number;
+  readonly unexpectedEntryCount: number;
+}
+
+export interface ImportBlobInput {
+  readonly vaultId: VaultId;
+  readonly source: AsyncIterable<Uint8Array>;
+  readonly signal?: AbortSignal;
+}
+
+export interface ImportedBlob {
+  readonly blobId: BlobId;
+  readonly fileKey: Uint8Array;
+  readonly manifestVersion: 1;
+  readonly manifest: Uint8Array;
+  readonly plaintextLength: number;
+}
+
+export interface AttachmentStore {
+  readonly startupRecovery: StartupRecoveryReport;
+  importBlob(input: ImportBlobInput): Promise<ImportedBlob>;
+  close(): Promise<void>;
+}
+import type { BlobId, VaultId } from '@notera/domain';
