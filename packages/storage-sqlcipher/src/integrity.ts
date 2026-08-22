@@ -80,11 +80,7 @@ class IntegrityScanner {
     private readonly vaultId: VaultId,
   ) {}
 
-  private add(
-    code: IntegrityIssueCode,
-    table: string,
-    id?: unknown,
-  ): void {
+  private add(code: IntegrityIssueCode, table: string, id?: unknown): void {
     const normalizedId = entityId(id);
     const issue: IntegrityIssue = {
       code,
@@ -219,7 +215,11 @@ class IntegrityScanner {
       const path: string[] = [];
       const pathIndex = new Map<string, number>();
       let current: string | null | undefined = start;
-      while (current !== null && current !== undefined && parentById.has(current)) {
+      while (
+        current !== null &&
+        current !== undefined &&
+        parentById.has(current)
+      ) {
         const repeatedAt = pathIndex.get(current);
         if (repeatedAt !== undefined) {
           path.slice(repeatedAt).forEach((id) => cycleIds.add(id));

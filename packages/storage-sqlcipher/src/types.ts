@@ -228,12 +228,22 @@ export interface ContentPlanWriter {
   applyBatchRelations(input: BatchRelationStoragePlan): void;
 }
 
-export interface StoredAttachment { readonly attachment: Attachment; readonly fileKey: Uint8Array;
-  readonly manifestVersion: number; readonly manifest: Uint8Array; }
-export interface AttachmentReader { get(id: AttachmentId): StoredAttachment | undefined; }
-export interface AttachmentWriter extends AttachmentReader { insert(value: StoredAttachment): void;
-  replace(value: StoredAttachment): void; addReference(reference: AttachmentReference): void;
-  removeReference(reference: AttachmentReference): void; markGcPending(attachment: Attachment): void; }
+export interface StoredAttachment {
+  readonly attachment: Attachment;
+  readonly fileKey: Uint8Array;
+  readonly manifestVersion: number;
+  readonly manifest: Uint8Array;
+}
+export interface AttachmentReader {
+  get(id: AttachmentId): StoredAttachment | undefined;
+}
+export interface AttachmentWriter extends AttachmentReader {
+  insert(value: StoredAttachment): void;
+  replace(value: StoredAttachment): void;
+  addReference(reference: AttachmentReference): void;
+  removeReference(reference: AttachmentReference): void;
+  markGcPending(attachment: Attachment): void;
+}
 
 export interface CreateVaultDatabaseOptions {
   readonly filePath: string;

@@ -30,10 +30,7 @@ function isPlainObject(value: object): boolean {
   return prototype === Object.prototype || prototype === null;
 }
 
-function validateArray(
-  value: readonly unknown[],
-  stack: Frame[],
-) {
+function validateArray(value: readonly unknown[], stack: Frame[]) {
   const keys = Reflect.ownKeys(value);
   if (
     keys.some(

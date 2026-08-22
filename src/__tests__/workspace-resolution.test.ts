@@ -19,9 +19,9 @@ describe('workspace package resolution', () => {
   );
 
   it('exposes storage integrity through the package without native internals', () => {
-    expect(storageSqlcipher.VaultDatabase.prototype.checkIntegrity).toBeInstanceOf(
-      Function,
-    );
+    expect(
+      storageSqlcipher.VaultDatabase.prototype.checkIntegrity,
+    ).toBeInstanceOf(Function);
     expect(
       (storageSqlcipher as Record<string, unknown>).openNativeConnection,
     ).toBeUndefined();

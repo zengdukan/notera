@@ -10,10 +10,7 @@ export interface NativeStatement<Row = Record<string, unknown>> {
   iterate(...parameters: unknown[]): IterableIterator<Row>;
 }
 
-export interface NativeTransaction<
-  Arguments extends unknown[],
-  Result,
-> {
+export interface NativeTransaction<Arguments extends unknown[], Result> {
   (...arguments_: Arguments): Result;
   deferred(...arguments_: Arguments): Result;
   immediate(...arguments_: Arguments): Result;
@@ -23,10 +20,7 @@ export interface NativeTransaction<
 export interface NativeDatabase {
   exec(sql: string): this;
   prepare<Row = Record<string, unknown>>(sql: string): NativeStatement<Row>;
-  pragma(
-    source: string,
-    options?: Readonly<{ simple?: boolean }>,
-  ): unknown;
+  pragma(source: string, options?: Readonly<{ simple?: boolean }>): unknown;
   transaction<Arguments extends unknown[], Result>(
     operation: (...arguments_: Arguments) => Result,
   ): NativeTransaction<Arguments, Result>;

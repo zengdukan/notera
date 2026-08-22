@@ -160,7 +160,9 @@ function note(
   document = asAdfDocument({
     type: 'doc',
     version: 1,
-    content: [{ type: 'paragraph', content: [{ type: 'text', text: `Body ${index}` }] }],
+    content: [
+      { type: 'paragraph', content: [{ type: 'text', text: `Body ${index}` }] },
+    ],
   }),
 ): Note {
   return createNote({
@@ -211,7 +213,7 @@ describe('notes, ADF serialization, and search indexing', () => {
     expect(serialized.length).toBeGreaterThan(8 * 1024 * 1024);
     const parsed = adfJsonModule().parseAdf(serialized);
     expect((parsed.large as string).length).toBe(8 * 1024 * 1024 + 1);
-    expect((parsed.values as readonly unknown[])).toHaveLength(100_001);
+    expect(parsed.values as readonly unknown[]).toHaveLength(100_001);
     expect(searchTextModule().extractAdfText(parsed)).toContain(
       'Deep visible text',
     );
@@ -292,7 +294,9 @@ describe('notes, ADF serialization, and search indexing', () => {
       document: asAdfDocument({
         type: 'doc',
         version: 1,
-        content: [{ type: 'paragraph', content: [{ type: 'text', text: '新正文' }] }],
+        content: [
+          { type: 'paragraph', content: [{ type: 'text', text: '新正文' }] },
+        ],
       }),
       updatedAt: asTimestamp(10),
     });
@@ -357,14 +361,18 @@ describe('notes, ADF serialization, and search indexing', () => {
       transaction.notes.insert(first);
       transaction.notes.insert(second);
     });
-    const page = database.folders.listContent(TEST_ROOT_FOLDER_ID, { limit: 2 });
+    const page = database.folders.listContent(TEST_ROOT_FOLDER_ID, {
+      limit: 2,
+    });
     expect(page.items.map(({ id }) => id)).toEqual([child.id, first.id]);
     expect(page.nextCursor).toEqual(expect.any(String));
     expect(
-      database.folders.listContent(TEST_ROOT_FOLDER_ID, {
-        cursor: page.nextCursor,
-        limit: 2,
-      }).items.map(({ id }) => id),
+      database.folders
+        .listContent(TEST_ROOT_FOLDER_ID, {
+          cursor: page.nextCursor,
+          limit: 2,
+        })
+        .items.map(({ id }) => id),
     ).toEqual([second.id]);
 
     database.transaction((transaction) => {
@@ -384,14 +392,11 @@ describe('notes, ADF serialization, and search indexing', () => {
     const raw = openTestConnection(filePath);
     expect(
       raw
-        .prepare<{ source_content_version: number }>(
-          'SELECT source_content_version FROM notes_fts ORDER BY note_id',
-        )
+        .prepare<{
+          source_content_version: number;
+        }>('SELECT source_content_version FROM notes_fts ORDER BY note_id')
         .all(),
-    ).toEqual([
-      { source_content_version: 1 },
-      { source_content_version: 1 },
-    ]);
+    ).toEqual([{ source_content_version: 1 }, { source_content_version: 1 }]);
     raw.close();
   });
 });

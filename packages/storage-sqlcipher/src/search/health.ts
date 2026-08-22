@@ -8,7 +8,11 @@ import type { SearchIndexIssueCode, SearchIndexReport } from '../types';
 import { insertNoteIndex } from './index-writer';
 import { NORMALIZER_VERSION } from './normalize';
 
-function count(database: SqlcipherConnection, sql: string, ...values: unknown[]): number {
+function count(
+  database: SqlcipherConnection,
+  sql: string,
+  ...values: unknown[]
+): number {
   const row = database.prepare<{ count: number }>(sql).get(...values);
   return row?.count ?? -1;
 }

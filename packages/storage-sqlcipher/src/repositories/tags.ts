@@ -26,7 +26,9 @@ export class TagRepository implements TagWriter {
   get(id: TagId): Tag | undefined {
     this.guard();
     const row = this.connection()
-      .prepare<TagRow>(`SELECT ${TAG_COLUMNS} FROM tags WHERE id = ? AND vault_id = ?`)
+      .prepare<TagRow>(
+        `SELECT ${TAG_COLUMNS} FROM tags WHERE id = ? AND vault_id = ?`,
+      )
       .get(id, this.vaultId);
     return row ? hydrateTag(row) : undefined;
   }
@@ -52,10 +54,12 @@ export class TagRepository implements TagWriter {
     return {
       items,
       ...(rows.length > page.limit && last
-        ? { nextCursor: encodeCursor(TAG_CURSOR, `vault:${this.vaultId}`, {
-            sortOrder: last.createdAt,
-            lastId: last.id,
-          }) }
+        ? {
+            nextCursor: encodeCursor(TAG_CURSOR, `vault:${this.vaultId}`, {
+              sortOrder: last.createdAt,
+              lastId: last.id,
+            }),
+          }
         : {}),
     };
   }
@@ -79,60 +83,78 @@ export class TagRepository implements TagWriter {
     if (tag.vaultId !== this.vaultId || this.get(tag.id)) {
       relationViolation();
     }
-    this.connection().prepare(
-      `INSERT INTO tags(id, vault_id, name, created_at, updated_at)
+    this.connection()
+      .prepare(
+        `INSERT INTO tags(id, vault_id, name, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?)`,
-    ).run(tag.id, tag.vaultId, tag.name, tag.createdAt, tag.updatedAt);
+      )
+      .run(tag.id, tag.vaultId, tag.name, tag.createdAt, tag.updatedAt);
   }
 
   replace(tag: Tag): void {
     this.guard();
     const existing = this.get(tag.id);
-    if (!existing || tag.vaultId !== this.vaultId || tag.createdAt !== existing.createdAt) {
+    if (
+      !existing ||
+      tag.vaultId !== this.vaultId ||
+      tag.createdAt !== existing.createdAt
+    ) {
       relationViolation();
     }
-    this.connection().prepare(
-      'UPDATE tags SET name = ?, updated_at = ? WHERE id = ? AND vault_id = ?',
-    ).run(tag.name, tag.updatedAt, tag.id, this.vaultId);
+    this.connection()
+      .prepare(
+        'UPDATE tags SET name = ?, updated_at = ? WHERE id = ? AND vault_id = ?',
+      )
+      .run(tag.name, tag.updatedAt, tag.id, this.vaultId);
   }
 
   delete(id: TagId): void {
     this.guard();
-    const related = this.connection().prepare(
-      'SELECT 1 FROM note_tags WHERE vault_id = ? AND tag_id = ? LIMIT 1',
-    ).get(this.vaultId, id);
+    const related = this.connection()
+      .prepare(
+        'SELECT 1 FROM note_tags WHERE vault_id = ? AND tag_id = ? LIMIT 1',
+      )
+      .get(this.vaultId, id);
     if (related) {
       relationViolation();
     }
-    this.connection().prepare('DELETE FROM tags WHERE id = ? AND vault_id = ?')
+    this.connection()
+      .prepare('DELETE FROM tags WHERE id = ? AND vault_id = ?')
       .run(id, this.vaultId);
   }
 
   private assertActiveNote(noteId: NoteId): void {
-    const row = this.connection().prepare(
-      `SELECT 1 FROM notes n WHERE n.id = ? AND n.vault_id = ?
+    const row = this.connection()
+      .prepare(
+        `SELECT 1 FROM notes n WHERE n.id = ? AND n.vault_id = ?
        AND NOT EXISTS (
          SELECT 1 FROM trash_entries tr WHERE tr.vault_id = n.vault_id
            AND tr.object_type = 'NOTE' AND tr.object_id = n.id
        )`,
-    ).get(noteId, this.vaultId);
+      )
+      .get(noteId, this.vaultId);
     if (!row) relationViolation();
   }
 
   addToNote(value: NoteTag): void {
     this.guard();
-    if (value.vaultId !== this.vaultId || !this.get(value.tagId)) relationViolation();
+    if (value.vaultId !== this.vaultId || !this.get(value.tagId))
+      relationViolation();
     this.assertActiveNote(value.noteId);
-    this.connection().prepare(
-      'INSERT OR IGNORE INTO note_tags(vault_id, note_id, tag_id) VALUES (?, ?, ?)',
-    ).run(this.vaultId, value.noteId, value.tagId);
+    this.connection()
+      .prepare(
+        'INSERT OR IGNORE INTO note_tags(vault_id, note_id, tag_id) VALUES (?, ?, ?)',
+      )
+      .run(this.vaultId, value.noteId, value.tagId);
   }
 
   removeFromNote(noteId: NoteId, tagId: TagId): void {
     this.guard();
-    this.connection().prepare(
-      'DELETE FROM note_tags WHERE vault_id = ? AND note_id = ? AND tag_id = ?',
-    ).run(this.vaultId, noteId, tagId);
+    this.connection()
+      .prepare(
+        'DELETE FROM note_tags WHERE vault_id = ? AND note_id = ? AND tag_id = ?',
+      )
+      .run(this.vaultId, noteId, tagId);
   }
 }
 

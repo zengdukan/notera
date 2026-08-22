@@ -165,7 +165,9 @@ describe('vault transactions and folder repositories', () => {
     database.transaction((transaction) => {
       transaction.profileMetadata.rename('Committed Profile');
     });
-    expect(database.profileMetadata.get().profileName).toBe('Committed Profile');
+    expect(database.profileMetadata.get().profileName).toBe(
+      'Committed Profile',
+    );
 
     const sentinel = new Error('caller failure');
     try {
@@ -177,7 +179,9 @@ describe('vault transactions and folder repositories', () => {
     } catch (error) {
       expect(error).toBe(sentinel);
     }
-    expect(database.profileMetadata.get().profileName).toBe('Committed Profile');
+    expect(database.profileMetadata.get().profileName).toBe(
+      'Committed Profile',
+    );
   });
 
   it('rolls back thenables, nested transactions, and close inside a transaction', () => {
@@ -278,7 +282,9 @@ describe('vault transactions and folder repositories', () => {
     });
 
     expect(database.folders.listAll()).toHaveLength(305);
-    expect(database.folders.listSubtree(directChildren[3].id)).toHaveLength(301);
+    expect(database.folders.listSubtree(directChildren[3].id)).toHaveLength(
+      301,
+    );
     expect(database.folders.get(folderId(309))?.kind).toBe('REGULAR');
 
     const firstPage = database.folders.listChildren(TEST_ROOT_FOLDER_ID, {
@@ -309,8 +315,7 @@ describe('vault transactions and folder repositories', () => {
     );
     [-1, 0, 101, 1.5].forEach((limit) => {
       expectStorageCode(
-        () =>
-          database.folders.listChildren(TEST_ROOT_FOLDER_ID, { limit }),
+        () => database.folders.listChildren(TEST_ROOT_FOLDER_ID, { limit }),
         'INVALID_CURSOR',
       );
     });
@@ -359,7 +364,10 @@ describe('vault transactions and folder repositories', () => {
       updatedAt: asTimestamp(10),
     });
     expectStorageCode(
-      () => database.transaction((transaction) => transaction.folders.replace(cycle)),
+      () =>
+        database.transaction((transaction) =>
+          transaction.folders.replace(cycle),
+        ),
       'RELATION_INTEGRITY_VIOLATION',
     );
     expect(database.folders.get(first.id)).toEqual(first);
@@ -376,9 +384,7 @@ describe('vault transactions and folder repositories', () => {
     expectStorageCode(
       () =>
         database.transaction((transaction) =>
-          transaction.folders.insert(
-            regularFolder(4, folderId(999), 4),
-          ),
+          transaction.folders.insert(regularFolder(4, folderId(999), 4)),
         ),
       'RELATION_INTEGRITY_VIOLATION',
     );

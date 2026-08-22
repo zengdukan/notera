@@ -156,9 +156,7 @@ describe('vault schema v1', () => {
     );
     expect(
       connection
-        .prepare(
-          `SELECT note_id FROM notes_fts WHERE notes_fts MATCH ?`,
-        )
+        .prepare(`SELECT note_id FROM notes_fts WHERE notes_fts MATCH ?`)
         .get('ote'),
     ).toEqual({ note_id: 'note' });
     connection.close();
@@ -233,10 +231,7 @@ describe('vault schema v1', () => {
           vaultMetaDigest: vaultMetaDigest(),
         })
         .close();
-      const connection = openTestConnection(
-        filePath,
-        databaseKey(index + 10),
-      );
+      const connection = openTestConnection(filePath, databaseKey(index + 10));
       connection.exec(mutation);
       connection.close();
       const before = fileHash(filePath);

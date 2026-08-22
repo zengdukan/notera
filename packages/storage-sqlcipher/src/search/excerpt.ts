@@ -21,7 +21,9 @@ function matchesAt(
   if (offset + query.length > source.length) {
     return false;
   }
-  return query.every((codePoint, index) => source[offset + index] === codePoint);
+  return query.every(
+    (codePoint, index) => source[offset + index] === codePoint,
+  );
 }
 
 function mergeRanges(ranges: readonly SourceRange[]): readonly SourceRange[] {

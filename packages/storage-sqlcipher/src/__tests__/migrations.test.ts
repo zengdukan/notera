@@ -91,7 +91,8 @@ function openNewConnection(filePath: string): SqlcipherConnection {
   // Loading through the existing internal connection keeps migration tests on
   // the real SQLCipher transaction implementation.
   // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
-  const { openNativeConnection } = require('../connection') as typeof import('../connection');
+  const { openNativeConnection } =
+    require('../connection') as typeof import('../connection');
   return openNativeConnection({
     filePath,
     databaseKey: databaseKey(),
@@ -166,7 +167,9 @@ describe('schema migrations', () => {
       connection.prepare('SELECT schema_version FROM schema_metadata').get(),
     ).toEqual({ schema_version: 2 });
     expect(
-      connection.prepare('SELECT value FROM migration_audit ORDER BY value').all(),
+      connection
+        .prepare('SELECT value FROM migration_audit ORDER BY value')
+        .all(),
     ).toEqual([{ value: 'v2' }]);
 
     runnerModule().runMigrations(connection, 2, 3, [
@@ -178,7 +181,9 @@ describe('schema migrations', () => {
       connection.prepare('SELECT schema_version FROM schema_metadata').get(),
     ).toEqual({ schema_version: 3 });
     expect(
-      connection.prepare('SELECT value FROM migration_audit ORDER BY value').all(),
+      connection
+        .prepare('SELECT value FROM migration_audit ORDER BY value')
+        .all(),
     ).toEqual([{ value: 'v2' }, { value: 'v3' }]);
     connection.close();
   });
@@ -190,7 +195,9 @@ describe('schema migrations', () => {
         migration(
           2,
           (database) => {
-            database.prepare('INSERT INTO migration_audit VALUES (?)').run('v2');
+            database
+              .prepare('INSERT INTO migration_audit VALUES (?)')
+              .run('v2');
           },
           () => {
             throw new Error('injected validation failure');
@@ -201,16 +208,17 @@ describe('schema migrations', () => {
     expect(
       connection.prepare('SELECT schema_version FROM schema_metadata').get(),
     ).toEqual({ schema_version: 1 });
-    expect(connection.prepare('SELECT value FROM migration_audit').all()).toEqual(
-      [],
-    );
+    expect(
+      connection.prepare('SELECT value FROM migration_audit').all(),
+    ).toEqual([]);
     connection.close();
   });
 
   it('produces the same normalized structure from snapshot and migration', () => {
     const freshPath = tempDatabasePath('fresh.db');
     // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
-    const { createVaultDatabase } = require('../database') as SnapshotDatabaseModule;
+    const { createVaultDatabase } =
+      require('../database') as SnapshotDatabaseModule;
     createVaultDatabase({
       filePath: freshPath,
       databaseKey: databaseKey(),

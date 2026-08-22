@@ -211,7 +211,8 @@ export function hydrateNoteVersion(row: NoteVersionRow): NoteVersion {
       vaultId: asVaultId(row.vault_id),
       noteId: asNoteId(row.note_id),
       kind: row.kind as NoteVersion['kind'],
-      protectionReason: row.protection_reason as NoteVersion['protectionReason'],
+      protectionReason:
+        row.protection_reason as NoteVersion['protectionReason'],
       sourceContentVersion: asContentVersion(row.source_content_version),
       title: row.title,
       document: parseAdf(row.adf_json),

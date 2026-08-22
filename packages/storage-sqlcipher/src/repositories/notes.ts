@@ -66,7 +66,11 @@ export class NoteRepository implements NoteWriter {
   listByFolder(folderId: FolderId, page: PageRequest): Page<Note> {
     this.guard();
     this.assertActiveFolder(folderId);
-    const cursor = parsePageRequest(page, BY_FOLDER_CURSOR, `folder:${folderId}`);
+    const cursor = parsePageRequest(
+      page,
+      BY_FOLDER_CURSOR,
+      `folder:${folderId}`,
+    );
     const parameters: unknown[] = [this.vaultId, folderId, this.vaultId];
     let keyset = '';
     if (cursor !== undefined) {
@@ -93,7 +97,11 @@ export class NoteRepository implements NoteWriter {
 
   listRecent(page: PageRequest): Page<Note> {
     this.guard();
-    const cursor = parsePageRequest(page, RECENT_CURSOR, `vault:${this.vaultId}`);
+    const cursor = parsePageRequest(
+      page,
+      RECENT_CURSOR,
+      `vault:${this.vaultId}`,
+    );
     const parameters: unknown[] = [this.vaultId, this.vaultId];
     let keyset = '';
     if (cursor !== undefined) {
@@ -213,9 +221,9 @@ export class NoteRepository implements NoteWriter {
       throw new StorageError('CONTENT_VERSION_CONFLICT');
     }
     const row = this.connection()
-      .prepare<{ row_id: number | bigint }>(
-        'SELECT row_id FROM notes WHERE id = ? AND vault_id = ?',
-      )
+      .prepare<{
+        row_id: number | bigint;
+      }>('SELECT row_id FROM notes WHERE id = ? AND vault_id = ?')
       .get(note.id, this.vaultId);
     if (row === undefined) {
       throw new StorageError('DB_CORRUPT');
@@ -241,7 +249,13 @@ export class NoteRepository implements NoteWriter {
         `UPDATE notes SET folder_id = ?, sort_order = ?, updated_at = ?
          WHERE id = ? AND vault_id = ?`,
       )
-      .run(note.folderId, note.sortOrder, note.updatedAt, note.id, this.vaultId);
+      .run(
+        note.folderId,
+        note.sortOrder,
+        note.updatedAt,
+        note.id,
+        this.vaultId,
+      );
   }
 
   replaceSortOrders(notes: readonly Note[]): void {

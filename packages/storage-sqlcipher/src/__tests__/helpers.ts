@@ -10,20 +10,13 @@ import {
   type VaultIdentity,
 } from '@notera/domain';
 
-import {
-  openNativeConnection,
-  type SqlcipherConnection,
-} from '../connection';
+import { openNativeConnection, type SqlcipherConnection } from '../connection';
 
-export const TEST_VAULT_ID = asVaultId(
-  '11111111-1111-4111-8111-111111111111',
-);
+export const TEST_VAULT_ID = asVaultId('11111111-1111-4111-8111-111111111111');
 export const TEST_ROOT_FOLDER_ID = asFolderId(
   '22222222-2222-4222-8222-222222222222',
 );
-export const OTHER_VAULT_ID = asVaultId(
-  '33333333-3333-4333-8333-333333333333',
-);
+export const OTHER_VAULT_ID = asVaultId('33333333-3333-4333-8333-333333333333');
 
 export const TEST_IDENTITY: VaultIdentity = createVaultIdentity({
   id: TEST_VAULT_ID,

@@ -250,9 +250,9 @@ describe('scoped search and index health', () => {
     });
 
     const subtree = { kind: 'FOLDER_SUBTREE', folderId: parent.id } as const;
-    expect(query(database, 'needle', subtree).map(({ noteId: id }) => id)).toEqual(
-      [childNote.id, parentNote.id],
-    );
+    expect(
+      query(database, 'needle', subtree).map(({ noteId: id }) => id),
+    ).toEqual([childNote.id, parentNote.id]);
     expect(
       query(database, 'needle', {
         kind: 'FOLDER_SUBTREE',
@@ -288,7 +288,10 @@ describe('scoped search and index health', () => {
         TEST_ROOT_FOLDER_ID,
       );
     raw.close();
-    expectStorageCode(() => query(database, 'needle', subtree), 'ENTITY_NOT_FOUND');
+    expectStorageCode(
+      () => query(database, 'needle', subtree),
+      'ENTITY_NOT_FOUND',
+    );
     expectStorageCode(
       () =>
         query(database, 'needle', {
@@ -304,31 +307,47 @@ describe('scoped search and index health', () => {
     const child = folder(1);
     database.transaction((transaction) => {
       transaction.folders.insert(child);
-      transaction.notes.insert(note(1, { title: 'needle title', updatedAt: 1 }));
+      transaction.notes.insert(
+        note(1, { title: 'needle title', updatedAt: 1 }),
+      );
       transaction.notes.insert(note(2, { body: 'needle body', updatedAt: 3 }));
       transaction.notes.insert(
         note(3, { folderId: child.id, body: 'needle body', updatedAt: 2 }),
       );
     });
 
-    const first = database.search.query('needle', { kind: 'VAULT' }, { limit: 2 });
+    const first = database.search.query(
+      'needle',
+      { kind: 'VAULT' },
+      { limit: 2 },
+    );
     expect(first.items.map(({ noteId: id }) => id)).toEqual([
       noteId(1),
       noteId(2),
     ]);
     expect(first.nextCursor).toEqual(expect.any(String));
     expect(
-      database.search.query('needle', { kind: 'VAULT' }, {
-        cursor: first.nextCursor,
-        limit: 2,
-      }).items.map(({ noteId: id }) => id),
+      database.search
+        .query(
+          'needle',
+          { kind: 'VAULT' },
+          {
+            cursor: first.nextCursor,
+            limit: 2,
+          },
+        )
+        .items.map(({ noteId: id }) => id),
     ).toEqual([noteId(3)]);
     expectStorageCode(
       () =>
-        database.search.query('different', { kind: 'VAULT' }, {
-          cursor: first.nextCursor,
-          limit: 2,
-        }),
+        database.search.query(
+          'different',
+          { kind: 'VAULT' },
+          {
+            cursor: first.nextCursor,
+            limit: 2,
+          },
+        ),
       'INVALID_CURSOR',
     );
     expectStorageCode(
@@ -366,7 +385,10 @@ describe('scoped search and index health', () => {
       ok: false,
       issues: ['METADATA_INVALID', 'NOTE_COUNT_MISMATCH', 'ROWID_MISMATCH'],
     });
-    expectStorageCode(() => query(database, 'needle'), 'SEARCH_INDEX_UNAVAILABLE');
+    expectStorageCode(
+      () => query(database, 'needle'),
+      'SEARCH_INDEX_UNAVAILABLE',
+    );
 
     database.rebuildSearchIndex();
     expect(database.checkSearchIndex()).toEqual({ ok: true, issues: [] });
@@ -374,19 +396,20 @@ describe('scoped search and index health', () => {
 
     raw = openTestConnection(filePath);
     const before = raw
-      .prepare<{ rowid: number; note_id: string }>(
-        'SELECT rowid, note_id FROM notes_fts ORDER BY rowid',
-      )
+      .prepare<{
+        rowid: number;
+        note_id: string;
+      }>('SELECT rowid, note_id FROM notes_fts ORDER BY rowid')
       .all();
     raw.pragma('ignore_check_constraints = ON');
-    raw.prepare('UPDATE notes SET adf_json = ? WHERE id = ?').run('{', second.id);
+    raw
+      .prepare('UPDATE notes SET adf_json = ? WHERE id = ?')
+      .run('{', second.id);
     raw.close();
     expectStorageCode(() => database.rebuildSearchIndex(), 'DB_CORRUPT');
     raw = openTestConnection(filePath);
     expect(
-      raw
-        .prepare('SELECT rowid, note_id FROM notes_fts ORDER BY rowid')
-        .all(),
+      raw.prepare('SELECT rowid, note_id FROM notes_fts ORDER BY rowid').all(),
     ).toEqual(before);
     raw.close();
   });

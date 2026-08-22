@@ -291,14 +291,12 @@ describe('vault integrity scan', () => {
     const missingId = '99000000-0000-4000-8000-000000000001';
     const raw = openTestConnection(filePath);
     raw.pragma('ignore_check_constraints = ON');
-    raw.prepare('UPDATE folders SET parent_id = ? WHERE id = ?').run(
-      second.id,
-      first.id,
-    );
-    raw.prepare('UPDATE folders SET parent_id = ? WHERE id = ?').run(
-      missingId,
-      missingParent.id,
-    );
+    raw
+      .prepare('UPDATE folders SET parent_id = ? WHERE id = ?')
+      .run(second.id, first.id);
+    raw
+      .prepare('UPDATE folders SET parent_id = ? WHERE id = ?')
+      .run(missingId, missingParent.id);
     raw
       .prepare(
         `INSERT INTO tags(id, vault_id, name, created_at, updated_at)
@@ -306,7 +304,9 @@ describe('vault integrity scan', () => {
       )
       .run('42000000-0000-4000-8000-000000000001', OTHER_VAULT_ID);
     raw
-      .prepare('INSERT INTO note_tags(vault_id, note_id, tag_id) VALUES (?, ?, ?)')
+      .prepare(
+        'INSERT INTO note_tags(vault_id, note_id, tag_id) VALUES (?, ?, ?)',
+      )
       .run(
         TEST_VAULT_ID,
         '32000000-0000-4000-8000-000000000001',
@@ -396,7 +396,9 @@ describe('vault integrity scan', () => {
     raw.pragma('ignore_check_constraints = ON');
     raw.prepare('UPDATE notes SET adf_json = ? WHERE id = ?').run('{', note.id);
     raw
-      .prepare('UPDATE note_versions SET adf_sha256 = zeroblob(32) WHERE id = ?')
+      .prepare(
+        'UPDATE note_versions SET adf_sha256 = zeroblob(32) WHERE id = ?',
+      )
       .run(version.id);
     raw
       .prepare('UPDATE attachments SET file_key = zeroblob(31) WHERE id = ?')

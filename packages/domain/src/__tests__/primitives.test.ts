@@ -138,7 +138,7 @@ describe('domain primitives', () => {
     let cursor: unknown = document.content?.[0];
     for (let index = 0; index < levels; index += 1) {
       expect(Object.isFrozen(cursor)).toBe(true);
-      cursor = (cursor as readonly unknown[])[0];
+      [cursor] = cursor as readonly unknown[];
     }
 
     expect(cursor).toBe('leaf');

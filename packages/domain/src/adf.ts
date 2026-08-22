@@ -135,19 +135,13 @@ function cloneJson(value: unknown): JsonValue {
       assign(frame.value);
       continue;
     }
-    if (
-      typeof frame.value !== 'object' ||
-      activeAncestors.has(frame.value)
-    ) {
+    if (typeof frame.value !== 'object' || activeAncestors.has(frame.value)) {
       failDomain('INVALID_ADF_DOCUMENT');
     }
 
     const source = frame.value;
-    const target: { [key: string]: MutableJson } | MutableJson[] = Array.isArray(
-      source,
-    )
-      ? []
-      : {};
+    const target: { [key: string]: MutableJson } | MutableJson[] =
+      Array.isArray(source) ? [] : {};
     assign(target);
     activeAncestors.add(source);
     stack.push({ kind: 'EXIT', source, target });

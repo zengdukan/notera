@@ -28,7 +28,9 @@ import {
 } from './helpers';
 
 interface TrashApi {
-  list(page: { cursor?: string; limit: number }): { items: readonly TrashEntry[] };
+  list(page: { cursor?: string; limit: number }): {
+    items: readonly TrashEntry[];
+  };
   apply(plan: { entries: readonly TrashEntry[] }): void;
   restore(input: {
     entries: readonly TrashEntry[];
@@ -41,17 +43,19 @@ interface TrashApi {
 interface VaultApi {
   readonly trash: Pick<TrashApi, 'list'>;
   readonly notes: { get(id: ReturnType<typeof asNoteId>): Note | undefined };
-  transaction<Result>(callback: (transaction: {
-    notes: { insert(note: Note): void };
-    trash: TrashApi;
-    contentPlans: {
-      insertNoteCopy(plan: {
-        note: Note;
-        noteTags: readonly never[];
-        attachmentReferences: readonly CurrentNoteAttachmentReference[];
-      }): void;
-    };
-  }) => Result): Result;
+  transaction<Result>(
+    callback: (transaction: {
+      notes: { insert(note: Note): void };
+      trash: TrashApi;
+      contentPlans: {
+        insertNoteCopy(plan: {
+          note: Note;
+          noteTags: readonly never[];
+          attachmentReferences: readonly CurrentNoteAttachmentReference[];
+        }): void;
+      };
+    }) => Result,
+  ): Result;
   close(): void;
 }
 
@@ -86,13 +90,22 @@ function createVault(): { database: VaultApi; filePath: string } {
 
 function note(index: number): Note {
   return createNote({
-    id: asNoteId(`70000000-0000-4000-8000-${index.toString().padStart(12, '0')}`),
+    id: asNoteId(
+      `70000000-0000-4000-8000-${index.toString().padStart(12, '0')}`,
+    ),
     vaultId: TEST_VAULT_ID,
     folderId: TEST_ROOT_FOLDER_ID,
     title: `Note ${index}`,
-    document: asAdfDocument({ type: 'doc', version: 1, content: [
-      { type: 'paragraph', content: [{ type: 'text', text: `Body ${index}` }] },
-    ] }),
+    document: asAdfDocument({
+      type: 'doc',
+      version: 1,
+      content: [
+        {
+          type: 'paragraph',
+          content: [{ type: 'text', text: `Body ${index}` }],
+        },
+      ],
+    }),
     sortOrder: asSortOrder(index),
     createdAt: asTimestamp(index),
     updatedAt: asTimestamp(index),
@@ -100,7 +113,10 @@ function note(index: number): Note {
 }
 
 function expectCode(operation: () => unknown, code: string): void {
-  try { operation(); throw new Error(`Expected ${code}`); } catch (error) {
+  try {
+    operation();
+    throw new Error(`Expected ${code}`);
+  } catch (error) {
     expect((error as StorageError).code).toBe(code);
   }
 }
@@ -125,17 +141,23 @@ describe('trash and content plans', () => {
     });
     expect(database.trash.list({ limit: 10 }).items).toEqual(plan.entries);
     const raw = openTestConnection(filePath);
-    expect(raw.prepare('SELECT count(*) AS count FROM notes_fts').get()).toEqual({ count: 0 });
+    expect(
+      raw.prepare('SELECT count(*) AS count FROM notes_fts').get(),
+    ).toEqual({ count: 0 });
     raw.close();
 
-    database.transaction((transaction) => transaction.trash.restore({
-      entries: plan.entries,
-      targetFolderIds: new Map([[plan.entries[0].id, TEST_ROOT_FOLDER_ID]]),
-      now: asTimestamp(11),
-    }));
+    database.transaction((transaction) =>
+      transaction.trash.restore({
+        entries: plan.entries,
+        targetFolderIds: new Map([[plan.entries[0].id, TEST_ROOT_FOLDER_ID]]),
+        now: asTimestamp(11),
+      }),
+    );
     expect(database.trash.list({ limit: 10 }).items).toEqual([]);
     const restored = openTestConnection(filePath);
-    expect(restored.prepare('SELECT count(*) AS count FROM notes_fts').get()).toEqual({ count: 1 });
+    expect(
+      restored.prepare('SELECT count(*) AS count FROM notes_fts').get(),
+    ).toEqual({ count: 1 });
     restored.close();
   });
 
@@ -151,11 +173,17 @@ describe('trash and content plans', () => {
       transaction.notes.insert(stored);
       transaction.trash.apply(plan);
     });
-    expectCode(() => database.transaction((transaction) => transaction.trash.restore({
-      entries: plan.entries,
-      targetFolderIds: new Map(),
-      now: plan.entries[0].expiresAt,
-    })), 'RELATION_INTEGRITY_VIOLATION');
+    expectCode(
+      () =>
+        database.transaction((transaction) =>
+          transaction.trash.restore({
+            entries: plan.entries,
+            targetFolderIds: new Map(),
+            now: plan.entries[0].expiresAt,
+          }),
+        ),
+      'RELATION_INTEGRITY_VIOLATION',
+    );
     expect(database.trash.list({ limit: 10 }).items).toEqual(plan.entries);
   });
 
@@ -165,18 +193,20 @@ describe('trash and content plans', () => {
     const copied = note(2);
     const attachmentId = '72000000-0000-4000-8000-000000000001';
     const rawBefore = openTestConnection(filePath);
-    rawBefore.prepare(
-      `INSERT INTO attachments(
+    rawBefore
+      .prepare(
+        `INSERT INTO attachments(
          id, blob_id, vault_id, file_name, mime_type, byte_length,
          local_state, file_key, manifest_version, manifest, created_at, updated_at
        ) VALUES (?, ?, ?, 'a.txt', 'text/plain', 1, 'READY', ?, 1, ?, 1, 1)`,
-    ).run(
-      attachmentId,
-      '73000000-0000-4000-8000-000000000001',
-      TEST_VAULT_ID,
-      Buffer.alloc(32, 1),
-      Buffer.from('{}'),
-    );
+      )
+      .run(
+        attachmentId,
+        '73000000-0000-4000-8000-000000000001',
+        TEST_VAULT_ID,
+        Buffer.alloc(32, 1),
+        Buffer.from('{}'),
+      );
     rawBefore.close();
     const copiedReference = createCurrentNoteAttachmentReference({
       vaultId: TEST_VAULT_ID,
@@ -204,9 +234,12 @@ describe('trash and content plans', () => {
     });
     expect(database.notes.get(source.id)).toBeUndefined();
     const raw = openTestConnection(filePath);
-    expect(raw.prepare('SELECT count(*) AS count FROM notes_fts').get()).toEqual({ count: 1 });
-    expect(raw.prepare('SELECT count(*) AS count FROM attachment_references').get())
-      .toEqual({ count: 1 });
+    expect(
+      raw.prepare('SELECT count(*) AS count FROM notes_fts').get(),
+    ).toEqual({ count: 1 });
+    expect(
+      raw.prepare('SELECT count(*) AS count FROM attachment_references').get(),
+    ).toEqual({ count: 1 });
     raw.close();
   });
 });

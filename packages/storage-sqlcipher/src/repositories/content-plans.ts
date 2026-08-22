@@ -25,7 +25,10 @@ export class ContentPlanRepository implements ContentPlanWriter {
 
   insertNoteCopy(plan: NoteCopyPlan): void {
     this.guard();
-    this.validateAttachmentReferences(plan.attachmentReferences, new Set([plan.note.id]));
+    this.validateAttachmentReferences(
+      plan.attachmentReferences,
+      new Set([plan.note.id]),
+    );
     plan.noteTags.forEach((value) => {
       if (!this.tags.get(value.tagId) || value.vaultId !== this.vaultId) {
         throw new StorageError('RELATION_INTEGRITY_VIOLATION');
@@ -67,9 +70,9 @@ export class ContentPlanRepository implements ContentPlanWriter {
     noteIds: ReadonlySet<string>,
   ): void {
     references.forEach((reference) => {
-      const attachment = this.connection().prepare(
-        'SELECT 1 FROM attachments WHERE id = ? AND vault_id = ?',
-      ).get(reference.attachmentId, this.vaultId);
+      const attachment = this.connection()
+        .prepare('SELECT 1 FROM attachments WHERE id = ? AND vault_id = ?')
+        .get(reference.attachmentId, this.vaultId);
       if (
         reference.vaultId !== this.vaultId ||
         !noteIds.has(reference.noteId) ||
@@ -84,12 +87,14 @@ export class ContentPlanRepository implements ContentPlanWriter {
     references: NoteCopyPlan['attachmentReferences'],
   ): void {
     references.forEach((reference) => {
-      this.connection().prepare(
-        `INSERT OR IGNORE INTO attachment_references(
+      this.connection()
+        .prepare(
+          `INSERT OR IGNORE INTO attachment_references(
            vault_id, attachment_id, source_type,
            note_id, note_version_id, trash_entry_id
          ) VALUES (?, ?, 'NOTE', ?, NULL, NULL)`,
-      ).run(this.vaultId, reference.attachmentId, reference.noteId);
+        )
+        .run(this.vaultId, reference.attachmentId, reference.noteId);
     });
   }
 }

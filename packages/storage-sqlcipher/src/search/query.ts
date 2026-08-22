@@ -97,7 +97,10 @@ export class SearchRepository implements SearchReader {
     }
   }
 
-  private rows(normalizedQuery: string, scope: SearchScope): readonly SearchRow[] {
+  private rows(
+    normalizedQuery: string,
+    scope: SearchScope,
+  ): readonly SearchRow[] {
     const useFts = Array.from(normalizedQuery).length >= 3;
     const titleExpression = 'instr(notes_fts.normalized_title, ?) > 0';
     const predicate = useFts
@@ -168,9 +171,9 @@ export class SearchRepository implements SearchReader {
 
   private rootFolderId(): string {
     const row = this.connection()
-      .prepare<{ root_folder_id: string }>(
-        'SELECT root_folder_id FROM vault_metadata WHERE singleton = 1',
-      )
+      .prepare<{
+        root_folder_id: string;
+      }>('SELECT root_folder_id FROM vault_metadata WHERE singleton = 1')
       .get();
     return row?.root_folder_id ?? '';
   }

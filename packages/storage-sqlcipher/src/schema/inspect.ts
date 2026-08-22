@@ -30,7 +30,7 @@ export function readSchemaVersion(database: SqlcipherConnection): number {
       )
       .all();
   } catch {
-    return corrupt();
+    corrupt();
   }
 
   if (
@@ -63,7 +63,7 @@ export function validateVaultMetadata(
       )
       .all();
   } catch {
-    return corrupt();
+    corrupt();
   }
   if (rows.length !== 1) {
     corrupt();

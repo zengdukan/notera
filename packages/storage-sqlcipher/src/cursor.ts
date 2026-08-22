@@ -64,7 +64,11 @@ export function parsePageRequest(
       return invalidCursor();
     }
     const parsed = JSON.parse(bytes.toString('utf8')) as unknown;
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
       return invalidCursor();
     }
     const record = parsed as Record<string, unknown>;
@@ -72,8 +76,7 @@ export function parsePageRequest(
     const keyList = keys.join(',');
     if (
       (keyList !== 'fingerprint,kind,lastId,sortOrder,version' &&
-        keyList !==
-          'fingerprint,kind,lastId,secondary,sortOrder,version') ||
+        keyList !== 'fingerprint,kind,lastId,secondary,sortOrder,version') ||
       record.version !== 1 ||
       record.kind !== kind ||
       record.fingerprint !== fingerprint ||

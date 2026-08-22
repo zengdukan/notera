@@ -76,9 +76,9 @@ describe('SQLCipher connection', () => {
     );
     created.close();
 
-    expect(
-      readFileSync(filePath).subarray(0, 16).toString('utf8'),
-    ).not.toBe('SQLite format 3\0');
+    expect(readFileSync(filePath).subarray(0, 16).toString('utf8')).not.toBe(
+      'SQLite format 3\0',
+    );
     const reopened = connectionModule().openNativeConnection({
       filePath,
       databaseKey: key,

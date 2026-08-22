@@ -7,30 +7,24 @@ import { mapNativeError, StorageError } from './errors';
 import { checkIntegrity } from './integrity';
 import { PRODUCTION_MIGRATIONS } from './migrations/registry';
 import { runMigrations } from './migrations/runner';
-import {
-  asFolderReader,
-  FolderRepository,
-} from './repositories/folders';
+import { asFolderReader, FolderRepository } from './repositories/folders';
 import {
   asProfileMetadataReader,
   ProfileMetadataRepository,
 } from './repositories/profile-metadata';
 import { asNoteReader, NoteRepository } from './repositories/notes';
 import { asTagReader, TagRepository } from './repositories/tags';
-import {
-  asFavoriteReader,
-  FavoriteRepository,
-} from './repositories/favorites';
+import { asFavoriteReader, FavoriteRepository } from './repositories/favorites';
 import { asHistoryReader, HistoryRepository } from './repositories/history';
 import { asTrashReader, TrashRepository } from './repositories/trash';
 import { ContentPlanRepository } from './repositories/content-plans';
-import { asAttachmentReader, AttachmentRepository } from './repositories/attachments';
+import {
+  asAttachmentReader,
+  AttachmentRepository,
+} from './repositories/attachments';
 import { checkSearchIndex, rebuildSearchIndex } from './search/health';
 import { SearchRepository } from './search/query';
-import {
-  createCurrentSchema,
-  CURRENT_SCHEMA_VERSION,
-} from './schema/current';
+import { createCurrentSchema, CURRENT_SCHEMA_VERSION } from './schema/current';
 import { readSchemaVersion, validateVaultMetadata } from './schema/inspect';
 import type {
   CreateVaultDatabaseOptions,
@@ -87,6 +81,7 @@ export class VaultDatabase {
   readonly history: HistoryReader;
 
   readonly trash: TrashReader;
+
   readonly attachments: AttachmentReader;
 
   readonly search: SearchReader;
@@ -122,13 +117,12 @@ export class VaultDatabase {
         historyNotes,
       ),
     );
-    const trashNotes = new NoteRepository(() => this.requireConnection(), vaultId);
+    const trashNotes = new NoteRepository(
+      () => this.requireConnection(),
+      vaultId,
+    );
     this.trash = asTrashReader(
-      new TrashRepository(
-        () => this.requireConnection(),
-        vaultId,
-        trashNotes,
-      ),
+      new TrashRepository(() => this.requireConnection(), vaultId, trashNotes),
     );
     this.attachments = asAttachmentReader(
       new AttachmentRepository(() => this.requireConnection(), vaultId),
@@ -215,7 +209,9 @@ export class VaultDatabase {
         guard,
       ),
       attachments: new AttachmentRepository(
-        () => this.requireConnection(), this.vaultId, guard,
+        () => this.requireConnection(),
+        this.vaultId,
+        guard,
       ),
     };
 
@@ -243,7 +239,7 @@ export class VaultDatabase {
     if (this.transactionActive || this.searchRebuildActive) {
       throw new StorageError('STORAGE_OPERATION_FAILED');
     }
-    const connection = this.connection;
+    const { connection } = this;
     if (connection === undefined) {
       return;
     }

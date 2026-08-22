@@ -77,16 +77,21 @@ interface HistoryWriterApi {
 }
 
 interface VaultDatabaseApi {
-  readonly tags: Omit<TagWriterApi, 'insert' | 'replace' | 'delete' | 'addToNote' | 'removeFromNote'>;
+  readonly tags: Omit<
+    TagWriterApi,
+    'insert' | 'replace' | 'delete' | 'addToNote' | 'removeFromNote'
+  >;
   readonly favorites: Pick<FavoriteWriterApi, 'list'>;
   readonly history: Pick<HistoryWriterApi, 'get' | 'listForNote'>;
   readonly notes: { get(id: NoteId): Note | undefined };
-  transaction<Result>(callback: (transaction: {
-    readonly notes: { insert(note: Note): void };
-    readonly tags: TagWriterApi;
-    readonly favorites: FavoriteWriterApi;
-    readonly history: HistoryWriterApi;
-  }) => Result): Result;
+  transaction<Result>(
+    callback: (transaction: {
+      readonly notes: { insert(note: Note): void };
+      readonly tags: TagWriterApi;
+      readonly favorites: FavoriteWriterApi;
+      readonly history: HistoryWriterApi;
+    }) => Result,
+  ): Result;
   close(): void;
 }
 
@@ -128,14 +133,21 @@ function createVault(): { database: VaultDatabaseApi; filePath: string } {
 
 function note(index = 1): Note {
   return createNote({
-    id: asNoteId(`30000000-0000-4000-8000-${index.toString().padStart(12, '0')}`),
+    id: asNoteId(
+      `30000000-0000-4000-8000-${index.toString().padStart(12, '0')}`,
+    ),
     vaultId: TEST_VAULT_ID,
     folderId: TEST_ROOT_FOLDER_ID,
     title: `Note ${index}`,
     document: asAdfDocument({
       type: 'doc',
       version: 1,
-      content: [{ type: 'paragraph', content: [{ type: 'text', text: `Body ${index}` }] }],
+      content: [
+        {
+          type: 'paragraph',
+          content: [{ type: 'text', text: `Body ${index}` }],
+        },
+      ],
     }),
     sortOrder: asSortOrder(index),
     createdAt: asTimestamp(index),
@@ -145,7 +157,9 @@ function note(index = 1): Note {
 
 function tag(index: number, name = `Tag ${index}`): Tag {
   return createTag({
-    id: asTagId(`40000000-0000-4000-8000-${index.toString().padStart(12, '0')}`),
+    id: asTagId(
+      `40000000-0000-4000-8000-${index.toString().padStart(12, '0')}`,
+    ),
     vaultId: TEST_VAULT_ID,
     name: asTagName(name),
     createdAt: asTimestamp(index),
@@ -256,17 +270,19 @@ describe('organization and immutable history repositories', () => {
     });
     database.close();
     const raw = openTestConnection(filePath);
-    raw.prepare(
-      `INSERT INTO trash_entries(
+    raw
+      .prepare(
+        `INSERT INTO trash_entries(
          id, vault_id, object_type, object_id, original_parent_id,
          deleted_at, expires_at
        ) VALUES (?, ?, 'NOTE', ?, ?, 1, 2)`,
-    ).run(
-      '60000000-0000-4000-8000-000000000001',
-      TEST_VAULT_ID,
-      storedNote.id,
-      TEST_ROOT_FOLDER_ID,
-    );
+      )
+      .run(
+        '60000000-0000-4000-8000-000000000001',
+        TEST_VAULT_ID,
+        storedNote.id,
+        TEST_ROOT_FOLDER_ID,
+      );
     raw.close();
     const reopened = databaseModule().openVaultDatabase({
       filePath,
@@ -276,24 +292,30 @@ describe('organization and immutable history repositories', () => {
     });
     openDatabases.push(reopened);
     expectStorageCode(
-      () => reopened.transaction((transaction) => {
-        transaction.tags.addToNote(createNoteTag({
-          vaultId: TEST_VAULT_ID,
-          noteId: storedNote.id,
-          tagId: storedTag.id,
-        }));
-      }),
+      () =>
+        reopened.transaction((transaction) => {
+          transaction.tags.addToNote(
+            createNoteTag({
+              vaultId: TEST_VAULT_ID,
+              noteId: storedNote.id,
+              tagId: storedTag.id,
+            }),
+          );
+        }),
       'RELATION_INTEGRITY_VIOLATION',
     );
     expectStorageCode(
-      () => reopened.transaction((transaction) => {
-        transaction.favorites.insert(createFavorite({
-          vaultId: TEST_VAULT_ID,
-          noteId: storedNote.id,
-          sortOrder: asSortOrder(1),
-          createdAt: asTimestamp(1),
-        }));
-      }),
+      () =>
+        reopened.transaction((transaction) => {
+          transaction.favorites.insert(
+            createFavorite({
+              vaultId: TEST_VAULT_ID,
+              noteId: storedNote.id,
+              sortOrder: asSortOrder(1),
+              createdAt: asTimestamp(1),
+            }),
+          );
+        }),
       'RELATION_INTEGRITY_VIOLATION',
     );
     expect(reopened.tags.listForNote(storedNote.id)).toEqual([]);
@@ -309,9 +331,9 @@ describe('organization and immutable history repositories', () => {
       transaction.history.insert(historical);
     });
     expect(database.history.get(historical.id)).toEqual(historical);
-    expect(database.history.listForNote(current.id, { limit: 10 }).items).toEqual([
-      historical,
-    ]);
+    expect(
+      database.history.listForNote(current.id, { limit: 10 }).items,
+    ).toEqual([historical]);
 
     const plan = restoreNoteVersion({
       note: current,
@@ -335,13 +357,18 @@ describe('organization and immutable history repositories', () => {
     database.close();
     const raw = openTestConnection(filePath);
     expect(
-      raw.prepare(
-        `SELECT adf_bytes = length(CAST(adf_json AS BLOB)) AS size_ok,
+      raw
+        .prepare(
+          `SELECT adf_bytes = length(CAST(adf_json AS BLOB)) AS size_ok,
                 length(adf_sha256) AS hash_bytes
          FROM note_versions WHERE id = ?`,
-      ).get(historical.id),
+        )
+        .get(historical.id),
     ).toEqual({ size_ok: 1, hash_bytes: 32 });
-    raw.prepare('UPDATE note_versions SET adf_bytes = adf_bytes + 1 WHERE id = ?')
+    raw
+      .prepare(
+        'UPDATE note_versions SET adf_bytes = adf_bytes + 1 WHERE id = ?',
+      )
       .run(historical.id);
     raw.close();
     const reopened = databaseModule().openVaultDatabase({

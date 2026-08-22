@@ -27,10 +27,7 @@ export interface SqlcipherStatement<Row = Record<string, unknown>> {
 export interface SqlcipherConnection {
   exec(sql: string): void;
   prepare<Row = Record<string, unknown>>(sql: string): SqlcipherStatement<Row>;
-  pragma(
-    source: string,
-    options?: Readonly<{ simple?: boolean }>,
-  ): unknown;
+  pragma(source: string, options?: Readonly<{ simple?: boolean }>): unknown;
   transaction<Arguments extends unknown[], Result>(
     operation: (...arguments_: Arguments) => Result,
   ): (...arguments_: Arguments) => Result;
@@ -99,17 +96,12 @@ class ManagedSqlcipherConnection implements SqlcipherConnection {
     });
   }
 
-  prepare<Row = Record<string, unknown>>(
-    sql: string,
-  ): SqlcipherStatement<Row> {
+  prepare<Row = Record<string, unknown>>(sql: string): SqlcipherStatement<Row> {
     const statement = this.runNative((database) => database.prepare<Row>(sql));
     return new ConnectionStatement(this, statement);
   }
 
-  pragma(
-    source: string,
-    options?: Readonly<{ simple?: boolean }>,
-  ): unknown {
+  pragma(source: string, options?: Readonly<{ simple?: boolean }>): unknown {
     return this.runNative((database) => database.pragma(source, options));
   }
 
@@ -145,7 +137,7 @@ class ManagedSqlcipherConnection implements SqlcipherConnection {
   }
 
   close(): void {
-    const database = this.database;
+    const { database } = this;
     if (database === undefined) {
       return;
     }

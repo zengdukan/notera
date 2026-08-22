@@ -30,7 +30,7 @@ export function extractAdfText(document: AdfDocument): string {
       appendSeparator(parts);
       continue;
     }
-    const value = frame.value;
+    const { value } = frame;
     if (value === null || typeof value !== 'object' || Array.isArray(value)) {
       continue;
     }
@@ -52,5 +52,8 @@ export function extractAdfText(document: AdfDocument): string {
       }
     }
   }
-  return parts.join('').replace(/\n{2,}/g, '\n').replace(/^\n|\n$/g, '');
+  return parts
+    .join('')
+    .replace(/\n{2,}/g, '\n')
+    .replace(/^\n|\n$/g, '');
 }

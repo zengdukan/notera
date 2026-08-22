@@ -13,10 +13,7 @@ import type { SqlcipherConnection } from '../connection';
 import { encodeCursor, parsePageRequest } from '../cursor';
 import { StorageError } from '../errors';
 import { serializeAdf } from '../serialization/adf-json';
-import {
-  hydrateNoteVersion,
-  type NoteVersionRow,
-} from '../serialization/rows';
+import { hydrateNoteVersion, type NoteVersionRow } from '../serialization/rows';
 import type { HistoryReader, HistoryWriter, Page, PageRequest } from '../types';
 import type { NoteRepository } from './notes';
 
@@ -42,9 +39,11 @@ export class HistoryRepository implements HistoryWriter {
 
   get(id: NoteVersionId): NoteVersion | undefined {
     this.guard();
-    const row = this.connection().prepare<NoteVersionRow>(
-      `SELECT ${HISTORY_COLUMNS} FROM note_versions WHERE id = ? AND vault_id = ?`,
-    ).get(id, this.vaultId);
+    const row = this.connection()
+      .prepare<NoteVersionRow>(
+        `SELECT ${HISTORY_COLUMNS} FROM note_versions WHERE id = ? AND vault_id = ?`,
+      )
+      .get(id, this.vaultId);
     return row ? hydrateNoteVersion(row) : undefined;
   }
 
@@ -58,51 +57,58 @@ export class HistoryRepository implements HistoryWriter {
       parameters.push(cursor.sortOrder, cursor.sortOrder, cursor.lastId);
     }
     parameters.push(page.limit + 1);
-    const rows = this.connection().prepare<NoteVersionRow>(
-      `SELECT ${HISTORY_COLUMNS} FROM note_versions
+    const rows = this.connection()
+      .prepare<NoteVersionRow>(
+        `SELECT ${HISTORY_COLUMNS} FROM note_versions
        WHERE vault_id = ? AND note_id = ? ${keyset}
        ORDER BY created_at, id LIMIT ?`,
-    ).all(...parameters);
+      )
+      .all(...parameters);
     const items = rows.slice(0, page.limit).map(hydrateNoteVersion);
     const last = items.at(-1);
     return {
       items,
       ...(rows.length > page.limit && last
-        ? { nextCursor: encodeCursor(HISTORY_CURSOR, `note:${noteId}`, {
-            sortOrder: last.createdAt,
-            lastId: last.id,
-          }) }
+        ? {
+            nextCursor: encodeCursor(HISTORY_CURSOR, `note:${noteId}`, {
+              sortOrder: last.createdAt,
+              lastId: last.id,
+            }),
+          }
         : {}),
     };
   }
 
   insert(version: NoteVersion): void {
     this.guard();
-    if (version.vaultId !== this.vaultId || this.get(version.id)) relationViolation();
+    if (version.vaultId !== this.vaultId || this.get(version.id))
+      relationViolation();
     const note = this.notes.get(version.noteId);
     if (!note || note.vaultId !== version.vaultId) relationViolation();
     const json = serializeAdf(version.document);
     const bytes = Buffer.from(json, 'utf8');
     const hash = createHash('sha256').update(bytes).digest();
-    this.connection().prepare(
-      `INSERT INTO note_versions(
+    this.connection()
+      .prepare(
+        `INSERT INTO note_versions(
          id, vault_id, note_id, kind, protection_reason,
          source_content_version, title, adf_json, adf_bytes,
          adf_sha256, created_at
        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      version.id,
-      version.vaultId,
-      version.noteId,
-      version.kind,
-      version.protectionReason,
-      version.sourceContentVersion,
-      version.title,
-      json,
-      bytes.byteLength,
-      hash,
-      version.createdAt,
-    );
+      )
+      .run(
+        version.id,
+        version.vaultId,
+        version.noteId,
+        version.kind,
+        version.protectionReason,
+        version.sourceContentVersion,
+        version.title,
+        json,
+        bytes.byteLength,
+        hash,
+        version.createdAt,
+      );
   }
 
   restore(
@@ -119,6 +125,5 @@ export class HistoryRepository implements HistoryWriter {
   }
 }
 
-export const asHistoryReader = (
-  repository: HistoryRepository,
-): HistoryReader => repository;
+export const asHistoryReader = (repository: HistoryRepository): HistoryReader =>
+  repository;
