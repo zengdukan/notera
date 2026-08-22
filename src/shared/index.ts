@@ -17,3 +17,4 @@ export * from './ipc/contracts/export';
 export * from './ipc/errors';
 export * from './ipc/pagination';
 export * from './ipc/registry';
+export * from './export-renderer/contracts';

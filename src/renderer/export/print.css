@@ -1,0 +1,61 @@
+:root {
+  color-scheme: light;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+html,
+body {
+  margin: 0;
+  background: #ffffff;
+  color: #172b4d;
+}
+
+.notera-export-document {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.notera-export-document > h1 {
+  margin: 0 0 24px;
+  font-size: 32px;
+  line-height: 1.25;
+}
+
+.export-extension--invalid-math,
+[aria-label="无效 Mermaid 图表"],
+[aria-label="不支持的扩展"] {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border: 1px solid #f15b50;
+  border-radius: 4px;
+  padding: 8px;
+  background: #fff7f5;
+}
+
+table,
+pre,
+blockquote,
+figure,
+.media-single,
+.media-group,
+.export-extension {
+  break-inside: avoid;
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+@page {
+  size: A4;
+  margin: 16mm 18mm 18mm;
+}
+
+@media print {
+  html,
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'<% if (htmlWebpackPlugin.options.isDevelopment) { %> 'unsafe-eval'<% } %>; style-src 'self' 'unsafe-inline'; img-src 'self' data: notera-export-media:; font-src 'self' data:; connect-src notera-export-media:<% if (htmlWebpackPlugin.options.isDevelopment) { %> http://localhost:* ws://localhost:*<% } %>; object-src 'none'; frame-src 'none'; form-action 'none'; worker-src 'none'; base-uri 'none'"
+    />
+    <meta name="color-scheme" content="light" />
+    <title>Notera 导出</title>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

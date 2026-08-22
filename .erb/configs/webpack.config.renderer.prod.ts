@@ -25,12 +25,15 @@ const configuration: webpack.Configuration = {
 
   target: ['web', 'electron-renderer'],
 
-  entry: [path.join(webpackPaths.srcRendererPath, 'index.tsx')],
+  entry: {
+    renderer: path.join(webpackPaths.srcRendererPath, 'index.tsx'),
+    export: path.join(webpackPaths.srcRendererPath, 'export/index.tsx'),
+  },
 
   output: {
     path: webpackPaths.distRendererPath,
     publicPath: './',
-    filename: 'renderer.js',
+    filename: '[name].js',
     library: {
       type: 'umd',
     },
@@ -112,7 +115,7 @@ const configuration: webpack.Configuration = {
     }),
 
     new MiniCssExtractPlugin({
-      filename: 'style.css',
+      filename: '[name].css',
     }),
 
     new BundleAnalyzerPlugin({
@@ -123,12 +126,24 @@ const configuration: webpack.Configuration = {
     new HtmlWebpackPlugin({
       filename: 'index.html',
       template: path.join(webpackPaths.srcRendererPath, 'index.ejs'),
+      chunks: ['renderer'],
       minify: {
         collapseWhitespace: true,
         removeAttributeQuotes: true,
         removeComments: true,
       },
       isBrowser: false,
+      isDevelopment: false,
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'export.html',
+      template: path.join(webpackPaths.srcRendererPath, 'export/index.ejs'),
+      chunks: ['export'],
+      minify: {
+        collapseWhitespace: true,
+        removeAttributeQuotes: true,
+        removeComments: true,
+      },
       isDevelopment: false,
     }),
 

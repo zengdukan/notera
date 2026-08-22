@@ -1,0 +1,65 @@
+/** @jest-environment jsdom */
+
+import { createExportReadiness } from '../readiness';
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((accept, decline) => {
+    resolve = accept;
+    reject = decline;
+  });
+  return { promise, reject, resolve };
+}
+
+describe('export render readiness', () => {
+  it('waits for fonts, image decoding, and Mermaid terminal state', async () => {
+    const root = document.createElement('main');
+    root.innerHTML =
+      '<img alt="attachment"><span data-export-lossy="true">invalid math</span>';
+    const image = root.querySelector('img')!;
+    const fonts = deferred<void>();
+    const decoded = deferred<void>();
+    Object.defineProperty(image, 'decode', { value: () => decoded.promise });
+    const readiness = createExportReadiness();
+    const settleMermaid = readiness.registerMermaid();
+    let resolved = false;
+
+    const result = readiness
+      .waitForStable(root, fonts.promise)
+      .then((value: number) => {
+        resolved = true;
+        return value;
+      });
+    await Promise.resolve();
+    expect(resolved).toBe(false);
+
+    fonts.resolve();
+    await Promise.resolve();
+    expect(resolved).toBe(false);
+
+    decoded.resolve();
+    await Promise.resolve();
+    expect(resolved).toBe(false);
+
+    root.insertAdjacentHTML(
+      'beforeend',
+      '<pre data-export-lossy="true">invalid Mermaid</pre>',
+    );
+    settleMermaid();
+    await expect(result).resolves.toBe(2);
+  });
+
+  it('treats an undecodable image as a stable lossy node', async () => {
+    const root = document.createElement('main');
+    root.innerHTML = '<img alt="missing attachment">';
+    const image = root.querySelector('img')!;
+    Object.defineProperty(image, 'decode', {
+      value: () => Promise.reject(new Error('decode failed')),
+    });
+
+    await expect(
+      createExportReadiness().waitForStable(root, Promise.resolve()),
+    ).resolves.toBe(1);
+  });
+});
