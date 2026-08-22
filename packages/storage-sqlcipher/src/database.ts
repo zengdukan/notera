@@ -23,6 +23,7 @@ import {
 import { asHistoryReader, HistoryRepository } from './repositories/history';
 import { asTrashReader, TrashRepository } from './repositories/trash';
 import { ContentPlanRepository } from './repositories/content-plans';
+import { asAttachmentReader, AttachmentRepository } from './repositories/attachments';
 import {
   createCurrentSchema,
   CURRENT_SCHEMA_VERSION,
@@ -36,6 +37,7 @@ import type {
   FavoriteReader,
   HistoryReader,
   TrashReader,
+  AttachmentReader,
   OpenVaultDatabaseOptions,
   ProfileMetadataReader,
   VaultTransaction,
@@ -77,6 +79,7 @@ export class VaultDatabase {
   readonly history: HistoryReader;
 
   readonly trash: TrashReader;
+  readonly attachments: AttachmentReader;
 
   private readonly vaultId: VaultId;
 
@@ -116,6 +119,9 @@ export class VaultDatabase {
         vaultId,
         trashNotes,
       ),
+    );
+    this.attachments = asAttachmentReader(
+      new AttachmentRepository(() => this.requireConnection(), vaultId),
     );
   }
 
@@ -189,6 +195,9 @@ export class VaultDatabase {
         noteWriter,
         tagWriter,
         guard,
+      ),
+      attachments: new AttachmentRepository(
+        () => this.requireConnection(), this.vaultId, guard,
       ),
     };
 

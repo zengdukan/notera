@@ -16,6 +16,9 @@ import type {
   TrashEntry,
   TrashEntryId,
   TrashPlan,
+  Attachment,
+  AttachmentId,
+  AttachmentReference,
   VaultId,
   VaultIdentity,
 } from '@notera/domain';
@@ -67,6 +70,7 @@ export interface VaultTransaction {
   readonly history: HistoryWriter;
   readonly trash: TrashWriter;
   readonly contentPlans: ContentPlanWriter;
+  readonly attachments: AttachmentWriter;
 }
 
 export interface NoteReader {
@@ -163,6 +167,13 @@ export interface ContentPlanWriter {
   applyBatchMove(input: BatchMoveStoragePlan): void;
   applyBatchRelations(input: BatchRelationStoragePlan): void;
 }
+
+export interface StoredAttachment { readonly attachment: Attachment; readonly fileKey: Uint8Array;
+  readonly manifestVersion: number; readonly manifest: Uint8Array; }
+export interface AttachmentReader { get(id: AttachmentId): StoredAttachment | undefined; }
+export interface AttachmentWriter extends AttachmentReader { insert(value: StoredAttachment): void;
+  replace(value: StoredAttachment): void; addReference(reference: AttachmentReference): void;
+  removeReference(reference: AttachmentReference): void; markGcPending(attachment: Attachment): void; }
 
 export interface CreateVaultDatabaseOptions {
   readonly filePath: string;
