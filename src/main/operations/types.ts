@@ -8,7 +8,10 @@ import {
   type IpcError,
 } from '../../shared';
 
-export type ActiveOperationKind = 'ATTACHMENT_IMPORT' | 'ATTACHMENT_SAVE_AS';
+export type ActiveOperationKind =
+  | 'ATTACHMENT_IMPORT'
+  | 'ATTACHMENT_SAVE_AS'
+  | 'NOTE_EXPORT';
 export type OperationPhase = z.output<typeof operationPhaseSchema>;
 export type OperationProgressPayload = z.output<
   typeof operationProgress.payload
@@ -26,10 +29,15 @@ type SaveAsSuccess = Extract<
   OperationTerminalStatus,
   { readonly kind: 'ATTACHMENT_SAVE_AS'; readonly state: 'SUCCEEDED' }
 >['result'];
+type ExportSuccess = Extract<
+  OperationTerminalStatus,
+  { readonly kind: 'NOTE_EXPORT'; readonly state: 'SUCCEEDED' }
+>['result'];
 
 export interface OperationSuccessByKind {
   readonly ATTACHMENT_IMPORT: ImportSuccess;
   readonly ATTACHMENT_SAVE_AS: SaveAsSuccess;
+  readonly NOTE_EXPORT: ExportSuccess;
 }
 
 export interface OperationContext {

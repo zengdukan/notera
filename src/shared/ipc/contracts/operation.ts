@@ -23,6 +23,7 @@ export const operationPhaseSchema = z.enum([
   'FINALIZING',
 ]);
 export const exportFormatSchema = z.enum(['MARKDOWN', 'PDF']);
+export const exportPackagingSchema = z.enum(['DIRECT', 'ZIP']);
 
 export const startOperationResultSchema = z.discriminatedUnion('status', [
   z.strictObject({ status: z.literal('cancelled') }),
@@ -45,6 +46,7 @@ const operationAttachmentSummarySchema = z.strictObject({
 
 export const exportReportSchema = z.strictObject({
   format: exportFormatSchema,
+  packaging: exportPackagingSchema,
   attachmentCount: z.number().int().min(0),
   lossyNodeCount: z.number().int().min(0),
   completedAt: timestampSchema,

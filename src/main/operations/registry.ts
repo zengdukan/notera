@@ -14,6 +14,7 @@ import type {
   ActiveOperationKind,
   OperationContext,
   OperationEventSink,
+  OperationPhase,
   OperationStatus,
   OperationTerminalStatus,
   StartOperationInput,
@@ -25,6 +26,8 @@ interface OperationRecord {
   readonly controller: AbortController;
   status: OperationStatus;
   completion: Promise<OperationTerminalStatus>;
+  lastPublishedPhase: OperationPhase | undefined;
+  lastPublishedAt: number | undefined;
 }
 
 const fallbackError = Object.freeze({
@@ -51,6 +54,8 @@ export class OperationRegistry {
 
   private readonly randomUUID: () => string;
 
+  private readonly now: () => number;
+
   private sessionEpoch: string | undefined;
 
   private accepting = false;
@@ -61,9 +66,11 @@ export class OperationRegistry {
     private readonly input: {
       readonly sink: OperationEventSink;
       readonly randomUUID?: () => string;
+      readonly now?: () => number;
     },
   ) {
     this.randomUUID = input.randomUUID ?? randomUUID;
+    this.now = input.now ?? Date.now;
   }
 
   beginSession(sessionEpoch: string): void {
@@ -83,6 +90,15 @@ export class OperationRegistry {
     input: StartOperationInput<Kind>,
   ): string {
     this.requireSession();
+    if (
+      input.kind === 'NOTE_EXPORT' &&
+      [...this.records.values()].some(
+        (record) =>
+          record.kind === 'NOTE_EXPORT' && record.status.state === 'RUNNING',
+      )
+    ) {
+      throw new ApplicationError('OPERATION_FAILED');
+    }
     const operationId = this.randomUUID();
     if (this.records.has(operationId)) {
       throw new ApplicationError('OPERATION_FAILED');
@@ -94,6 +110,8 @@ export class OperationRegistry {
       controller,
       status: runningStatus(operationId, input.kind),
       completion: Promise.resolve(undefined as never),
+      lastPublishedPhase: undefined,
+      lastPublishedAt: undefined,
     };
     this.records.set(operationId, record);
 
@@ -209,6 +227,16 @@ export class OperationRegistry {
     const parsed = operationStatusSchema.safeParse(candidate);
     if (!parsed.success) return;
     record.status = Object.freeze(parsed.data);
+    const timestamp = this.now();
+    const shouldPublish =
+      record.lastPublishedPhase !== parsedPhase.data ||
+      value === 0 ||
+      value === 1 ||
+      record.lastPublishedAt === undefined ||
+      timestamp - record.lastPublishedAt >= 100;
+    if (!shouldPublish) return;
+    record.lastPublishedPhase = parsedPhase.data;
+    record.lastPublishedAt = timestamp;
     try {
       this.input.sink.progress(
         Object.freeze({

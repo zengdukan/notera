@@ -171,12 +171,37 @@ describe('long operation state and events', () => {
         result: { completedAt },
       }),
     ).toBeDefined();
+    expect(
+      operationStatusSchema.parse({
+        operationId: uuid(1),
+        kind: 'NOTE_EXPORT',
+        state: 'SUCCEEDED',
+        result: {
+          report: {
+            format: 'PDF',
+            packaging: 'ZIP',
+            attachmentCount: 2,
+            lossyNodeCount: 1,
+            completedAt,
+          },
+        },
+      }),
+    ).toBeDefined();
     expect(() =>
       operationStatusSchema.parse({
         operationId: uuid(1),
         kind: 'NOTE_EXPORT',
         state: 'SUCCEEDED',
-        result: { completedAt },
+        result: {
+          report: {
+            format: 'PDF',
+            packaging: 'ARCHIVE',
+            attachmentCount: 0,
+            lossyNodeCount: 0,
+            completedAt,
+            path: 'C:\\private.pdf',
+          },
+        },
       }),
     ).toThrow();
   });

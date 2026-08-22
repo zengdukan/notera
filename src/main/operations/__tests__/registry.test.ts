@@ -10,6 +10,7 @@ import type {
 } from '../types';
 
 const operationId = '10000000-0000-4000-8000-000000000001';
+const secondOperationId = '10000000-0000-4000-8000-000000000002';
 const attachmentId = '20000000-0000-4000-8000-000000000002';
 const attachment = {
   id: attachmentId,
@@ -36,15 +37,23 @@ const settle = () =>
     setImmediate(resolve);
   });
 
-function setup() {
+function setup(now: () => number = Date.now) {
   const progress: OperationProgressPayload[] = [];
   const completed: OperationTerminalStatus[] = [];
+  let random = 0;
   const sink: OperationEventSink = {
     progress: (payload) => progress.push(payload),
     completed: (payload) => completed.push(payload),
   };
   return {
-    registry: new OperationRegistry({ sink, randomUUID: () => operationId }),
+    registry: new OperationRegistry({
+      sink,
+      randomUUID: () => {
+        random += 1;
+        return random === 1 ? operationId : secondOperationId;
+      },
+      now,
+    }),
     progress,
     completed,
   };
@@ -96,6 +105,119 @@ describe('session operation registry', () => {
       result: { attachment },
     });
     expect(completed).toEqual([registry.getStatus(importedId)]);
+  });
+
+  it('publishes NOTE_EXPORT reports and allows only one running export', async () => {
+    const { registry, completed } = setup();
+    const first = deferred<{
+      readonly report: {
+        readonly format: 'PDF';
+        readonly packaging: 'ZIP';
+        readonly attachmentCount: number;
+        readonly lossyNodeCount: number;
+        readonly completedAt: number;
+      };
+    }>();
+    registry.beginSession('session-1');
+    registry.start({
+      kind: 'NOTE_EXPORT',
+      execute: () => first.promise,
+      mapError: () => ({
+        code: 'EXPORT_FAILED',
+        message: IPC_ERROR_MESSAGES.EXPORT_FAILED,
+      }),
+    });
+    expect(() =>
+      registry.start({
+        kind: 'NOTE_EXPORT',
+        execute: async () => ({
+          report: {
+            format: 'PDF',
+            packaging: 'DIRECT',
+            attachmentCount: 0,
+            lossyNodeCount: 0,
+            completedAt: 2,
+          },
+        }),
+        mapError: () => ({
+          code: 'EXPORT_FAILED',
+          message: IPC_ERROR_MESSAGES.EXPORT_FAILED,
+        }),
+      }),
+    ).toThrow(expect.objectContaining({ code: 'OPERATION_FAILED' }));
+
+    first.resolve({
+      report: {
+        format: 'PDF',
+        packaging: 'ZIP',
+        attachmentCount: 2,
+        lossyNodeCount: 1,
+        completedAt: 1,
+      },
+    });
+    await settle();
+    expect(completed[0]).toMatchObject({
+      kind: 'NOTE_EXPORT',
+      state: 'SUCCEEDED',
+      result: { report: { packaging: 'ZIP' } },
+    });
+
+    expect(() =>
+      registry.start({
+        kind: 'NOTE_EXPORT',
+        execute: async () => ({
+          report: {
+            format: 'MARKDOWN',
+            packaging: 'DIRECT',
+            attachmentCount: 0,
+            lossyNodeCount: 0,
+            completedAt: 2,
+          },
+        }),
+        mapError: () => ({
+          code: 'EXPORT_FAILED',
+          message: IPC_ERROR_MESSAGES.EXPORT_FAILED,
+        }),
+      }),
+    ).not.toThrow();
+  });
+
+  it('throttles same-phase progress events but keeps query state current', async () => {
+    let clock = 0;
+    const { registry, progress } = setup(() => clock);
+    const gate = deferred<{ readonly completedAt: number }>();
+    registry.beginSession('session-1');
+    const id = registry.start({
+      kind: 'ATTACHMENT_SAVE_AS',
+      execute: async (context) => {
+        context.progress('PREPARING', 0);
+        context.progress('PREPARING', 0.1);
+        clock = 100;
+        context.progress('PREPARING', 0.2);
+        context.progress('WRITING', 0.3);
+        context.progress('WRITING', 0.4);
+        context.progress('WRITING', 1);
+        return gate.promise;
+      },
+      mapError: () => ({
+        code: 'ATTACHMENT_SAVE_FAILED',
+        message: IPC_ERROR_MESSAGES.ATTACHMENT_SAVE_FAILED,
+      }),
+    });
+    await settle();
+
+    expect(registry.getStatus(id)).toMatchObject({
+      phase: 'WRITING',
+      progress: 1,
+    });
+    expect(progress.map(({ phase, progress: value }) => [phase, value])).toEqual([
+      ['PREPARING', 0],
+      ['PREPARING', 0.2],
+      ['WRITING', 0.3],
+      ['WRITING', 1],
+    ]);
+    gate.resolve({ completedAt: 1 });
+    await settle();
   });
 
   it('publishes bounded progress and ignores invalid or late updates', async () => {
