@@ -2,7 +2,7 @@ export type InternalSessionName = string & {
   readonly __internalSessionName: unique symbol;
 };
 
-import type { LocalProfileId, Timestamp } from '@notera/domain';
+import type { LocalProfileId, Timestamp, VaultId } from '@notera/domain';
 
 export interface PageRequest {
   readonly cursor?: string;
@@ -36,4 +36,10 @@ export interface RecoveryReport {
   readonly clearedCreatingMarkerCount: number;
   readonly resumedDeletionCount: number;
   readonly unexpectedEntryCount: number;
+}
+
+export interface UnlockedSession {
+  readonly localProfileId: LocalProfileId;
+  readonly vaultId: VaultId;
+  readonly displayName: string;
 }
