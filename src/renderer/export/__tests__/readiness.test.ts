@@ -3,13 +3,17 @@
 import { createExportReadiness } from '../readiness';
 
 function deferred<T>() {
-  let resolve!: (value: T | PromiseLike<T>) => void;
-  let reject!: (reason?: unknown) => void;
-  const promise = new Promise<T>((accept, decline) => {
-    resolve = accept;
-    reject = decline;
+  let resolveDeferred!: (value: T | PromiseLike<T>) => void;
+  let rejectDeferred!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolve, reject) => {
+    resolveDeferred = resolve;
+    rejectDeferred = reject;
   });
-  return { promise, reject, resolve };
+  return {
+    promise,
+    reject: rejectDeferred,
+    resolve: resolveDeferred,
+  };
 }
 
 describe('export render readiness', () => {

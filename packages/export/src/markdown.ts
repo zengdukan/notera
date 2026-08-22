@@ -42,7 +42,7 @@ function renderText(node: JsonRecord): string {
     if (mark.type === 'em') value = `*${value}*`;
     if (mark.type === 'strike') value = `~~${value}~~`;
     if (mark.type === 'link') {
-      const href = attrs(mark).href;
+      const { href } = attrs(mark);
       if (typeof href === 'string' && /^https?:\/\//iu.test(href)) {
         value = `[${value}](${href.replace(/[()\s]/gu, (item) => encodeURIComponent(item))})`;
       }
@@ -115,7 +115,8 @@ function table(node: JsonRecord, state: RenderState): string {
           if (cellNode === undefined) return '';
           const properties = attrs(cellNode);
           if (
-            (typeof properties.colspan === 'number' && properties.colspan > 1) ||
+            (typeof properties.colspan === 'number' &&
+              properties.colspan > 1) ||
             (typeof properties.rowspan === 'number' && properties.rowspan > 1)
           ) {
             state.lossyNodeCount += 1;
@@ -161,7 +162,9 @@ function renderNode(value: unknown, state: RenderState): string {
     case 'listItem':
       return renderChildren(node, state);
     case 'taskList':
-      return `${children(node).map((item) => renderNode(item, state)).join('')}\n`;
+      return `${children(node)
+        .map((item) => renderNode(item, state))
+        .join('')}\n`;
     case 'taskItem':
       return `- [${attrs(node).state === 'DONE' ? 'x' : ' '}] ${renderChildren(node, state).trim()}\n`;
     case 'blockquote':
@@ -171,7 +174,9 @@ function renderNode(value: unknown, state: RenderState): string {
         .map((line) => `> ${line}`)
         .join('\n')}\n\n`;
     case 'codeBlock':
-      return `\`\`\`${typeof attrs(node).language === 'string' ? attrs(node).language : ''}\n${children(node)
+      return `\`\`\`${typeof attrs(node).language === 'string' ? attrs(node).language : ''}\n${children(
+        node,
+      )
         .map((child) => (record(child)?.text as string | undefined) ?? '')
         .join('')}\n\`\`\`\n\n`;
     case 'table':

@@ -1,7 +1,4 @@
-import {
-  allocateUniqueName,
-  sanitizeWindowsBaseName,
-} from '../filenames';
+import { allocateUniqueName, sanitizeWindowsBaseName } from '../filenames';
 
 describe('Windows export file names', () => {
   it('sanitizes invalid, reserved, blank and trailing characters', () => {

@@ -3,8 +3,18 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 
-const mockReactRenderer = jest.fn((_props: unknown) => (
-  <div data-testid="atlaskit-renderer" />
+import {
+  ReadOnlyDocument,
+  createExportExtensionHandlers,
+} from '../ReadOnlyDocument';
+import { createExportMediaProvider } from '../media-provider';
+import { createExportReadiness } from '../readiness';
+
+const mockReactRenderer = jest.fn((props: unknown) => (
+  <div
+    data-has-props={String(props !== undefined)}
+    data-testid="atlaskit-renderer"
+  />
 ));
 const mockMermaidInitialize = jest.fn();
 const mockMermaidParse = jest.fn().mockResolvedValue(false);
@@ -22,13 +32,6 @@ jest.mock('mermaid', () => ({
     render: mockMermaidRender,
   },
 }));
-
-import {
-  ReadOnlyDocument,
-  createExportExtensionHandlers,
-} from '../ReadOnlyDocument';
-import { createExportMediaProvider } from '../media-provider';
-import { createExportReadiness } from '../readiness';
 
 const operationId = '10000000-0000-4000-8000-000000000001';
 const nonce = 'n'.repeat(43);
@@ -76,9 +79,7 @@ describe('read-only export document', () => {
       },
       shouldOpenMediaViewer: false,
     });
-    expect(mockReactRenderer.mock.calls[0][0]).toHaveProperty(
-      'dataProviders',
-    );
+    expect(mockReactRenderer.mock.calls[0][0]).toHaveProperty('dataProviders');
     expect(mockReactRenderer.mock.calls[0][0]).toHaveProperty(
       'extensionHandlers',
     );
@@ -118,7 +119,8 @@ describe('read-only export document', () => {
     );
 
     const mathHandler = handlers['com.atlassian.editor.math'];
-    if (typeof mathHandler !== 'function') throw new Error('math handler missing');
+    if (typeof mathHandler !== 'function')
+      throw new Error('math handler missing');
     const { rerender } = render(
       mathHandler(
         {

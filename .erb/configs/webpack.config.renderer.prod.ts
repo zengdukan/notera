@@ -39,10 +39,33 @@ const configuration: webpack.Configuration = {
     },
   },
 
+  resolve: {
+    alias: {
+      '@atlaskit/embedded-confluence/page': path.join(
+        webpackPaths.srcRendererPath,
+        'export/shims/embedded-confluence-page.tsx',
+      ),
+    },
+  },
+
   module: {
     rules: [
       {
-        test: /\.s?(a|c)ss$/,
+        test: /\.module\.css$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          {
+            loader: 'css-loader',
+            options: {
+              modules: true,
+              sourceMap: true,
+              importLoaders: 1,
+            },
+          },
+        ],
+      },
+      {
+        test: /\.module\.s[ac]ss$/,
         use: [
           MiniCssExtractPlugin.loader,
           {
@@ -55,12 +78,16 @@ const configuration: webpack.Configuration = {
           },
           'sass-loader',
         ],
-        include: /\.module\.s?(c|a)ss$/,
       },
       {
-        test: /\.s?(a|c)ss$/,
+        test: /\.css$/,
+        use: [MiniCssExtractPlugin.loader, 'css-loader'],
+        exclude: /\.module\.css$/,
+      },
+      {
+        test: /\.s[ac]ss$/,
         use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],
-        exclude: /\.module\.s?(c|a)ss$/,
+        exclude: /\.module\.s[ac]ss$/,
       },
       // Fonts
       {

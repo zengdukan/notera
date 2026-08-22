@@ -210,7 +210,9 @@ describe('session operation registry', () => {
       phase: 'WRITING',
       progress: 1,
     });
-    expect(progress.map(({ phase, progress: value }) => [phase, value])).toEqual([
+    expect(
+      progress.map(({ phase, progress: value }) => [phase, value]),
+    ).toEqual([
       ['PREPARING', 0],
       ['PREPARING', 0.2],
       ['WRITING', 0.3],

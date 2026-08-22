@@ -38,7 +38,9 @@ describe('ADF to Markdown', () => {
         {
           type: 'heading',
           attrs: { level: 2 },
-          content: [{ type: 'text', text: 'Title', marks: [{ type: 'strong' }] }],
+          content: [
+            { type: 'text', text: 'Title', marks: [{ type: 'strong' }] },
+          ],
         },
         {
           type: 'paragraph',
@@ -75,15 +77,47 @@ describe('ADF to Markdown', () => {
             {
               type: 'tableRow',
               content: [
-                { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'A' }] }] },
-                { type: 'tableHeader', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'B' }] }] },
+                {
+                  type: 'tableHeader',
+                  content: [
+                    {
+                      type: 'paragraph',
+                      content: [{ type: 'text', text: 'A' }],
+                    },
+                  ],
+                },
+                {
+                  type: 'tableHeader',
+                  content: [
+                    {
+                      type: 'paragraph',
+                      content: [{ type: 'text', text: 'B' }],
+                    },
+                  ],
+                },
               ],
             },
             {
               type: 'tableRow',
               content: [
-                { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: '1' }] }] },
-                { type: 'tableCell', content: [{ type: 'paragraph', content: [{ type: 'text', text: '2' }] }] },
+                {
+                  type: 'tableCell',
+                  content: [
+                    {
+                      type: 'paragraph',
+                      content: [{ type: 'text', text: '1' }],
+                    },
+                  ],
+                },
+                {
+                  type: 'tableCell',
+                  content: [
+                    {
+                      type: 'paragraph',
+                      content: [{ type: 'text', text: '2' }],
+                    },
+                  ],
+                },
               ],
             },
           ],
@@ -127,7 +161,10 @@ describe('ADF to Markdown', () => {
       type: 'doc',
       version: 1,
       content: [
-        { type: 'unsupportedWidget', attrs: { html: '<script>bad()</script>' } },
+        {
+          type: 'unsupportedWidget',
+          attrs: { html: '<script>bad()</script>' },
+        },
         { type: 'media', attrs: { id: 'invalid' } },
       ],
     });

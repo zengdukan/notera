@@ -21,10 +21,7 @@ const configuration: webpack.Configuration = {
 
   entry: {
     preload: path.join(webpackPaths.srcMainPath, 'preload.ts'),
-    'export-preload': path.join(
-      webpackPaths.srcMainPath,
-      'export-preload.ts',
-    ),
+    'export-preload': path.join(webpackPaths.srcMainPath, 'export-preload.ts'),
   },
 
   output: {

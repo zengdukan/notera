@@ -14,7 +14,10 @@ export function sanitizeWindowsBaseName(
   )
     ? `_${candidate}`
     : candidate;
-  return truncateUtf16(reserved, maxUtf16Length) || truncateUtf16(fallback, maxUtf16Length);
+  return (
+    truncateUtf16(reserved, maxUtf16Length) ||
+    truncateUtf16(fallback, maxUtf16Length)
+  );
 }
 
 export function allocateUniqueName(

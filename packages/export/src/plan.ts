@@ -20,11 +20,7 @@ export function createNoteExportPlan(
     if (attachment === undefined) {
       throw new ExportCoreError('ATTACHMENT_REFERENCE_MISSING');
     }
-    const requested = sanitizeWindowsBaseName(
-      attachment.fileName,
-      '附件',
-      180,
-    );
+    const requested = sanitizeWindowsBaseName(attachment.fileName, '附件', 180);
     const fileName = allocateUniqueName(requested, used, 180);
     used.add(fileName.toLocaleLowerCase('en-US'));
     return Object.freeze({

@@ -1,4 +1,5 @@
 import { ApplicationError } from '@notera/application';
+import { ExportCoreError } from '@notera/export';
 
 import {
   IPC_ERROR_CODES,
@@ -23,6 +24,15 @@ export class MainIpcError extends Error {
     this.name = 'MainIpcError';
     this.code = code;
   }
+}
+
+export function normalizeExportError(error: unknown): unknown {
+  if (!(error instanceof ExportCoreError)) return error;
+  return new MainIpcError(
+    error.code === 'ATTACHMENT_REFERENCE_MISSING'
+      ? 'BLOB_MISSING'
+      : 'EXPORT_FAILED',
+  );
 }
 
 export function mapIpcError(

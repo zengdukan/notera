@@ -4,10 +4,10 @@ import { secureExportPdf } from '../pdf-postprocess';
 
 const attachmentId = '20000000-0000-4000-8000-000000000002';
 
-async function fixture(...uris: string[]): Promise<Uint8Array> {
+async function fixture(...inputUris: string[]): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   const page = pdf.addPage([300, 300]);
-  const annotations = uris.map((uri, index) =>
+  const annotations = inputUris.map((uri, index) =>
     pdf.context.obj({
       Type: 'Annot',
       Subtype: 'Link',
@@ -68,6 +68,7 @@ describe('secure PDF link post-processing', () => {
   it.each([
     'file:///D:/private.txt',
     'notera-export-media://job/token/file/id',
+    // eslint-disable-next-line no-script-url
     'javascript:alert(1)',
     'custom://unsafe',
   ])('rejects unsafe URI %s', async (uri) => {

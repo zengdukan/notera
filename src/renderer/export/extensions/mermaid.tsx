@@ -13,7 +13,15 @@ type MermaidResult =
   | { status: 'success'; svg: string }
   | { status: 'error'; message: string };
 
-let mermaidPromise: Promise<typeof import('mermaid')['default']> | undefined;
+interface MermaidRenderer {
+  parse(
+    source: string,
+    options: { readonly suppressErrors: true },
+  ): Promise<unknown>;
+  render(id: string, source: string): Promise<{ readonly svg: string }>;
+}
+
+let mermaidPromise: Promise<MermaidRenderer> | undefined;
 
 async function renderMermaid(
   id: string,
@@ -43,7 +51,7 @@ async function renderMermaid(
 
 function sourceOf(parameters: unknown): string {
   if (typeof parameters !== 'object' || parameters === null) return '';
-  const source = (parameters as { source?: unknown }).source;
+  const { source } = parameters as { source?: unknown };
   return typeof source === 'string' ? source : '';
 }
 
@@ -92,10 +100,12 @@ function MermaidDiagram(props: {
 export function createMermaidExtensionHandler(
   readiness: ExportReadiness,
 ): ExtensionHandler {
-  return (extension: ExtensionParams<any>) => {
+  return function (extension: ExtensionParams<any>) {
     const source = sourceOf(extension.parameters);
     if (extension.extensionKey !== 'mermaid:block') {
-      return <pre data-export-lossy="true">{source || '不支持的 Mermaid 扩展'}</pre>;
+      return (
+        <pre data-export-lossy="true">{source || '不支持的 Mermaid 扩展'}</pre>
+      );
     }
     return <MermaidDiagram readiness={readiness} source={source} />;
   };

@@ -152,10 +152,7 @@ describe('atomic export writer', () => {
   });
 
   it.each([
-    [
-      'duplicate entries',
-      [entry('Project.md', [1]), entry('project.MD', [2])],
-    ],
+    ['duplicate entries', [entry('Project.md', [1]), entry('project.MD', [2])]],
     [
       'multiple root documents',
       [entry('Project.md', [1]), entry('Other.md', [2])],
@@ -175,8 +172,16 @@ describe('atomic export writer', () => {
   });
 
   it.each([
-    ['reader failure', Object.assign(new Error('reader failed'), { code: 'EIO' }), 'EXPORT_FAILED'],
-    ['disk full', Object.assign(new Error('disk full'), { code: 'ENOSPC' }), 'DISK_FULL'],
+    [
+      'reader failure',
+      Object.assign(new Error('reader failed'), { code: 'EIO' }),
+      'EXPORT_FAILED',
+    ],
+    [
+      'disk full',
+      Object.assign(new Error('disk full'), { code: 'ENOSPC' }),
+      'DISK_FULL',
+    ],
   ])('maps %s and preserves existing files', async (_label, failure, code) => {
     const target = join(root, 'Project.zip');
     const existing = join(root, 'existing.txt');

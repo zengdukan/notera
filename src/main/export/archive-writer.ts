@@ -146,8 +146,7 @@ async function writeZip(input: {
   const outputClosed = output.closed
     ? Promise.resolve()
     : new Promise<void>((resolve) => output.once('close', resolve));
-  const abort = () =>
-    failZip(new ApplicationError('OPERATION_ABORTED'));
+  const abort = () => failZip(new ApplicationError('OPERATION_ABORTED'));
   input.signal.addEventListener('abort', abort, { once: true });
   archive.pipe(output);
   try {
@@ -213,11 +212,7 @@ export async function writeExportEntries(input: {
   );
   try {
     if (input.signal.aborted) throw new ApplicationError('OPERATION_ABORTED');
-    const total = validateEntries(
-      input.packaging,
-      input.target,
-      input.entries,
-    );
+    const total = validateEntries(input.packaging, input.target, input.entries);
     if (input.packaging === 'DIRECT') {
       await writeDirect({
         part,

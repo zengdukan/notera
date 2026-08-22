@@ -27,7 +27,10 @@ function extensionOf(
 function selectedBaseName(path: string): string {
   const name = basename(path);
   const existingExtension = extname(name);
-  const raw = existingExtension.length > 0 ? name.slice(0, -existingExtension.length) : name;
+  const raw =
+    existingExtension.length > 0
+      ? name.slice(0, -existingExtension.length)
+      : name;
   return sanitizeWindowsBaseName(raw, '未命名笔记', 180);
 }
 
@@ -58,19 +61,13 @@ export function createExportFileAccess(input: {
             name.toLocaleLowerCase('en-US'),
           ),
         );
-        const fileName = allocateUniqueName(
-          `${base}.${extension}`,
-          used,
-          220,
-        );
+        const fileName = allocateUniqueName(`${base}.${extension}`, used, 220);
         const target = join(parent, fileName);
         const finalBaseName = fileName.slice(0, -(extension.length + 1));
         return Object.freeze({
           baseName: finalBaseName,
           packaging: value.packaging,
-          write: (
-            writeInput: Parameters<ExportSelection['write']>[0],
-          ) =>
+          write: (writeInput: Parameters<ExportSelection['write']>[0]) =>
             writeExportEntries({
               target,
               packaging: value.packaging,

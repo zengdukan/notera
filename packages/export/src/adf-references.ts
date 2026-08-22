@@ -21,9 +21,9 @@ export function collectAttachmentReferences(
     if (typeof value !== 'object' || value === null) continue;
     const record = value as Readonly<Record<string, unknown>>;
     if (record.type === 'media') {
-      const attrs = record.attrs;
+      const { attrs } = record;
       if (typeof attrs === 'object' && attrs !== null) {
-        const id = (attrs as Readonly<Record<string, unknown>>).id;
+        const { id } = attrs as Readonly<Record<string, unknown>>;
         try {
           const attachmentId = asAttachmentId(id);
           if (!seen.has(attachmentId)) {

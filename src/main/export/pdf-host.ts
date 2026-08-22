@@ -92,7 +92,7 @@ export interface PdfHostIpcPort {
   ): void;
 }
 
-interface SchedulerPort {
+export interface PdfHostSchedulerPort {
   setTimeout(callback: () => void, milliseconds: number): unknown;
   clearTimeout(handle: unknown): void;
 }
@@ -121,7 +121,7 @@ function mapped(error: unknown, signal: AbortSignal): Error {
 }
 
 function denyWindow(window: PdfHostWindowPort, pageUrl: string) {
-  const webContents = window.webContents;
+  const { webContents } = window;
   const preventNavigation = (
     event: { preventDefault(): void },
     candidate: string,
@@ -156,7 +156,7 @@ export function createPdfRenderHost(input: {
   readonly getSessionState: () => SessionState;
   readonly randomBytes: () => Uint8Array;
   readonly now: () => number;
-  readonly scheduler: SchedulerPort;
+  readonly scheduler: PdfHostSchedulerPort;
   readonly preloadPath: string;
   readonly pageUrl: string;
 }): PdfRenderHost {

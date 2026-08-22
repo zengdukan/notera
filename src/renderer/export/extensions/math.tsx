@@ -9,7 +9,7 @@ export const MATH_EXTENSION_TYPE = 'com.atlassian.editor.math';
 
 function latexOf(parameters: unknown): string {
   if (typeof parameters !== 'object' || parameters === null) return '';
-  const latex = (parameters as { latex?: unknown }).latex;
+  const { latex } = parameters as { latex?: unknown };
   return typeof latex === 'string' ? latex : '';
 }
 

@@ -9,10 +9,7 @@ import { ProviderFactory } from '@atlaskit/editor-common/provider-factory';
 import { ReactRenderer } from '@atlaskit/renderer';
 
 import type { ExportRenderDocument } from '../../shared';
-import {
-  MATH_EXTENSION_TYPE,
-  renderMathExtension,
-} from './extensions/math';
+import { MATH_EXTENSION_TYPE, renderMathExtension } from './extensions/math';
 import {
   createMermaidExtensionHandler,
   MERMAID_EXTENSION_TYPE,
@@ -52,7 +49,7 @@ function extensionTypes(document: unknown): ReadonlySet<string> {
     const value = stack.pop();
     if (typeof value !== 'object' || value === null) continue;
     const record = value as Record<string, unknown>;
-    const attrs = record.attrs;
+    const { attrs } = record;
     if (
       (record.type === 'extension' ||
         record.type === 'inlineExtension' ||
@@ -60,7 +57,7 @@ function extensionTypes(document: unknown): ReadonlySet<string> {
       typeof attrs === 'object' &&
       attrs !== null
     ) {
-      const extensionType = (attrs as Record<string, unknown>).extensionType;
+      const { extensionType } = attrs as Record<string, unknown>;
       if (typeof extensionType === 'string') types.add(extensionType);
     }
     Object.values(record).forEach((child) => {

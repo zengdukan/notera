@@ -70,6 +70,59 @@ module.exports = {
         'no-loop-func': 'off',
       },
     },
+    {
+      files: [
+        'packages/export/src/**/*.ts',
+        'src/main/export/**/*.ts',
+        'src/main/ipc/export-handlers.ts',
+      ],
+      rules: {
+        'import/prefer-default-export': 'off',
+        'no-await-in-loop': 'off',
+        'no-continue': 'off',
+        'no-control-regex': 'off',
+        'no-promise-executor-return': 'off',
+        'no-restricted-syntax': 'off',
+        'no-undef': 'off',
+        'no-use-before-define': 'off',
+        'require-yield': 'off',
+      },
+    },
+    {
+      files: ['src/renderer/export/**/*.ts', 'src/renderer/export/**/*.tsx'],
+      env: {
+        browser: true,
+        es2022: true,
+        jest: true,
+      },
+      rules: {
+        'consistent-return': 'off',
+        'func-names': 'off',
+        'import/prefer-default-export': 'off',
+        'no-continue': 'off',
+        'no-promise-executor-return': 'off',
+        'no-undef': 'off',
+        'no-void': 'off',
+        'promise/always-return': 'off',
+        'react/destructuring-assignment': 'off',
+        'react/function-component-definition': 'off',
+        'react/no-danger': 'off',
+        'react/require-default-props': 'off',
+        'react/state-in-constructor': 'off',
+      },
+    },
+    {
+      files: ['src/__tests__/export-preload.test.ts'],
+      rules: {
+        'no-restricted-syntax': 'off',
+      },
+    },
+    {
+      files: ['src/main/export-preload.ts'],
+      rules: {
+        'no-use-before-define': 'off',
+      },
+    },
   ],
   settings: {
     'import/resolver': {

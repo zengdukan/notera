@@ -1,4 +1,6 @@
 import type { SessionState } from '@notera/application';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { eventContracts, requestContracts } from '../../shared';
 import {
@@ -38,6 +40,8 @@ function setup(initialState: SessionState = { state: 'LOCKED' }) {
         calls.push(`ipc.remove:${channel}`);
         handlers.delete(channel);
       }),
+      on: jest.fn(),
+      removeListener: jest.fn(),
     },
     protocol: {
       handle: jest.fn(() => {
@@ -48,7 +52,15 @@ function setup(initialState: SessionState = { state: 'LOCKED' }) {
     dialogs: {
       chooseImportPath: jest.fn(async () => null),
       chooseSavePath: jest.fn(async () => null),
+      chooseExportPath: jest.fn(async () => null),
     },
+    exportWindowFactory: {
+      create: jest.fn(() => {
+        throw new Error('The export window must not open in this test.');
+      }),
+    },
+    exportPreloadPath: 'D:\\app\\export-preload.js',
+    exportPageUrl: 'file:///D:/app/renderer/export.html',
     powerMonitor: {
       on: jest.fn((event, listener) => powerListeners.set(event, listener)),
       removeListener: jest.fn((event, listener) => {
@@ -60,6 +72,8 @@ function setup(initialState: SessionState = { state: 'LOCKED' }) {
     scheduler: {
       setInterval: jest.fn(() => 1),
       clearInterval: jest.fn(),
+      setTimeout: jest.fn(() => 2),
+      clearTimeout: jest.fn(),
     },
     confirmation: {
       confirmRemove: jest.fn(async () => true),
@@ -88,20 +102,19 @@ function setup(initialState: SessionState = { state: 'LOCKED' }) {
 }
 
 describe('MainRuntime', () => {
-  it('registers exactly 55 enabled bindings and omits export.startNote', async () => {
+  it('registers exactly all 56 bindings including export.startNote', async () => {
     const state = setup();
     const runtime = await state.create();
     await runtime.start();
 
-    const enabled = Object.entries(requestContracts)
-      .filter(([key]) => key !== 'export.startNote')
-      .map(([, contract]) => contract.channel)
+    const enabled = Object.values(requestContracts)
+      .map((contract) => contract.channel)
       .sort();
     expect([...state.handlers.keys()].sort()).toEqual(enabled);
-    expect(state.handlers.size).toBe(55);
+    expect(state.handlers.size).toBe(56);
     expect(
       state.handlers.has(requestContracts['export.startNote'].channel),
-    ).toBe(false);
+    ).toBe(true);
     expect(state.calls[0]).toBe('protocol.handle');
     await runtime.close();
   });
@@ -145,12 +158,25 @@ describe('MainRuntime', () => {
     const second = runtime.close();
     expect(second).toBe(first);
     expect(state.handlers.size).toBe(0);
-    expect(state.electron.ipcMain.removeHandler).toHaveBeenCalledTimes(55);
+    expect(state.electron.ipcMain.removeHandler).toHaveBeenCalledTimes(56);
     pending.resolve();
     await first;
     expect(state.profile.manager.close).toHaveBeenCalledTimes(1);
     expect(state.electron.protocol.unhandle).toHaveBeenCalledTimes(1);
     expect(state.electron.scheduler.clearInterval).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps export protocol, preload, page, and save filters in Main only', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'src/main/main.ts'),
+      'utf8',
+    );
+    expect(source).toContain("scheme: 'notera-media'");
+    expect(source).toContain("scheme: 'notera-export-media'");
+    expect(source).toContain("'export-preload.js'");
+    expect(source).toContain("resolveHtmlPath('export.html')");
+    expect(source).toContain('chooseExportPath');
+    expect(source).toContain('extensions: [extension]');
   });
 
   it('continues protocol cleanup when lifecycle close fails', async () => {

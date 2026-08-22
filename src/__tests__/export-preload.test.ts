@@ -86,10 +86,7 @@ describe('export-only preload bridge', () => {
     bridge.failed({ operationId, nonce, path: 'C:\\private' } as never);
 
     expect(mockSend.mock.calls).toEqual([
-      [
-        'notera:export-render:ready',
-        { operationId, nonce, lossyNodeCount: 1 },
-      ],
+      ['notera:export-render:ready', { operationId, nonce, lossyNodeCount: 1 }],
       ['notera:export-render:failed', { operationId, nonce }],
     ]);
   });

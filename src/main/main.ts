@@ -28,6 +28,15 @@ protocol.registerSchemesAsPrivileged([
       supportFetchAPI: true,
     },
   },
+  {
+    scheme: 'notera-export-media',
+    privileges: {
+      standard: true,
+      secure: true,
+      stream: true,
+      supportFetchAPI: true,
+    },
+  },
 ]);
 
 let mainWindow: BrowserWindow | undefined;
@@ -43,10 +52,14 @@ async function start(): Promise<void> {
   const preloadPath = app.isPackaged
     ? path.join(__dirname, 'preload.js')
     : path.join(__dirname, '../../.erb/dll/preload.js');
+  const exportPreloadPath = app.isPackaged
+    ? path.join(__dirname, 'export-preload.js')
+    : path.join(__dirname, '../../.erb/dll/export-preload.js');
   const iconPath = app.isPackaged
     ? path.join(process.resourcesPath, 'assets', 'icon.png')
     : path.join(__dirname, '../../assets/icon.png');
   const entryUrl = resolveHtmlPath('index.html');
+  const exportPageUrl = resolveHtmlPath('export.html');
   mainWindow = createSecureWindow({
     factory: {
       create: (options) =>
@@ -69,6 +82,12 @@ async function start(): Promise<void> {
       createProfileManager,
       ipcMain,
       protocol,
+      exportWindowFactory: {
+        create: (options) =>
+          new BrowserWindow(options as BrowserWindowConstructorOptions),
+      },
+      exportPreloadPath,
+      exportPageUrl,
       dialogs: {
         async chooseImportPath() {
           if (mainWindow === undefined) return null;
@@ -82,6 +101,19 @@ async function start(): Promise<void> {
           const result = await dialog.showSaveDialog(mainWindow, {});
           return result.canceled ? null : (result.filePath ?? null);
         },
+        async chooseExportPath({ suggestedName, extension }) {
+          if (mainWindow === undefined) return null;
+          const result = await dialog.showSaveDialog(mainWindow, {
+            defaultPath: suggestedName,
+            filters: [
+              {
+                name: extension.toUpperCase(),
+                extensions: [extension],
+              },
+            ],
+          });
+          return result.canceled ? null : (result.filePath ?? null);
+        },
       },
       powerMonitor,
       scheduler: {
@@ -89,6 +121,10 @@ async function start(): Promise<void> {
           global.setInterval(callback, milliseconds),
         clearInterval: (handle) =>
           global.clearInterval(handle as ReturnType<typeof setInterval>),
+        setTimeout: (callback, milliseconds) =>
+          global.setTimeout(callback, milliseconds),
+        clearTimeout: (handle) =>
+          global.clearTimeout(handle as ReturnType<typeof setTimeout>),
       },
       confirmation: {
         async confirmRemove() {

@@ -9,7 +9,17 @@ import {
   createMediaGateway,
   type MediaProtocolPort,
 } from './attachments/media-gateway';
+import { createNoteExportCoordinator } from './export/coordinator';
+import { createExportFileAccess } from './export/file-access';
+import {
+  createPdfRenderHost,
+  type PdfHostIpcPort,
+  type PdfHostSchedulerPort,
+  type PdfHostWindowFactory,
+} from './export/pdf-host';
+import type { ExportDialogPort } from './export/types';
 import { createAttachmentBindings } from './ipc/attachment-handlers';
+import { createExportBindings } from './ipc/export-handlers';
 import {
   createLocalNotesBindings,
   type SessionCommandGate,
@@ -47,11 +57,14 @@ export interface MainElectronPorts {
   readonly createProfileManager: (input: {
     readonly appDataRoot: string;
   }) => Promise<ProfileManager>;
-  readonly ipcMain: IpcMainPort;
+  readonly ipcMain: IpcMainPort & PdfHostIpcPort;
   readonly protocol: MediaProtocolPort;
-  readonly dialogs: AttachmentDialogPort;
+  readonly dialogs: AttachmentDialogPort & ExportDialogPort;
+  readonly exportWindowFactory: PdfHostWindowFactory;
+  readonly exportPreloadPath: string;
+  readonly exportPageUrl: string;
   readonly powerMonitor: PowerMonitorPort;
-  readonly scheduler: SchedulerPort;
+  readonly scheduler: SchedulerPort & PdfHostSchedulerPort;
   readonly confirmation: ProfileRemovalConfirmation;
   readonly logger: AutoLockLogger;
   readonly randomUUID: () => string;
@@ -93,9 +106,7 @@ export function createEventPublisher(window: RuntimeWindow) {
 }
 
 function assertEnabledBindings(bindings: readonly IpcBinding[]): void {
-  const expected = new Set(
-    Object.keys(requestContracts).filter((key) => key !== 'export.startNote'),
-  );
+  const expected = new Set(Object.keys(requestContracts));
   const actual = new Set(bindings.map((binding) => binding.key));
   if (
     bindings.length !== expected.size ||
@@ -168,6 +179,30 @@ export async function createMainRuntime(input: {
     dialogs: input.electron.dialogs,
     randomUUID: input.electron.randomUUID,
   });
+  const exportFiles = createExportFileAccess({
+    dialogs: input.electron.dialogs,
+    randomUUID: input.electron.randomUUID,
+  });
+  const pdfHost = createPdfRenderHost({
+    factory: input.electron.exportWindowFactory,
+    ipc: input.electron.ipcMain,
+    service: manager.localAttachments,
+    getSessionState: () => manager.getSessionState(),
+    randomBytes: input.electron.randomBytes,
+    now: input.electron.now,
+    scheduler: input.electron.scheduler,
+    preloadPath: input.electron.exportPreloadPath,
+    pageUrl: input.electron.exportPageUrl,
+  });
+  const exportCoordinator = createNoteExportCoordinator({
+    notes: manager.localNotes,
+    attachments: manager.localAttachments,
+    files: exportFiles,
+    pdfHost,
+    operations,
+    gate: lifecycle,
+    now: input.electron.now,
+  });
   const autoLock = new AutoLockController({
     powerMonitor: input.electron.powerMonitor,
     scheduler: input.electron.scheduler,
@@ -193,6 +228,10 @@ export async function createMainRuntime(input: {
       gate: lifecycle,
       previewUrlProvider: media,
       now: input.electron.now,
+    }),
+    ...createExportBindings({
+      coordinator: exportCoordinator,
+      gate: lifecycle,
     }),
   ]);
   assertEnabledBindings(bindings);
@@ -249,7 +288,17 @@ export async function createMainRuntime(input: {
         .catch((error: unknown) => {
           if (firstError === undefined) firstError = error;
         })
-        .then(() => {
+        .then(async () => {
+          try {
+            await exportCoordinator.close();
+          } catch (error) {
+            if (firstError === undefined) firstError = error;
+          }
+          try {
+            await pdfHost.close();
+          } catch (error) {
+            if (firstError === undefined) firstError = error;
+          }
           try {
             media.close();
           } catch (error) {

@@ -4,9 +4,10 @@ import { join } from 'node:path';
 
 import { createExportFileAccess } from '../file-access';
 
-const source = (bytes: readonly number[]) => async function* stream() {
-  yield Uint8Array.from(bytes);
-};
+const source = (bytes: readonly number[]) =>
+  async function* stream() {
+    yield Uint8Array.from(bytes);
+  };
 
 describe('export file access', () => {
   let root: string;
