@@ -24,6 +24,8 @@ import { asHistoryReader, HistoryRepository } from './repositories/history';
 import { asTrashReader, TrashRepository } from './repositories/trash';
 import { ContentPlanRepository } from './repositories/content-plans';
 import { asAttachmentReader, AttachmentRepository } from './repositories/attachments';
+import { checkSearchIndex, rebuildSearchIndex } from './search/health';
+import { SearchRepository } from './search/query';
 import {
   createCurrentSchema,
   CURRENT_SCHEMA_VERSION,
@@ -38,6 +40,8 @@ import type {
   HistoryReader,
   TrashReader,
   AttachmentReader,
+  SearchIndexReport,
+  SearchReader,
   OpenVaultDatabaseOptions,
   ProfileMetadataReader,
   VaultTransaction,
@@ -66,6 +70,8 @@ export class VaultDatabase {
 
   private transactionActive = false;
 
+  private searchRebuildActive = false;
+
   readonly profileMetadata: ProfileMetadataReader;
 
   readonly folders: FolderReader;
@@ -80,6 +86,8 @@ export class VaultDatabase {
 
   readonly trash: TrashReader;
   readonly attachments: AttachmentReader;
+
+  readonly search: SearchReader;
 
   private readonly vaultId: VaultId;
 
@@ -123,6 +131,11 @@ export class VaultDatabase {
     this.attachments = asAttachmentReader(
       new AttachmentRepository(() => this.requireConnection(), vaultId),
     );
+    this.search = new SearchRepository(
+      () => this.requireConnection(),
+      vaultId,
+      () => this.searchRebuildActive,
+    );
   }
 
   private requireConnection(): SqlcipherConnection {
@@ -136,6 +149,9 @@ export class VaultDatabase {
     callback: (transaction: VaultTransaction) => Result,
   ): Result {
     const connection = this.requireConnection();
+    if (this.searchRebuildActive) {
+      throw new StorageError('SEARCH_INDEX_UNAVAILABLE');
+    }
     if (this.transactionActive) {
       throw new StorageError('STORAGE_OPERATION_FAILED');
     }
@@ -222,7 +238,7 @@ export class VaultDatabase {
   }
 
   close(): void {
-    if (this.transactionActive) {
+    if (this.transactionActive || this.searchRebuildActive) {
       throw new StorageError('STORAGE_OPERATION_FAILED');
     }
     const connection = this.connection;
@@ -231,6 +247,25 @@ export class VaultDatabase {
     }
     this.connection = undefined;
     connection.close();
+  }
+
+  checkSearchIndex(): SearchIndexReport {
+    return checkSearchIndex(this.requireConnection(), this.vaultId);
+  }
+
+  rebuildSearchIndex(): void {
+    const connection = this.requireConnection();
+    if (this.transactionActive || this.searchRebuildActive) {
+      throw new StorageError('SEARCH_INDEX_UNAVAILABLE');
+    }
+    this.searchRebuildActive = true;
+    try {
+      rebuildSearchIndex(connection, this.vaultId);
+    } catch (error) {
+      throw mapNativeError(error);
+    } finally {
+      this.searchRebuildActive = false;
+    }
   }
 }
 

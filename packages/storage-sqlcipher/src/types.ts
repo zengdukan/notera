@@ -94,6 +94,41 @@ export interface NormalizedSearchText {
   }>[];
 }
 
+export type SearchScope =
+  | Readonly<{ kind: 'VAULT' }>
+  | Readonly<{ kind: 'FOLDER_SUBTREE'; folderId: FolderId }>;
+
+export interface SearchHighlight {
+  readonly field: 'title' | 'excerpt';
+  readonly start: number;
+  readonly end: number;
+}
+
+export interface SearchHit {
+  readonly noteId: NoteId;
+  readonly title: string;
+  readonly excerpt: string;
+  readonly updatedAt: Timestamp;
+  readonly highlights: readonly SearchHighlight[];
+}
+
+export interface SearchReader {
+  query(query: string, scope: SearchScope, page: PageRequest): Page<SearchHit>;
+}
+
+export type SearchIndexIssueCode =
+  | 'METADATA_INVALID'
+  | 'NOTE_COUNT_MISMATCH'
+  | 'ROWID_MISMATCH'
+  | 'SOURCE_VERSION_MISMATCH'
+  | 'TRASHED_NOTE_INDEXED'
+  | 'FTS_INTEGRITY_FAILED';
+
+export interface SearchIndexReport {
+  readonly ok: boolean;
+  readonly issues: readonly SearchIndexIssueCode[];
+}
+
 export interface TagReader {
   get(id: TagId): Tag | undefined;
   list(page: PageRequest): Page<Tag>;
