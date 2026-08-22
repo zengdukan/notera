@@ -12,7 +12,7 @@
 本次范围包括：
 
 - 使用真实 SQLCipher Community 创建、打开、验证和关闭加密数据库；
-- 当前 Schema 快照、Schema 版本管理和逐版本迁移框架；
+- 不可变 v1 基线、派生 Schema 版本和逐版本迁移框架；
 - Profile 元数据、目录、笔记、标签、收藏、历史、回收站和附件元数据 Repository；
 - 显式同步事务、批量变更原子提交和乐观并发控制；
 - ADF 文本提取、FTS5 trigram 增量维护、全库搜索、指定目录子树搜索和索引重建；
@@ -68,7 +68,7 @@ E417E6E8351B9C79AB34B0614E917C01958ECAB4188B5836334A0DEE3CBE09D8
 ```text
 packages/storage-sqlcipher/src/
   connection/           # 原生适配、连接配置和生命周期
-  schema/               # 当前 Schema 快照和结构检查
+  schema/               # 不可变 v1 基线和结构检查
   migrations/           # 迁移协议、注册表和执行器
   repositories/         # 按领域划分的读写 Repository
   search/               # ADF 提取、规范化、查询和重建
@@ -158,15 +158,15 @@ interface VaultDatabase {
 
 创建失败时，仅当目标文件在调用前不存在时，才允许清理本次创建的数据库及对应 WAL/SHM；既有数据库在任何失败路径都不得自动删除。
 
-## 6. Schema v1
+## 6. 不可变 Schema v1 基线
 
-首个正式数据库版本为：
+首个正式数据库版本和永久基线版本为：
 
 ```ts
-CURRENT_SCHEMA_VERSION = 1;
+BASE_SCHEMA_VERSION = 1;
 ```
 
-全新数据库直接执行当前 v1 Schema 快照，不重放迁移。
+v1 基线保存首次发布时的完整结构和初始数据，发布后不再随 v2、v3 等版本修改。全新数据库先执行 v1 基线，再重放注册表中从 v2 到 `CURRENT_SCHEMA_VERSION` 的连续生产迁移。当前尚无生产迁移，因此 `CURRENT_SCHEMA_VERSION` 仍为 1，新库只执行基线。
 
 ### 6.1 元数据
 
@@ -201,11 +201,13 @@ Schema 不定义任何 `FOREIGN KEY` 或 `REFERENCES`。保留以下数据库级
 
 每个领域表都保存 Vault ID，但不通过外键关联；Repository 写入检查和完整性检查负责发现跨 Vault 污染。
 
-当前 Schema 不创建 `sync_outbox`、`sync_state`、`conflicts`、远端附件状态、远端块状态或附件传输状态字段。
+v1 基线不创建 `sync_outbox`、`sync_state`、`conflicts`、远端附件状态、远端块状态或附件传输状态字段。
 
 ## 7. Schema 版本与迁移
 
-打开数据库后按以下顺序处理：
+数据库结构只有两类事实来源：不可变 v1 基线，以及按目标版本连续、发布后不可变的生产迁移。不存在需要随版本手工更新的“当前完整 Schema 快照”。
+
+打开既有数据库后按以下顺序处理：
 
 1. 读取并严格验证 `schema_metadata`；
 2. 缺失或非法版本的非空数据库返回 `DB_CORRUPT`；
@@ -216,7 +218,7 @@ Schema 不定义任何 `FOREIGN KEY` 或 `REFERENCES`。保留以下数据库级
 7. 全部迁移后重新读取并确认最终版本；
 8. 验证 Vault ID、根目录 ID 和 `vault.meta` 摘要后开放 Repository。
 
-v1 没有历史生产迁移文件，但迁移注册表、连续性校验和执行器立即建立。测试通过注入测试迁移验证顺序、逐版本提交、失败回滚和断点续迁。
+v1 没有历史生产迁移文件，但迁移注册表、连续区间选择、连续性校验和执行器立即建立。`CURRENT_SCHEMA_VERSION` 从注册表最后一个生产迁移的 `targetVersion` 推导；注册表为空时等于 `BASE_SCHEMA_VERSION`。测试通过注入测试迁移验证顺序、逐版本提交、失败回滚和断点续迁。
 
 普通 Schema 迁移不得隐式重建 FTS。搜索规范化规则通过 `normalizer_version` 独立管理；规则变化使索引进入 `NEEDS_REBUILD`，不伪装成数据库 Schema 迁移。
 
@@ -238,35 +240,44 @@ v1 没有历史生产迁移文件，但迁移注册表、连续性校验和执�
 
 版本号必须是从 1 开始的连续安全整数。不能跳过 v2 直接发布 v3，也不能用日期、构建号或应用版本代替 Schema 版本。
 
-### 7.2 新增 v2 时的文件与职责
+### 7.2 基线、迁移和版本文件职责
 
-本节描述未来首次真实升级的开发流程，不表示仓库已经发布 v2；在具体 v2 产品结构获得批准并完成实现前，生产常量和注册表继续保持 v1 状态。
+本节描述未来首次真实升级的开发流程，不表示仓库已经发布 v2；在具体 v2 产品结构获得批准并完成实现前，v1 基线和空生产注册表保持不变。
 
 真实 v2 建议增加一个不可变的版本文件：
 
 ```text
 packages/storage-sqlcipher/src/
   schema/
-    current.ts                 # 更新为“全新数据库直接创建 v2”的完整快照
+    baseline-v1.ts             # 永久只创建首次发布的 v1 基线
   migrations/
     types.ts                   # Migration 协议，不因单个版本变化
     v2.ts                      # 只负责 v1 -> v2
     registry.ts                # 按 targetVersion 连续注册生产迁移
     runner.ts                  # 每版本独立事务、校验和版本提交
-  database.ts                  # 打开旧库时选择当前版本之后的迁移区间
+  database.ts                  # 新建/打开都选择实际版本之后的迁移区间
   __tests__/
-    schema.test.ts             # 全新 v2 快照、结构和公开边界
-    migrations.test.ts         # v1 -> v2、回滚、续迁和快照等价
+    schema.test.ts             # 不可变 v1 基线、结构和公开边界
+    migrations.test.ts         # 空/有数据 v1 -> v2、回滚和续迁
 ```
 
 各文件的边界固定如下：
 
+- `schema/baseline-v1.ts` 永久只描述 v1 完整结构、元数据和 Root Folder 初始化；发布 v2 后也不得改成 v2；
 - `migrations/v2.ts` 只描述从 v1 到 v2 的增量，不包含 v3 预留逻辑，也不创建连接或提交事务；
-- `schema/current.ts` 始终是最新完整快照，不是历史 SQL 的拼接，也不重放 `v2.ts`；
-- `registry.ts` 只维护有序生产迁移和连续性选择，不放任意业务 SQL；
+- `registry.ts` 维护有序生产迁移、连续区间选择和派生的 `CURRENT_SCHEMA_VERSION`，不放任意业务 SQL；
 - `runner.ts` 统一负责事务、调用 `validate()`、成功后更新 `schema_metadata` 和安全错误映射；
-- `database.ts` 只把数据库当前版本之后、应用当前版本之前的连续迁移交给 runner；
+- `database.ts` 在创建 v1 基线或读取既有版本后，只把该版本之后、应用当前版本之前的连续迁移交给 runner；
 - 测试可以构造历史 Schema 或注入测试迁移，但公开包入口不得暴露迁移注入、原生连接或任意 SQL。
+
+现有 `schema/current.ts` 还包含文件格式、搜索规范化和附件 Manifest 上限等常量。重构时不能把所有“当前策略”机械地冻结到基线文件：
+
+- v1 DDL 和创建 v1 所需的历史初始值留在 `baseline-v1.ts`；
+- 当前搜索规范化版本继续以 `search/normalize.ts` 为权威；
+- 当前文件格式版本放在独立文件格式模块，不随普通 Schema 迁移变化；
+- Repository 与完整性检查使用的当前 Manifest 上限放在附件存储职责内；v1 基线 SQL 中的历史 `CHECK` 仍保持原值。
+
+因此“基线不可变”只冻结历史数据库结构和历史初始值，不冻结应用其他可独立演进的当前策略。
 
 已发布的迁移文件是用户数据库历史的一部分。v2 发布后不得改写 `v2.ts` 来迎合 v3；后续变化必须新增 `v3.ts`。
 
@@ -275,15 +286,14 @@ packages/storage-sqlcipher/src/
 新增 v2 时按以下顺序工作，测试与实现属于同一个完整功能模块：
 
 1. 明确 v2 的结构差异、旧数据回填规则、不可逆变化和验证条件；破坏性变化必须先设计保护版本或其他明确的数据保留策略；
-2. 在 `migrations.test.ts` 建立真实 v1 历史库夹具，先表达 v1 数据升级到 v2 后必须满足的行为；
+2. 在 `migrations.test.ts` 分别建立空 v1 基线和带代表性数据的真实 v1 历史库，先表达两者升级到 v2 后必须满足的行为；
 3. 新建 `migrations/v2.ts`，实现固定 DDL、参数化回填和迁移后验证；
-4. 把 `CURRENT_SCHEMA_VERSION` 从 1 改为 2，并把 `schema/current.ts` 更新为完整 v2 快照；
-5. 在 `registry.ts` 按顺序注册 v2，并确保打开数据库时只选择适用于当前版本的连续区间；
-6. 在 `schema.test.ts` 更新全新数据库的 v2 结构断言；
-7. 比较“全新 v2 快照”和“v1 经 v2 迁移”的规范化 `sqlite_master`，并核对必要数据；
-8. 运行当前模块相关测试和 Storage typecheck，通过后把迁移、快照、注册和测试作为同一个功能提交。
+4. 在 `registry.ts` 按顺序注册 v2，使派生的 `CURRENT_SCHEMA_VERSION` 变为 2，并确保只选择适用于实际版本的连续区间；
+5. 保持 `baseline-v1.ts` 内容不变；新库创建测试应证明基线完成后会自动重放 v2；
+6. 核对空 v1 与带数据 v1 经同一个 `v2.ts` 后得到相同目标结构，并验证旧数据语义；
+7. 运行当前模块相关测试和 Storage typecheck，通过后把迁移、注册、创建流程和测试作为同一个功能提交。
 
-不能先修改生产快照再补迁移测试。测试必须证明旧库确实需要 v2，并证明失败时没有留下半迁移状态。
+不能通过修改 v1 基线让新库跳过 v2。测试必须证明新库和旧库都真实执行同一个生产迁移，并证明失败时没有留下半迁移状态。
 
 ### 7.4 v2 迁移文件模板
 
@@ -317,39 +327,49 @@ export const migrationToV2: Migration = Object.freeze({
 
 SQLite 支持事务化的 DDL 应当与回填一起放在当前版本事务中。不要在迁移中使用 `VACUUM`、切换 `journal_mode` 或执行其他不能满足当前事务语义的操作。
 
-### 7.5 更新当前 v2 快照
+### 7.5 新建数据库重放迁移
 
-完成 `v2.ts` 后，`schema/current.ts` 必须表示最终 v2，而不是先创建 v1 再运行迁移：
+`createVaultDatabase()` 创建新文件后执行以下流程：
 
-```ts
-export const CURRENT_SCHEMA_VERSION = 2;
+```text
+创建 SQLCipher 连接
+-> 在事务中创建 v1 基线、Vault 元数据和 Root Folder
+-> 从注册表选择 (BASE_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION] 区间
+-> runner 逐版本迁移
+-> 重新读取并确认最终版本
+-> 验证 Vault ID、Root Folder ID 和 vault.meta 摘要
+-> 返回 VaultDatabase
 ```
 
-同时直接更新 `CURRENT_SCHEMA_SQL`、初始化元数据以及新库所需的初始行。创建全新数据库时仍只执行一次当前快照，并把 `schema_metadata.schema_version` 写成 2。
+当前注册表为空，所以创建流程止于 v1 基线。发布 v2 后，所有新库也先成为合法空 v1，再真实执行 `v2.ts`。这使新库和旧库共享同一条 v2 结构变化路径，不再需要第二份最新 Schema SQL。
 
-快照和迁移必须达到相同的可观察结果：
+基线创建事务和版本迁移事务不嵌套：
 
-- 应用表、列、虚拟表、索引、唯一约束和 `CHECK` 一致；
-- 元数据版本和固定单行一致；
-- 必要默认值、回填值和数据类型一致；
-- `sqlite_master.sql` 规范化后结构一致；
-- 两条路径都不包含 `FOREIGN KEY` 或 `REFERENCES`，连接也不启用外键。
+- `createVaultDatabase()` 先在一个事务内完整创建 v1；
+- 基线提交后，runner 为 v2、v3 等目标版本分别创建独立事务；
+- 任一后续版本失败时，创建入口关闭连接并删除本次调用新建的精确 DB/WAL/SHM，因此不会向调用方暴露半创建的新 Profile；
+- 既有数据库使用相同 runner，但失败时绝不删除或替换文件。
 
-“迁移能打开”不等于快照正确。若快照遗漏 v2 结构，新用户和升级用户会得到两种不同数据库，必须由结构等价测试阻止。
+每个生产迁移必须同时支持“空基线数据库”和“带真实旧数据的数据库”。迁移不能假设至少存在一条 Note、Tag 或 Attachment，也不能因为新库为空而跳过结构验证。
 
 ### 7.6 注册迁移和选择连续区间
 
 v2 发布时生产注册表变为：
 
 ```ts
+import type { Migration } from './types';
+import { BASE_SCHEMA_VERSION } from '../schema/baseline-v1';
 import { migrationToV2 } from './v2';
 
 export const PRODUCTION_MIGRATIONS: readonly Migration[] = Object.freeze([
   migrationToV2,
 ]);
+
+export const CURRENT_SCHEMA_VERSION =
+  PRODUCTION_MIGRATIONS.at(-1)?.targetVersion ?? BASE_SCHEMA_VERSION;
 ```
 
-注册表必须按 `targetVersion` 严格升序且没有重复或缺口。打开数据库时不能无条件把完整历史数组交给只接受当前迁移区间的 runner；应选择满足以下条件的连续切片：
+注册表必须按 `targetVersion` 严格升序且没有重复或缺口。`CURRENT_SCHEMA_VERSION` 是迁移历史的派生结果，不再由手工维护的最新快照声明。新建和打开数据库都不能无条件把完整历史数组交给只接受当前迁移区间的 runner；应选择满足以下条件的连续切片：
 
 ```text
 databaseVersion < migration.targetVersion <= CURRENT_SCHEMA_VERSION
@@ -357,10 +377,11 @@ databaseVersion < migration.targetVersion <= CURRENT_SCHEMA_VERSION
 
 因此：
 
-- 打开 v1 且应用当前为 v2：执行 `[v2]`；
+- 新建 v1 基线且应用当前为 v2：执行 `[v2]`；
+- 打开既有 v1 且应用当前为 v2：同样执行 `[v2]`；
 - 打开 v2 且应用当前为 v2：不执行迁移；
-- 将来打开 v1 且应用当前为 v3：依次执行 `[v2, v3]`，每个版本单独提交；
-- 将来打开 v2 且应用当前为 v3：只执行 `[v3]`；
+- 将来新建 v1 基线且应用当前为 v3：依次执行 `[v2, v3]`；
+- 将来打开既有 v2 且应用当前为 v3：只执行 `[v3]`；
 - 打开高于应用当前版本的数据库：在选择迁移前返回 `DB_SCHEMA_TOO_NEW`。
 
 `validateMigrationRegistry()` 继续验证所选区间的数量和目标版本连续性。测试必须覆盖从每个受支持历史版本开始的选择结果，防止 v3 发布后错误地把 `[v2, v3]` 整体交给以 v2 为起点的 runner。
@@ -370,17 +391,20 @@ databaseVersion < migration.targetVersion <= CURRENT_SCHEMA_VERSION
 `migrations.test.ts` 至少覆盖以下行为：
 
 1. **成功升级：** 真实 v1 结构和代表性数据升级到 v2，版本恰好变为 2，所有旧数据保持预期语义；
-2. **结构验证：** v2 新增或改变的列、索引、约束及数据不变量全部存在；
-3. **快照等价：** 全新 v2 与 v1→v2 的规范化 `sqlite_master` 一致，必要初始数据也一致；
-4. **当前步骤回滚：** 在 v2 DDL、回填中段和 `validate()` 分别注入失败，v2 的全部变化回滚，版本仍为 1；
-5. **断点续迁：** 若将来 `[v2, v3]` 中 v3 失败，v2 保持已提交；下次打开只从 v3 继续，不重放 v2；
-6. **注册表拒绝：** 重复、缺口、乱序、错误起点和错误终点返回 `MIGRATION_FAILED`；
-7. **数据边界：** 空库、最小数据、代表性旧数据以及可能触发唯一约束或 `CHECK` 的边界值结果明确；
-8. **安全失败：** 迁移错误不回显 SQL、路径、Key 或用户内容，打开失败不删除、替换或重建既有数据库；
-9. **版本边界：** v2 正常打开且不重放迁移，v3 数据库被 v2 应用以 `DB_SCHEMA_TOO_NEW` 拒绝；
-10. **无外键：** 迁移和新快照都不定义或启用外键。
+2. **新库重放：** `createVaultDatabase()` 创建 v1 基线后真实执行生产 v2，最终版本和目标结构正确；
+3. **空/有数据一致：** 空 v1 和带代表性数据的旧 v1 使用同一个 `v2.ts`，最终结构一致且旧数据语义保留；
+4. **结构验证：** v2 新增或改变的列、索引、约束及数据不变量全部存在；
+5. **当前步骤回滚：** 在 v2 DDL、回填中段和 `validate()` 分别注入失败，v2 的全部变化回滚，版本仍为 1；
+6. **新库清理：** 创建期间 v2 失败后，本次新建的精确 DB/WAL/SHM 被清理；
+7. **断点续迁：** 若将来 `[v2, v3]` 中 v3 失败，既有库的 v2 保持已提交；下次打开只从 v3 继续，不重放 v2；
+8. **区间选择：** v1→v1 为空、v1→v2 为 `[v2]`、v1→v3 为 `[v2, v3]`、v2→v3 只为 `[v3]`；
+9. **注册表拒绝：** 重复、缺口、乱序、错误起点和错误终点返回 `MIGRATION_FAILED`；
+10. **数据边界：** 空库、最小数据、代表性旧数据以及可能触发唯一约束或 `CHECK` 的边界值结果明确；
+11. **安全失败：** 迁移错误不回显 SQL、路径、Key 或用户内容，打开失败不删除、替换或重建既有数据库；
+12. **版本边界：** v2 正常打开且不重放迁移，v3 数据库被 v2 应用以 `DB_SCHEMA_TOO_NEW` 拒绝；
+13. **无外键：** v1 基线和全部迁移都不定义或启用外键。
 
-测试夹具应创建真正的历史 v1 结构，不能调用已经更新为 v2 的 `createCurrentSchema()` 后再把版本号手工改回 1；仅改版本号不能代表真实旧库。
+测试夹具直接使用不可变 v1 基线建立真实历史结构。不得调用迁移后结构再把版本号手工改回 1；仅改版本号不能代表真实旧库。
 
 ### 7.8 失败、回滚与恢复
 
@@ -394,7 +418,8 @@ runner 对每个目标版本建立独立事务，执行顺序固定为：
 
 - 回滚当前目标版本的 DDL、回填和版本更新；
 - 把错误映射为固定 `MIGRATION_FAILED`；
-- 关闭打开失败的连接，但不删除数据库、WAL 或 SHM，不替换文件，不自动创建新库；
+- 打开既有数据库失败时关闭连接，但不删除数据库、WAL 或 SHM，不替换文件，不自动创建新库；
+- 创建新数据库失败时关闭连接，并只删除本次调用前不存在且由本次调用创建的精确 DB/WAL/SHM；
 - 已经成功提交的更早版本保持有效，因此下次打开从数据库记录的版本继续；
 - 不自动降级。应用版本过旧时只返回 `DB_SCHEMA_TOO_NEW`，不得尝试反向执行迁移。
 
@@ -402,7 +427,7 @@ runner 对每个目标版本建立独立事务，执行顺序固定为：
 
 ### 7.9 精确验证命令和提交范围
 
-实施 v2 期间只运行当前 Schema/迁移模块相关测试：
+实施 v2 期间只运行 Schema/迁移功能模块相关测试：
 
 ```powershell
 npm run test:unit -- packages/storage-sqlcipher/src/__tests__/schema.test.ts packages/storage-sqlcipher/src/__tests__/migrations.test.ts --runInBand
@@ -418,25 +443,24 @@ git diff --check
 
 同一个 v2 功能提交至少包含：
 
-- `schema/current.ts` 的版本号和完整 v2 快照；
 - 新增的 `migrations/v2.ts`；
-- `migrations/registry.ts` 的生产注册与连续区间选择；
-- 如有需要，`database.ts` 的适用迁移区间调用；
-- `schema.test.ts` 和 `migrations.test.ts` 的全部 v2 行为测试；
+- `migrations/registry.ts` 的生产注册、派生当前版本与连续区间选择；
+- `database.ts` 的新建/打开适用迁移区间调用；
+- `schema.test.ts` 的 v1 基线保护，以及 `migrations.test.ts` 的全部 v2 行为测试；
 - 真实 v2 设计要求涉及的 Repository 或水合调整。
 
-测试、迁移实现、快照更新和注册属于同一个可独立验证的功能模块，只提交一次；不要拆成“测试提交”“迁移提交”和“快照提交”。
+`schema/baseline-v1.ts` 不应出现在普通 v2 提交中，除非本次工作只是把尚未发布的 `current.ts` 等价重命名为基线。测试、迁移实现、注册和创建流程属于同一个可独立验证的功能模块，只提交一次；不要拆成“测试提交”“迁移提交”和“注册提交”。
 
 ### 7.10 常见错误
 
 - **只递增版本号：** 不能代表真实 v1→v2，既没有结构变化，也没有验证旧数据；
-- **只写迁移、不改当前快照：** 导致新用户与升级用户结构不同；
-- **只改快照、不写迁移：** 已有用户无法升级；
+- **发布 v2 时修改 v1 基线：** 会让新库绕过真实迁移，并破坏历史夹具；
+- **为新库另写 v2 创建 SQL：** 重新引入第二份事实来源，新库与旧库可能分叉；
 - **在 `migrate()` 中更新版本号：** 会绕过 runner 的验证后提交规则；
 - **迁移自己管理事务：** 会破坏每个目标版本独立回滚和断点续迁；
 - **发布后修改 v2：** 已升级用户不会重放，必须新增下一版本迁移；
 - **完整注册表不做区间选择：** 从中间版本升级时会因数量或目标版本不匹配而失败；
-- **用当前快照伪造历史夹具：** 无法发现真实旧结构与新结构的差异；
+- **用迁移后结构伪造历史夹具：** 无法发现真实旧结构与新结构的差异；
 - **迁移中重建 FTS：** 混淆 Schema 与规范化版本，失败恢复边界不清；
 - **添加或启用外键：** 与当前无外键设计冲突，并改变 Repository 和完整性检查的职责；
 - **吞掉单行回填错误：** 会提交部分语义错误数据；任何一行不满足规则都应使当前版本整体回滚；
@@ -638,11 +662,12 @@ WHERE notes_fts MATCH :query;
 
 ### 13.2 Schema 与迁移
 
-- 新建数据库直接得到完整 v1 Schema；
+- v1 基线发布后保持不可变，当前无迁移时新建数据库得到完整 v1；
+- 发布后续版本时，新库和旧库都从各自实际版本重放同一连续生产迁移；
 - `sqlite_master` 中不存在 `FOREIGN KEY` 或 `REFERENCES`，连接不启用外键；
 - 缺失、非法和过高 Schema 版本返回固定错误；
-- 测试迁移覆盖注册连续性、顺序、逐版本提交、单版本回滚和断点续迁；
-- 新建快照与测试迁移产生的最终结构一致。
+- 测试迁移覆盖空/有数据基线、区间选择、注册连续性、逐版本提交、单版本回滚和断点续迁；
+- 新库迁移失败清理本次新文件，旧库迁移失败不删除或替换文件。
 
 ### 13.3 Repository 与事务
 
@@ -682,7 +707,7 @@ npm run typecheck --workspace @notera/storage-sqlcipher
 
 - 真实 SQLCipher 文件只能使用正确 32 字节 Database Key 读取；
 - Node 和 Electron 运行时均能加载固定本机原生包；
-- v1 Schema、迁移框架、全部离线 Repository 和事务边界可用；
+- 不可变 v1 基线、连续迁移重放、全部离线 Repository 和事务边界可用；
 - Schema 不定义或启用外键，关系完整性由 Repository 和检查器保证；
 - Note 正文与 FTS 始终在同一事务维护；
 - 支持全 Vault 和指定目录完整子树搜索；
