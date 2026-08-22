@@ -1,11 +1,14 @@
 import type {
+  AdfDocument,
   ContentVersion,
   FolderId,
   NoteId,
+  TagId,
   Timestamp,
+  TrashEntryId,
 } from '@notera/domain';
 
-import type { Page } from '../types';
+import type { Page, PageRequest } from '../types';
 
 export type ContentSortField = 'CREATED_AT' | 'UPDATED_AT' | 'TITLE';
 export type SortDirection = 'ASC' | 'DESC';
@@ -33,6 +36,18 @@ export interface NoteSummary {
   readonly updatedAt: Timestamp;
 }
 
+export interface TagSummary {
+  readonly id: TagId;
+  readonly name: string;
+  readonly updatedAt: Timestamp;
+}
+
+export interface NoteDetail extends NoteSummary {
+  readonly document: AdfDocument;
+  readonly createdAt: Timestamp;
+  readonly tags: readonly TagSummary[];
+}
+
 export type TreeEntrySummary = FolderSummary | NoteSummary;
 
 export interface ListChildrenInput {
@@ -56,4 +71,29 @@ export interface LocalNotesService {
     readonly folderId: FolderId;
     readonly targetParentId: FolderId;
   }): Promise<FolderSummary>;
+  createNote(input: {
+    readonly folderId: FolderId;
+    readonly title?: string;
+  }): Promise<NoteDetail>;
+  getNote(noteId: NoteId): Promise<NoteDetail>;
+  saveDraft(input: {
+    readonly noteId: NoteId;
+    readonly expectedContentVersion: number;
+    readonly title: string;
+    readonly document: AdfDocument;
+  }): Promise<{
+    readonly noteId: NoteId;
+    readonly contentVersion: ContentVersion;
+    readonly savedAt: Timestamp;
+  }>;
+  moveNote(input: {
+    readonly noteId: NoteId;
+    readonly targetFolderId: FolderId;
+  }): Promise<NoteSummary>;
+  copyNote(input: {
+    readonly noteId: NoteId;
+    readonly targetFolderId: FolderId;
+  }): Promise<NoteSummary>;
+  trashNote(noteId: NoteId): Promise<{ readonly trashEntryId: TrashEntryId }>;
+  listRecent(input: PageRequest): Promise<Page<NoteSummary>>;
 }

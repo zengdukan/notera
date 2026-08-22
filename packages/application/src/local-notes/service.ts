@@ -12,6 +12,15 @@ import {
   renameFolder,
 } from './folders';
 import { mapLocalNotesError } from './errors';
+import {
+  copyNote,
+  createNote,
+  getNote,
+  listRecent,
+  moveNote,
+  saveDraft,
+  trashNote,
+} from './notes';
 import type {
   FolderSummary,
   ListChildrenInput,
@@ -70,6 +79,44 @@ class SessionLocalNotesService implements LocalNotesService {
     return this.run('WRITE', (database) =>
       moveFolder(database, input, this.now()),
     );
+  }
+
+  createNote(input: Parameters<LocalNotesService['createNote']>[0]) {
+    return this.run('WRITE', (database) =>
+      createNote(database, input, this.randomId(), this.now()),
+    );
+  }
+
+  getNote(noteId: Parameters<LocalNotesService['getNote']>[0]) {
+    return this.run('READ', (database) => getNote(database, noteId));
+  }
+
+  saveDraft(input: Parameters<LocalNotesService['saveDraft']>[0]) {
+    return this.run('WRITE', (database) =>
+      saveDraft(database, input, this.now()),
+    );
+  }
+
+  moveNote(input: Parameters<LocalNotesService['moveNote']>[0]) {
+    return this.run('WRITE', (database) =>
+      moveNote(database, input, this.now()),
+    );
+  }
+
+  copyNote(input: Parameters<LocalNotesService['copyNote']>[0]) {
+    return this.run('WRITE', (database) =>
+      copyNote(database, input, this.randomId(), this.now()),
+    );
+  }
+
+  trashNote(noteId: Parameters<LocalNotesService['trashNote']>[0]) {
+    return this.run('WRITE', (database) =>
+      trashNote(database, noteId, this.randomId(), this.now()),
+    );
+  }
+
+  listRecent(input: Parameters<LocalNotesService['listRecent']>[0]) {
+    return this.run('READ', (database) => listRecent(database, input));
   }
 }
 

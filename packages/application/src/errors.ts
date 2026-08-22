@@ -6,6 +6,8 @@ export type ApplicationErrorCode =
   | 'FOLDER_CYCLE'
   | 'PARENT_FOLDER_INVALID'
   | 'INVALID_CURSOR'
+  | 'CONTENT_VERSION_CONFLICT'
+  | 'CONTENT_VERSION_OVERFLOW'
   | 'WRONG_PASSWORD'
   | 'VAULT_META_INVALID'
   | 'CRYPTO_UNAVAILABLE'
@@ -26,6 +28,8 @@ const SAFE_MESSAGES: Readonly<Record<ApplicationErrorCode, string>> = {
   FOLDER_CYCLE: 'The folder move would create a cycle.',
   PARENT_FOLDER_INVALID: 'The parent folder is invalid.',
   INVALID_CURSOR: 'The page cursor is invalid.',
+  CONTENT_VERSION_CONFLICT: 'The note content has changed.',
+  CONTENT_VERSION_OVERFLOW: 'The note content version cannot be incremented.',
   WRONG_PASSWORD: 'The password is incorrect.',
   VAULT_META_INVALID: 'The profile metadata is invalid.',
   CRYPTO_UNAVAILABLE: 'Encryption is unavailable.',

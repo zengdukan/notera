@@ -9,6 +9,7 @@ const DOMAIN_CODES: Readonly<Partial<Record<string, ApplicationErrorCode>>> = {
   ROOT_FOLDER_IMMUTABLE: 'ROOT_FOLDER_IMMUTABLE',
   FOLDER_CYCLE: 'FOLDER_CYCLE',
   PARENT_FOLDER_INVALID: 'PARENT_FOLDER_INVALID',
+  CONTENT_VERSION_OVERFLOW: 'CONTENT_VERSION_OVERFLOW',
 };
 
 const STORAGE_CODES: Readonly<Partial<Record<string, ApplicationErrorCode>>> = {
@@ -16,6 +17,7 @@ const STORAGE_CODES: Readonly<Partial<Record<string, ApplicationErrorCode>>> = {
   ENTITY_NOT_FOUND: 'ENTITY_NOT_FOUND',
   INVALID_CURSOR: 'INVALID_CURSOR',
   DISK_FULL: 'DISK_FULL',
+  CONTENT_VERSION_CONFLICT: 'CONTENT_VERSION_CONFLICT',
 };
 
 export function mapLocalNotesError(

@@ -6,9 +6,11 @@ export type {
   FolderSummary,
   ListChildrenInput,
   LocalNotesService,
+  NoteDetail,
   NoteSummary,
   SortDirection,
   TreeEntrySummary,
+  TagSummary,
 } from './local-notes/types';
 export type {
   Page,
