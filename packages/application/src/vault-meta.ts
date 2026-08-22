@@ -37,9 +37,15 @@ function invalid(): never {
   throw new ApplicationError('VAULT_META_INVALID');
 }
 
-function exactKeys(value: Record<string, unknown>, keys: readonly string[]): void {
+function exactKeys(
+  value: Record<string, unknown>,
+  keys: readonly string[],
+): void {
   const actual = Object.keys(value);
-  if (actual.length !== keys.length || actual.some((key) => !keys.includes(key))) {
+  if (
+    actual.length !== keys.length ||
+    actual.some((key) => !keys.includes(key))
+  ) {
     invalid();
   }
 }
@@ -186,10 +192,14 @@ export function decodeVaultMeta(bytes: Uint8Array): ReadVaultMeta {
 }
 
 export class VaultMetaStore {
-  constructor(
-    private readonly paths: ProfilePaths,
-    private readonly createSessionName: () => string,
-  ) {}
+  private readonly paths: ProfilePaths;
+
+  private readonly createSessionName: () => string;
+
+  constructor(paths: ProfilePaths, createSessionName: () => string) {
+    this.paths = paths;
+    this.createSessionName = createSessionName;
+  }
 
   async writeInitial(value: VaultMetaV1): Promise<ReadVaultMeta> {
     const encoded = encodeVaultMeta(value);

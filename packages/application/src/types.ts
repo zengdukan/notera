@@ -1,8 +1,8 @@
+import type { LocalProfileId, Timestamp, VaultId } from '@notera/domain';
+
 export type InternalSessionName = string & {
   readonly __internalSessionName: unique symbol;
 };
-
-import type { LocalProfileId, Timestamp, VaultId } from '@notera/domain';
 
 export interface PageRequest {
   readonly cursor?: string;
@@ -56,12 +56,24 @@ export type SessionState =
 export interface ProfileManager {
   listProfiles(input: PageRequest): Page<ProfileSummary>;
   getSessionState(): SessionState;
-  createProfile(input: { readonly displayName: string; readonly password: string }): Promise<Extract<SessionState, { state: 'UNLOCKED' }>>;
-  unlockProfile(input: { readonly localProfileId: LocalProfileId; readonly password: string }): Promise<Extract<SessionState, { state: 'UNLOCKED' }>>;
+  createProfile(input: {
+    readonly displayName: string;
+    readonly password: string;
+  }): Promise<Extract<SessionState, { state: 'UNLOCKED' }>>;
+  unlockProfile(input: {
+    readonly localProfileId: LocalProfileId;
+    readonly password: string;
+  }): Promise<Extract<SessionState, { state: 'UNLOCKED' }>>;
   lockProfile(): Promise<void>;
-  switchProfile(input: { readonly localProfileId: LocalProfileId; readonly password: string }): Promise<Extract<SessionState, { state: 'UNLOCKED' }>>;
+  switchProfile(input: {
+    readonly localProfileId: LocalProfileId;
+    readonly password: string;
+  }): Promise<Extract<SessionState, { state: 'UNLOCKED' }>>;
   renameProfile(displayName: string): Promise<ProfileSummary>;
-  changeProfilePassword(input: { readonly oldPassword: string; readonly newPassword: string }): Promise<void>;
+  changeProfilePassword(input: {
+    readonly oldPassword: string;
+    readonly newPassword: string;
+  }): Promise<void>;
   removeProfileFromDevice(localProfileId: LocalProfileId): Promise<void>;
   close(): Promise<void>;
 }

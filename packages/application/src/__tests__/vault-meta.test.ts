@@ -67,14 +67,13 @@ describe('strict vault metadata', () => {
   it('encodes a deterministic canonical UTF-8 fixture and digest', () => {
     const first = encodeVaultMeta(meta());
     const second = encodeVaultMeta(meta());
-    const expected =
-      `${JSON.stringify({
-        metaVersion: 1,
-        localProfileId: TEST_LOCAL_PROFILE_ID,
-        vaultId: TEST_VAULT_ID,
-        fileFormatVersion: 1,
-        keyPackage: keyPackage(),
-      })}\n`;
+    const expected = `${JSON.stringify({
+      metaVersion: 1,
+      localProfileId: TEST_LOCAL_PROFILE_ID,
+      vaultId: TEST_VAULT_ID,
+      fileFormatVersion: 1,
+      keyPackage: keyPackage(),
+    })}\n`;
 
     expect(Buffer.from(first.bytes).toString('utf8')).toBe(expected);
     expect(Buffer.from(first.bytes).toString('hex')).toBe(
@@ -91,7 +90,8 @@ describe('strict vault metadata', () => {
     const originalBytes = Uint8Array.from(encoded.bytes);
     encoded.bytes.fill(0);
     encoded.digest.fill(0);
-    (input.keyPackage.wrappedDatabaseKey as { nonce: string }).nonce = 'changed';
+    (input.keyPackage.wrappedDatabaseKey as { nonce: string }).nonce =
+      'changed';
 
     const decoded = decodeVaultMeta(originalBytes);
     expect(decoded.value).toEqual(meta());
@@ -123,7 +123,10 @@ describe('strict vault metadata', () => {
     })}\n`,
     `${JSON.stringify({
       ...meta(),
-      keyPackage: { ...keyPackage(), salt: Buffer.alloc(15).toString('base64') },
+      keyPackage: {
+        ...keyPackage(),
+        salt: Buffer.alloc(15).toString('base64'),
+      },
     })}\n`,
     `${JSON.stringify({
       ...meta(),
@@ -169,7 +172,9 @@ describe('trusted profile paths', () => {
     const paths = await createApplicationPaths(linkedRoot);
     const profile = paths.profile(TEST_LOCAL_PROFILE_ID);
     expect(paths.appDataRoot).toBe(realRoot);
-    expect(profile.root).toBe(join(realRoot, 'profiles', TEST_LOCAL_PROFILE_ID));
+    expect(profile.root).toBe(
+      join(realRoot, 'profiles', TEST_LOCAL_PROFILE_ID),
+    );
     expect(profile.vaultMeta).toBe(join(profile.root, 'vault.meta'));
     expect(Object.isFrozen(paths)).toBe(true);
     expect(Object.isFrozen(profile)).toBe(true);
@@ -178,7 +183,10 @@ describe('trusted profile paths', () => {
       () => paths.profile('../escape' as LocalProfileId),
       'OPERATION_FAILED',
     );
-    expectCode(() => paths.temporarySibling(profile.vaultMeta, 'BAD'), 'OPERATION_FAILED');
+    expectCode(
+      () => paths.temporarySibling(profile.vaultMeta, 'BAD'),
+      'OPERATION_FAILED',
+    );
     expect(paths.temporarySibling(profile.vaultMeta, SESSION)).toBe(
       `${profile.vaultMeta}.${SESSION}.tmp`,
     );
@@ -229,9 +237,15 @@ describe('atomic files and VaultMetaStore', () => {
         expect(mode).toBe(0o600);
         return handle;
       },
-      async link() {},
-      async rename() {},
-      async unlink() {},
+      async link() {
+        return undefined;
+      },
+      async rename() {
+        return undefined;
+      },
+      async unlink() {
+        return undefined;
+      },
     };
 
     await writeFileExclusively(
@@ -248,45 +262,55 @@ describe('atomic files and VaultMetaStore', () => {
   it.each([
     ['zero write', undefined, 0, 'SAVE_FAILED'],
     ['disk full', 'ENOSPC', undefined, 'DISK_FULL'],
-  ])('cleans only its exact temporary file after %s', async (_name, nativeCode, bytesWritten, code) => {
-    const root = tempRoot();
-    const target = join(root, 'vault.meta');
-    const unrelated = `${target}.unrelated.tmp`;
-    writeFileSync(unrelated, 'keep');
-    const unlinked: string[] = [];
-    let closed = 0;
-    const operations: AtomicFileOperations = {
-      async open() {
-        if (nativeCode !== undefined) {
-          throw Object.assign(new Error('sensitive native failure'), {
-            code: nativeCode,
-          });
-        }
-        return {
-          async write() {
-            return { bytesWritten: bytesWritten ?? 1 };
-          },
-          async sync() {},
-          async close() {
-            closed += 1;
-          },
-        };
-      },
-      async link() {},
-      async rename() {},
-      async unlink(path) {
-        unlinked.push(path);
-      },
-    };
+  ])(
+    'cleans only its exact temporary file after %s',
+    async (_name, nativeCode, bytesWritten, code) => {
+      const root = tempRoot();
+      const target = join(root, 'vault.meta');
+      const unrelated = `${target}.unrelated.tmp`;
+      writeFileSync(unrelated, 'keep');
+      const unlinked: string[] = [];
+      let closed = 0;
+      const operations: AtomicFileOperations = {
+        async open() {
+          if (nativeCode !== undefined) {
+            throw Object.assign(new Error('sensitive native failure'), {
+              code: nativeCode,
+            });
+          }
+          return {
+            async write() {
+              return { bytesWritten: bytesWritten ?? 1 };
+            },
+            async sync() {
+              return undefined;
+            },
+            async close() {
+              closed += 1;
+            },
+          };
+        },
+        async link() {
+          return undefined;
+        },
+        async rename() {
+          return undefined;
+        },
+        async unlink(path) {
+          unlinked.push(path);
+        },
+      };
 
-    await expectAsyncCode(
-      () => writeFileExclusively(target, Uint8Array.of(1), SESSION, operations),
-      code,
-    );
-    expect(unlinked).toEqual([`${target}.${SESSION}.tmp`]);
-    expect(readFileSync(unrelated, 'utf8')).toBe('keep');
-    expect(closed).toBe(nativeCode === undefined ? 1 : 0);
-  });
+      await expectAsyncCode(
+        () =>
+          writeFileExclusively(target, Uint8Array.of(1), SESSION, operations),
+        code,
+      );
+      expect(unlinked).toEqual([`${target}.${SESSION}.tmp`]);
+      expect(readFileSync(unrelated, 'utf8')).toBe('keep');
+      expect(closed).toBe(nativeCode === undefined ? 1 : 0);
+    },
+  );
 
   it('keeps old content before rename and new content after the commit point', async () => {
     const root = tempRoot();

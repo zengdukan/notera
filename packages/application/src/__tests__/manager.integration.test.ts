@@ -10,7 +10,10 @@ describe('ProfileManager production integration', () => {
       displayName: ' Personal ',
       password: 'correct horse battery staple',
     });
-    expect(created).toMatchObject({ state: 'UNLOCKED', displayName: 'Personal' });
+    expect(created).toMatchObject({
+      state: 'UNLOCKED',
+      displayName: 'Personal',
+    });
     expect(manager.listProfiles({ limit: 10 }).items).toEqual([
       expect.objectContaining({
         localProfileId: created.localProfileId,

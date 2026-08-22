@@ -8,9 +8,7 @@ import type { PasswordKeyPackage } from '@notera/crypto';
 export const TEST_LOCAL_PROFILE_ID = asLocalProfileId(
   '018f5f46-43ca-7c86-9912-ec42bde8c553',
 );
-export const TEST_VAULT_ID = asVaultId(
-  '10000000-0000-4000-8000-000000000001',
-);
+export const TEST_VAULT_ID = asVaultId('10000000-0000-4000-8000-000000000001');
 
 const roots: string[] = [];
 
@@ -28,7 +26,7 @@ export function cleanupTempRoots(): void {
 
 function base64(length: number, start: number): string {
   return Buffer.from(
-    Uint8Array.from({ length }, (_, index) => (start + index) & 0xff),
+    Uint8Array.from({ length }, (_, index) => (start + index) % 256),
   ).toString('base64');
 }
 

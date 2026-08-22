@@ -1,9 +1,4 @@
-import {
-  mkdirSync,
-  readFileSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { asTimestamp } from '@notera/domain';
@@ -55,13 +50,13 @@ describe('ProfileCatalog', () => {
     await catalog.add(entry(3, 2));
     expect(catalog.get(localProfileId(1))?.displayName).toBe('Profile 1');
     const first = catalog.list({ limit: 2 }, localProfileId(1));
-    expect(first.items.map(({ localProfileId }) => localProfileId)).toEqual([
+    expect(first.items.map((item) => item.localProfileId)).toEqual([
       localProfileId(1),
       localProfileId(2),
     ]);
     expect(first.items[0].isCurrent).toBe(true);
     const second = catalog.list({ limit: 2, cursor: first.nextCursor });
-    expect(second.items.map(({ localProfileId }) => localProfileId)).toEqual([
+    expect(second.items.map((item) => item.localProfileId)).toEqual([
       localProfileId(3),
     ]);
 

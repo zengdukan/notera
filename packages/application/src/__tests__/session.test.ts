@@ -1,9 +1,5 @@
 import type { AttachmentStore } from '@notera/attachments';
-import {
-  asLocalProfileId,
-  asFolderId,
-  asVaultId,
-} from '@notera/domain';
+import { asLocalProfileId, asFolderId, asVaultId } from '@notera/domain';
 import type { VaultDatabase } from '@notera/storage-sqlcipher';
 
 import { ApplicationError } from '../errors';
@@ -17,17 +13,19 @@ function deferred(): {
   readonly promise: Promise<void>;
   readonly resolve: () => void;
 } {
-  let resolve!: () => void;
-  const promise = new Promise<void>((done) => {
-    resolve = done;
+  let settle!: () => void;
+  const promise = new Promise<void>((resolve) => {
+    settle = resolve;
   });
-  return { promise, resolve };
+  return { promise, resolve: settle };
 }
 
-function resources(options: {
-  attachmentClose?: () => Promise<void>;
-  databaseClose?: () => void;
-} = {}) {
+function resources(
+  options: {
+    attachmentClose?: () => Promise<void>;
+    databaseClose?: () => void;
+  } = {},
+) {
   let attachmentCloses = 0;
   let databaseCloses = 0;
   const attachments = {
@@ -53,7 +51,11 @@ function create(options: Parameters<typeof resources>[0] = {}) {
   const owned = resources(options);
   const databaseKey = Uint8Array.from({ length: 32 }, () => 11);
   const vaultKey = Uint8Array.from({ length: 32 }, () => 22);
-  const observations: Array<{ phase: string; database: number[]; vault: number[] }> = [];
+  const observations: Array<{
+    phase: string;
+    database: number[];
+    vault: number[];
+  }> = [];
   const session = createProfileSession(
     {
       localProfileId: LOCAL_ID,
@@ -104,9 +106,9 @@ describe('ProfileSession', () => {
     });
     await Promise.resolve();
     const closing = setup.session.close();
-    await expect(
-      setup.session.run(() => undefined),
-    ).rejects.toMatchObject({ code: 'PROFILE_LOCKED' });
+    await expect(setup.session.run(() => undefined)).rejects.toMatchObject({
+      code: 'PROFILE_LOCKED',
+    });
     expect(events).toEqual(['operation', 'abort']);
     gate.resolve();
     await active;

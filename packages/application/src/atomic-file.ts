@@ -60,6 +60,8 @@ async function persistTemporary(
   try {
     let offset = 0;
     while (offset < bytes.byteLength) {
+      // Writes are intentionally sequential because each offset depends on the prior short write.
+      // eslint-disable-next-line no-await-in-loop
       const { bytesWritten } = await handle.write(
         bytes,
         offset,
@@ -138,11 +140,6 @@ export async function replaceFileWithBackup(
   sessionName: string,
   operations: AtomicFileOperations = NODE_FILE_OPERATIONS,
 ): Promise<void> {
-  await replaceFileAtomically(
-    backup,
-    currentBytes,
-    sessionName,
-    operations,
-  );
+  await replaceFileAtomically(backup, currentBytes, sessionName, operations);
   await replaceFileAtomically(target, nextBytes, sessionName, operations);
 }

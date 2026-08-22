@@ -58,9 +58,7 @@ export class ProfileMetadataRepository implements ProfileMetadataWriter {
     if (row.pending_vault_meta_digest instanceof Uint8Array) {
       return {
         ...metadata,
-        pendingVaultMetaDigest: Uint8Array.from(
-          row.pending_vault_meta_digest,
-        ),
+        pendingVaultMetaDigest: Uint8Array.from(row.pending_vault_meta_digest),
       };
     }
     return metadata;

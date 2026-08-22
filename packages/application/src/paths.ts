@@ -1,10 +1,7 @@
 import { mkdir, realpath } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
-import {
-  asLocalProfileId,
-  type LocalProfileId,
-} from '@notera/domain';
+import { asLocalProfileId, type LocalProfileId } from '@notera/domain';
 
 import { ApplicationError } from './errors';
 import type { InternalSessionName } from './types';
@@ -28,10 +25,7 @@ export interface ApplicationPaths {
   readonly catalog: string;
   readonly catalogBackup: string;
   readonly profile: (localProfileId: LocalProfileId) => ProfilePaths;
-  readonly temporarySibling: (
-    target: string,
-    sessionName: string,
-  ) => string;
+  readonly temporarySibling: (target: string, sessionName: string) => string;
 }
 
 export function asInternalSessionName(value: unknown): InternalSessionName {

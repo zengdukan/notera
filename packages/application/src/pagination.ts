@@ -34,6 +34,8 @@ function decode(cursor: string): readonly [number, LocalProfileId] {
   }
 }
 
+// This named internal helper keeps call sites explicit.
+// eslint-disable-next-line import/prefer-default-export
 export function paginateCatalog(
   entries: readonly CatalogEntry[],
   input: PageRequest,
@@ -59,8 +61,13 @@ export function paginateCatalog(
     start = position + 1;
   }
   const selected = entries.slice(start, start + input.limit);
-  const items = selected.map(({ sortOrder: _sortOrder, ...entry }) =>
-    Object.freeze({ ...entry, isCurrent: entry.localProfileId === currentId }),
+  const items = selected.map((entry) =>
+    Object.freeze({
+      localProfileId: entry.localProfileId,
+      displayName: entry.displayName,
+      lastUsedAt: entry.lastUsedAt,
+      isCurrent: entry.localProfileId === currentId,
+    }),
   );
   const last = selected.at(-1);
   return Object.freeze({

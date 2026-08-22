@@ -55,5 +55,7 @@ export function mapFileError(
   if (error instanceof ApplicationError) {
     return error;
   }
-  return new ApplicationError(nativeCode(error) === 'ENOSPC' ? 'DISK_FULL' : fallback);
+  return new ApplicationError(
+    nativeCode(error) === 'ENOSPC' ? 'DISK_FULL' : fallback,
+  );
 }

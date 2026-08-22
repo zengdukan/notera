@@ -298,7 +298,9 @@ describe('vault transactions and folder repositories', () => {
         pendingDigest: next,
       });
     });
-    expect(database.profileMetadata.get().pendingVaultMetaDigest).toBeUndefined();
+    expect(
+      database.profileMetadata.get().pendingVaultMetaDigest,
+    ).toBeUndefined();
 
     expectStorageCode(
       () =>

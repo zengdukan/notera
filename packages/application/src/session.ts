@@ -64,13 +64,21 @@ function key(value: unknown): Uint8Array {
 
 class OwnedProfileSession implements ProfileSession {
   private currentSummary: UnlockedSession;
+
   private readonly controller = new AbortController();
+
   private readonly active = new Set<Promise<unknown>>();
+
   private readonly databaseKey: Uint8Array;
+
   private readonly vaultKey: Uint8Array;
+
   private database: VaultDatabase | undefined;
+
   private attachments: AttachmentStore | undefined;
+
   private closing = false;
+
   private closePromise: Promise<void> | undefined;
 
   constructor(
@@ -101,7 +109,11 @@ class OwnedProfileSession implements ProfileSession {
   run<Result>(
     operation: (resources: SessionResources) => Promise<Result> | Result,
   ): Promise<Result> {
-    if (this.closing || this.database === undefined || this.attachments === undefined) {
+    if (
+      this.closing ||
+      this.database === undefined ||
+      this.attachments === undefined
+    ) {
       return Promise.reject(new ApplicationError('PROFILE_LOCKED'));
     }
     const resources = Object.freeze({
@@ -109,8 +121,7 @@ class OwnedProfileSession implements ProfileSession {
       attachments: this.attachments,
       signal: this.controller.signal,
     });
-    let active!: Promise<Result>;
-    active = Promise.resolve()
+    const active = Promise.resolve()
       .then(() => operation(resources))
       .finally(() => {
         this.active.delete(active);
@@ -139,7 +150,7 @@ class OwnedProfileSession implements ProfileSession {
     let firstError: ApplicationError | undefined;
     await Promise.allSettled([...this.active]);
 
-    const attachments = this.attachments;
+    const { attachments } = this;
     this.attachments = undefined;
     if (attachments !== undefined) {
       try {
@@ -149,7 +160,7 @@ class OwnedProfileSession implements ProfileSession {
       }
     }
 
-    const database = this.database;
+    const { database } = this;
     this.database = undefined;
     if (database !== undefined) {
       try {

@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax, no-await-in-loop, no-continue */
 import { lstat, mkdir, readdir, realpath, rm, unlink } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
@@ -24,9 +25,14 @@ export interface RecoveryResult {
   readonly changed: boolean;
 }
 
-type MutableRecoveryReport = {
-  -readonly [Key in keyof RecoveryReport]: RecoveryReport[Key];
-};
+interface MutableRecoveryReport {
+  recoveredProfileCount: number;
+  removedCatalogEntryCount: number;
+  removedCreatingDirectoryCount: number;
+  clearedCreatingMarkerCount: number;
+  resumedDeletionCount: number;
+  unexpectedEntryCount: number;
+}
 
 function defaultReport(): MutableRecoveryReport {
   return {
@@ -39,7 +45,10 @@ function defaultReport(): MutableRecoveryReport {
   };
 }
 
-async function ordinaryDirectDirectory(path: string, parent: string): Promise<boolean> {
+async function ordinaryDirectDirectory(
+  path: string,
+  parent: string,
+): Promise<boolean> {
   try {
     const status = await lstat(path);
     if (!status.isDirectory() || status.isSymbolicLink()) return false;
@@ -55,12 +64,16 @@ export async function recoverCatalog(
   initialEntries: readonly CatalogEntry[],
   dependencies: RecoveryDependencies,
 ): Promise<RecoveryResult> {
-  const entries = new Map(initialEntries.map((entry) => [entry.localProfileId, entry]));
+  const entries = new Map(
+    initialEntries.map((entry) => [entry.localProfileId, entry]),
+  );
   const report = defaultReport();
   let changed = false;
   await mkdir(paths.deletingRoot, { recursive: true });
 
-  for (const item of await readdir(paths.deletingRoot, { withFileTypes: true })) {
+  for (const item of await readdir(paths.deletingRoot, {
+    withFileTypes: true,
+  })) {
     const match = DELETING_ENTRY.exec(item.name);
     let id: LocalProfileId | undefined;
     try {
@@ -91,7 +104,9 @@ export async function recoverCatalog(
   }
 
   const seen = new Set<LocalProfileId>();
-  for (const item of await readdir(paths.profilesRoot, { withFileTypes: true })) {
+  for (const item of await readdir(paths.profilesRoot, {
+    withFileTypes: true,
+  })) {
     if (item.name === '.deleting') continue;
     let id: LocalProfileId;
     try {
@@ -142,7 +157,11 @@ export async function recoverCatalog(
           dependencies.createSessionName,
         ).read();
         if (metadata.value.localProfileId !== id) throw new Error('mismatch');
-        const nextSort = Math.max(-1, ...[...entries.values()].map(({ sortOrder }) => sortOrder)) + 1;
+        const nextSort =
+          Math.max(
+            -1,
+            ...[...entries.values()].map(({ sortOrder }) => sortOrder),
+          ) + 1;
         entries.set(id, {
           localProfileId: id,
           displayName: `Profile ${id.slice(0, 8)}`,

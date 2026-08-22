@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-syntax, no-await-in-loop */
 import { randomBytes, randomUUID } from 'node:crypto';
 import {
   lstat,
@@ -64,7 +65,11 @@ function name(value: unknown): string {
 }
 
 function password(value: unknown): string {
-  if (typeof value !== 'string' || [...value].length < 1 || [...value].length > 1024) {
+  if (
+    typeof value !== 'string' ||
+    [...value].length < 1 ||
+    [...value].length > 1024
+  ) {
     throw new ApplicationError('OPERATION_FAILED');
   }
   return value;
@@ -74,7 +79,9 @@ function mapError(error: unknown): ApplicationError {
   if (error instanceof ApplicationError) return error;
   if (error instanceof CryptoError) {
     return new ApplicationError(
-      error.code === 'AUTHENTICATION_FAILED' ? 'WRONG_PASSWORD' : 'CRYPTO_UNAVAILABLE',
+      error.code === 'AUTHENTICATION_FAILED'
+        ? 'WRONG_PASSWORD'
+        : 'CRYPTO_UNAVAILABLE',
     );
   }
   if (error instanceof StorageError) {
@@ -84,10 +91,14 @@ function mapError(error: unknown): ApplicationError {
       MIGRATION_FAILED: 'MIGRATION_FAILED',
       DISK_FULL: 'DISK_FULL',
     } as const;
-    return new ApplicationError(mapped[error.code as keyof typeof mapped] ?? 'OPERATION_FAILED');
+    return new ApplicationError(
+      mapped[error.code as keyof typeof mapped] ?? 'OPERATION_FAILED',
+    );
   }
   if (error instanceof AttachmentStorageError) {
-    return new ApplicationError(error.code === 'DISK_FULL' ? 'DISK_FULL' : 'OPERATION_FAILED');
+    return new ApplicationError(
+      error.code === 'DISK_FULL' ? 'DISK_FULL' : 'OPERATION_FAILED',
+    );
   }
   return new ApplicationError('OPERATION_FAILED');
 }
@@ -95,14 +106,25 @@ function mapError(error: unknown): ApplicationError {
 function sessionState(session: ProfileSession | undefined): SessionState {
   if (session === undefined) return lockedState;
   const { localProfileId, displayName, rootFolderId } = session.summary;
-  return Object.freeze({ state: 'UNLOCKED', localProfileId, displayName, rootFolderId });
+  return Object.freeze({
+    state: 'UNLOCKED',
+    localProfileId,
+    displayName,
+    rootFolderId,
+  });
 }
 
 function sameDigest(left: Uint8Array, right: Uint8Array): boolean {
-  return left.byteLength === right.byteLength && Buffer.from(left).equals(Buffer.from(right));
+  return (
+    left.byteLength === right.byteLength &&
+    Buffer.from(left).equals(Buffer.from(right))
+  );
 }
 
-async function verifiedDirectory(path: string, parent: string): Promise<boolean> {
+async function verifiedDirectory(
+  path: string,
+  parent: string,
+): Promise<boolean> {
   try {
     const status = await lstat(path);
     if (!status.isDirectory() || status.isSymbolicLink()) return false;
@@ -149,15 +171,22 @@ async function settleMetaDigest(
 }
 
 class LocalProfileManager implements ProfileManager {
+  private readonly paths: ApplicationPaths;
+
+  private readonly catalog: ProfileCatalog;
+
   private session: ProfileSession | undefined;
+
   private queue: Promise<void> = Promise.resolve();
+
   private closed = false;
+
   private closePromise: Promise<void> | undefined;
 
-  constructor(
-    private readonly paths: ApplicationPaths,
-    private readonly catalog: ProfileCatalog,
-  ) {}
+  constructor(paths: ApplicationPaths, catalog: ProfileCatalog) {
+    this.paths = paths;
+    this.catalog = catalog;
+  }
 
   private ensureOpen(): void {
     if (this.closed) throw new ApplicationError('APPLICATION_CLOSED');
@@ -168,7 +197,10 @@ class LocalProfileManager implements ProfileManager {
       this.ensureOpen();
       return operation();
     });
-    this.queue = result.then(() => undefined, () => undefined);
+    this.queue = result.then(
+      () => undefined,
+      () => undefined,
+    );
     return result;
   }
 
@@ -182,7 +214,10 @@ class LocalProfileManager implements ProfileManager {
     return sessionState(this.session);
   }
 
-  createProfile(input: { readonly displayName: string; readonly password: string }) {
+  createProfile(input: {
+    readonly displayName: string;
+    readonly password: string;
+  }) {
     return this.enqueue(async () => {
       const displayName = name(input?.displayName);
       const masterPassword = password(input?.password);
@@ -202,12 +237,20 @@ class LocalProfileManager implements ProfileManager {
       try {
         await mkdir(profile.root);
         directoryCreated = true;
-        await writeFile(profile.creatingMarker, new Uint8Array(), { flag: 'wx', mode: 0o600 });
+        await writeFile(profile.creatingMarker, new Uint8Array(), {
+          flag: 'wx',
+          mode: 0o600,
+        });
         markerCreated = true;
-        const keys = await createProfileKeyPackage(masterPassword, localProfileId);
+        const keys = await createProfileKeyPackage(
+          masterPassword,
+          localProfileId,
+        );
         databaseKey = keys.databaseKey;
         vaultKey = keys.vaultKey;
-        const meta = await new VaultMetaStore(profile, () => randomBytes(16).toString('hex')).writeInitial({
+        const meta = await new VaultMetaStore(profile, () =>
+          randomBytes(16).toString('hex'),
+        ).writeInitial({
           metaVersion: 1,
           localProfileId,
           vaultId,
@@ -221,7 +264,9 @@ class LocalProfileManager implements ProfileManager {
           profileName: displayName,
           vaultMetaDigest: meta.digest,
         });
-        attachments = await createAttachmentStore({ profileRoot: profile.root });
+        attachments = await createAttachmentStore({
+          profileRoot: profile.root,
+        });
         createdSession = createProfileSession({
           localProfileId,
           vaultId,
@@ -248,34 +293,58 @@ class LocalProfileManager implements ProfileManager {
         this.ensureOpen();
         this.session = createdSession;
         createdSession = undefined;
-        try { await unlink(profile.creatingMarker); } catch { /* startup recovery clears it */ }
-        return sessionState(this.session) as Extract<SessionState, { state: 'UNLOCKED' }>;
+        try {
+          await unlink(profile.creatingMarker);
+        } catch {
+          /* startup recovery clears it */
+        }
+        return sessionState(this.session) as Extract<
+          SessionState,
+          { state: 'UNLOCKED' }
+        >;
       } catch (error) {
         await createdSession?.close().catch(() => undefined);
         await attachments?.close().catch(() => undefined);
-        try { database?.close(); } catch { /* preserve original */ }
+        try {
+          database?.close();
+        } catch {
+          /* preserve original */
+        }
         if (databaseKey !== undefined) wipeBytes(databaseKey);
         if (vaultKey !== undefined) wipeBytes(vaultKey);
         if (!committed && directoryCreated && markerCreated) {
-          await rm(profile.root, { force: true, recursive: true }).catch(() => undefined);
+          await rm(profile.root, { force: true, recursive: true }).catch(
+            () => undefined,
+          );
         }
         throw mapError(error);
       }
     });
   }
 
-  unlockProfile(input: { readonly localProfileId: LocalProfileId; readonly password: string }) {
+  unlockProfile(input: {
+    readonly localProfileId: LocalProfileId;
+    readonly password: string;
+  }) {
     return this.enqueue(() => {
       const masterPassword = password(input?.password);
       let id: LocalProfileId;
-      try { id = asLocalProfileId(input?.localProfileId); } catch { throw new ApplicationError('ENTITY_NOT_FOUND'); }
+      try {
+        id = asLocalProfileId(input?.localProfileId);
+      } catch {
+        throw new ApplicationError('ENTITY_NOT_FOUND');
+      }
       return this.unlock(id, masterPassword);
     });
   }
 
-  private async unlock(id: LocalProfileId, masterPassword: string): Promise<Extract<SessionState, { state: 'UNLOCKED' }>> {
+  private async unlock(
+    id: LocalProfileId,
+    masterPassword: string,
+  ): Promise<Extract<SessionState, { state: 'UNLOCKED' }>> {
     if (!this.catalog.has(id)) throw new ApplicationError('ENTITY_NOT_FOUND');
-    if (this.session !== undefined) throw new ApplicationError('OPERATION_FAILED');
+    if (this.session !== undefined)
+      throw new ApplicationError('OPERATION_FAILED');
     const profile = this.paths.profile(id);
     let database: VaultDatabase | undefined;
     let attachments: AttachmentStore | undefined;
@@ -283,14 +352,27 @@ class LocalProfileManager implements ProfileManager {
     let vaultKey: Uint8Array | undefined;
     let createdSession: ProfileSession | undefined;
     try {
-      const store = new VaultMetaStore(profile, () => randomBytes(16).toString('hex'));
+      const store = new VaultMetaStore(profile, () =>
+        randomBytes(16).toString('hex'),
+      );
       const meta = await store.read();
-      const keys = await unlockProfileKeyPackage(masterPassword, id, meta.value.keyPackage);
+      const keys = await unlockProfileKeyPackage(
+        masterPassword,
+        id,
+        meta.value.keyPackage,
+      );
       databaseKey = keys.databaseKey;
       vaultKey = keys.vaultKey;
-      database = openVaultDatabase({ filePath: profile.database, databaseKey, expectedVaultId: meta.value.vaultId, expectedVaultMetaDigest: meta.digest });
+      database = openVaultDatabase({
+        filePath: profile.database,
+        databaseKey,
+        expectedVaultId: meta.value.vaultId,
+        expectedVaultMetaDigest: meta.digest,
+      });
       await settleMetaDigest(database, meta, store);
-      const roots = database.folders.listAll().filter((folder) => folder.kind === 'ROOT');
+      const roots = database.folders
+        .listAll()
+        .filter((folder) => folder.kind === 'ROOT');
       if (roots.length !== 1) throw new ApplicationError('DB_CORRUPT');
       const stored = database.profileMetadata.get();
       attachments = await createAttachmentStore({ profileRoot: profile.root });
@@ -306,38 +388,63 @@ class LocalProfileManager implements ProfileManager {
       });
       database = undefined;
       attachments = undefined;
-      wipeBytes(databaseKey); wipeBytes(vaultKey);
-      databaseKey = undefined; vaultKey = undefined;
+      wipeBytes(databaseKey);
+      wipeBytes(vaultKey);
+      databaseKey = undefined;
+      vaultKey = undefined;
       this.ensureOpen();
       this.session = createdSession;
       createdSession = undefined;
       const cached = this.catalog.get(id);
       if (cached !== undefined) {
-        await this.catalog.updateCache({ ...cached, displayName: stored.profileName, lastUsedAt: asTimestamp(Date.now()) }).catch(() => undefined);
+        await this.catalog
+          .updateCache({
+            ...cached,
+            displayName: stored.profileName,
+            lastUsedAt: asTimestamp(Date.now()),
+          })
+          .catch(() => undefined);
       }
-      return sessionState(this.session) as Extract<SessionState, { state: 'UNLOCKED' }>;
+      return sessionState(this.session) as Extract<
+        SessionState,
+        { state: 'UNLOCKED' }
+      >;
     } catch (error) {
       await createdSession?.close().catch(() => undefined);
       await attachments?.close().catch(() => undefined);
-      try { database?.close(); } catch { /* preserve original */ }
+      try {
+        database?.close();
+      } catch {
+        /* preserve original */
+      }
       if (databaseKey !== undefined) wipeBytes(databaseKey);
       if (vaultKey !== undefined) wipeBytes(vaultKey);
       throw mapError(error);
     }
   }
 
-  lockProfile(): Promise<void> { return this.enqueue(() => this.lockCurrent()); }
+  lockProfile(): Promise<void> {
+    return this.enqueue(() => this.lockCurrent());
+  }
+
   private async lockCurrent(): Promise<void> {
     const current = this.session;
     this.session = undefined;
     if (current !== undefined) await current.close();
   }
 
-  switchProfile(input: { readonly localProfileId: LocalProfileId; readonly password: string }) {
+  switchProfile(input: {
+    readonly localProfileId: LocalProfileId;
+    readonly password: string;
+  }) {
     return this.enqueue(async () => {
       const masterPassword = password(input?.password);
       let id: LocalProfileId;
-      try { id = asLocalProfileId(input?.localProfileId); } catch { throw new ApplicationError('ENTITY_NOT_FOUND'); }
+      try {
+        id = asLocalProfileId(input?.localProfileId);
+      } catch {
+        throw new ApplicationError('ENTITY_NOT_FOUND');
+      }
       await this.lockCurrent();
       return this.unlock(id, masterPassword);
     });
@@ -348,10 +455,17 @@ class LocalProfileManager implements ProfileManager {
       const displayName = name(value);
       const current = this.session;
       if (current === undefined) throw new ApplicationError('PROFILE_LOCKED');
-      await current.run(({ database }) => database.transaction((transaction) => transaction.profileMetadata.rename(displayName)));
+      await current.run(({ database }) =>
+        database.transaction((transaction) =>
+          transaction.profileMetadata.rename(displayName),
+        ),
+      );
       current.updateDisplayName(displayName);
       const cached = this.catalog.get(current.summary.localProfileId);
-      if (cached !== undefined) await this.catalog.updateCache({ ...cached, displayName }).catch(() => undefined);
+      if (cached !== undefined)
+        await this.catalog
+          .updateCache({ ...cached, displayName })
+          .catch(() => undefined);
       return Object.freeze({
         localProfileId: current.summary.localProfileId,
         displayName,
@@ -361,14 +475,19 @@ class LocalProfileManager implements ProfileManager {
     });
   }
 
-  changeProfilePassword(input: { readonly oldPassword: string; readonly newPassword: string }): Promise<void> {
+  changeProfilePassword(input: {
+    readonly oldPassword: string;
+    readonly newPassword: string;
+  }): Promise<void> {
     return this.enqueue(async () => {
       const oldPassword = password(input?.oldPassword);
       const newPassword = password(input?.newPassword);
       const current = this.session;
       if (current === undefined) throw new ApplicationError('PROFILE_LOCKED');
       const profile = this.paths.profile(current.summary.localProfileId);
-      const store = new VaultMetaStore(profile, () => randomBytes(16).toString('hex'));
+      const store = new VaultMetaStore(profile, () =>
+        randomBytes(16).toString('hex'),
+      );
       try {
         await current.run(async ({ database }) => {
           let prepared = false;
@@ -429,30 +548,40 @@ class LocalProfileManager implements ProfileManager {
       }
     });
   }
+
   removeProfileFromDevice(value: LocalProfileId): Promise<void> {
     return this.enqueue(async () => {
       let id: LocalProfileId;
-      try { id = asLocalProfileId(value); } catch { throw new ApplicationError('ENTITY_NOT_FOUND'); }
+      try {
+        id = asLocalProfileId(value);
+      } catch {
+        throw new ApplicationError('ENTITY_NOT_FOUND');
+      }
       await mkdir(this.paths.deletingRoot, { recursive: true });
       const deletingRoot = await realpath(this.paths.deletingRoot);
       const isolatedPrefix = `${id}.`;
-      const existingIsolation = (await readdir(deletingRoot, { withFileTypes: true }))
+      const existingIsolation = (
+        await readdir(deletingRoot, { withFileTypes: true })
+      )
         .filter((entry) => entry.name.startsWith(isolatedPrefix))
         .map((entry) => ({ entry, path: join(deletingRoot, entry.name) }))
-        .filter(({ entry }) =>
-          entry.isDirectory() &&
-          !entry.isSymbolicLink() &&
-          new RegExp(`^${id}\\.[0-9a-f]{32}$`, 'u').test(entry.name),
+        .filter(
+          ({ entry }) =>
+            entry.isDirectory() &&
+            !entry.isSymbolicLink() &&
+            new RegExp(`^${id}\\.[0-9a-f]{32}$`, 'u').test(entry.name),
         );
 
       if (!this.catalog.has(id)) {
         const valid: string[] = [];
         for (const candidate of existingIsolation) {
-          if (await verifiedDirectory(candidate.path, deletingRoot)) valid.push(candidate.path);
+          if (await verifiedDirectory(candidate.path, deletingRoot))
+            valid.push(candidate.path);
         }
         if (valid.length === 0) throw new ApplicationError('ENTITY_NOT_FOUND');
         try {
-          for (const target of valid) await rm(target, { force: true, recursive: true });
+          for (const target of valid)
+            await rm(target, { force: true, recursive: true });
           return;
         } catch {
           throw new ApplicationError('REMOVE_FAILED');
@@ -464,7 +593,10 @@ class LocalProfileManager implements ProfileManager {
       if (!(await verifiedDirectory(source, this.paths.profilesRoot))) {
         throw new ApplicationError('REMOVE_FAILED');
       }
-      const target = join(deletingRoot, `${id}.${randomBytes(16).toString('hex')}`);
+      const target = join(
+        deletingRoot,
+        `${id}.${randomBytes(16).toString('hex')}`,
+      );
       try {
         await rename(source, target);
       } catch {
@@ -496,7 +628,11 @@ class LocalProfileManager implements ProfileManager {
   }
 }
 
-export async function createProfileManager(input: { readonly appDataRoot: string }): Promise<ProfileManager> {
+// The named factory is the intentional package entry point.
+// eslint-disable-next-line import/prefer-default-export
+export async function createProfileManager(input: {
+  readonly appDataRoot: string;
+}): Promise<ProfileManager> {
   const paths = await createApplicationPaths(input?.appDataRoot);
   const { catalog } = await createProfileCatalog(paths);
   return new LocalProfileManager(paths, catalog);
