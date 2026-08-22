@@ -36,6 +36,12 @@ export interface Page<Value> {
 export interface ProfileMetadata {
   readonly profileName: string;
   readonly vaultMetaDigest: Uint8Array;
+  readonly pendingVaultMetaDigest?: Uint8Array;
+}
+
+export interface VaultMetaDigestTransition {
+  readonly currentDigest: Uint8Array;
+  readonly pendingDigest: Uint8Array;
 }
 
 export interface ProfileMetadataReader {
@@ -44,7 +50,9 @@ export interface ProfileMetadataReader {
 
 export interface ProfileMetadataWriter extends ProfileMetadataReader {
   rename(profileName: string): void;
-  replaceVaultMetaDigest(digest: Uint8Array): void;
+  prepareVaultMetaDigest(input: VaultMetaDigestTransition): void;
+  finalizeVaultMetaDigest(input: VaultMetaDigestTransition): void;
+  cancelVaultMetaDigest(input: VaultMetaDigestTransition): void;
 }
 
 export interface FolderReader {

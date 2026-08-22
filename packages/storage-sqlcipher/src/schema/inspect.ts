@@ -15,6 +15,7 @@ interface VaultMetadataRow {
   readonly root_folder_id: unknown;
   readonly profile_name: unknown;
   readonly vault_meta_digest: unknown;
+  readonly pending_vault_meta_digest: unknown;
   readonly file_format_version: unknown;
 }
 
@@ -50,7 +51,10 @@ export function validateVaultMetadata(
   expectedVaultId: VaultId,
   expectedVaultMetaDigest: Uint8Array,
 ): void {
-  if (expectedVaultMetaDigest.byteLength !== 32) {
+  if (
+    !(expectedVaultMetaDigest instanceof Uint8Array) ||
+    expectedVaultMetaDigest.byteLength !== 32
+  ) {
     corrupt();
   }
 
@@ -59,7 +63,8 @@ export function validateVaultMetadata(
     rows = database
       .prepare<VaultMetadataRow>(
         `SELECT vault_id, root_folder_id, profile_name,
-                vault_meta_digest, file_format_version
+                vault_meta_digest, pending_vault_meta_digest,
+                file_format_version
          FROM vault_metadata WHERE singleton = 1`,
       )
       .all();
@@ -81,11 +86,24 @@ export function validateVaultMetadata(
       row.file_format_version !== CURRENT_FILE_FORMAT_VERSION ||
       !(row.vault_meta_digest instanceof Uint8Array) ||
       row.vault_meta_digest.byteLength !== 32 ||
-      !timingSafeEqual(
-        Buffer.from(row.vault_meta_digest),
-        Buffer.from(expectedVaultMetaDigest),
-      )
+      (row.pending_vault_meta_digest !== null &&
+        (!(row.pending_vault_meta_digest instanceof Uint8Array) ||
+          row.pending_vault_meta_digest.byteLength !== 32))
     ) {
+      corrupt();
+    }
+
+    const matchesCurrent = timingSafeEqual(
+      Buffer.from(row.vault_meta_digest),
+      Buffer.from(expectedVaultMetaDigest),
+    );
+    const matchesPending =
+      row.pending_vault_meta_digest instanceof Uint8Array &&
+      timingSafeEqual(
+        Buffer.from(row.pending_vault_meta_digest),
+        Buffer.from(expectedVaultMetaDigest),
+      );
+    if (!matchesCurrent && !matchesPending) {
       corrupt();
     }
 

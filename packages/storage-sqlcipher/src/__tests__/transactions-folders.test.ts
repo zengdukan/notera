@@ -51,12 +51,24 @@ interface ProfileMetadataReaderApi {
   get(): {
     readonly profileName: string;
     readonly vaultMetaDigest: Uint8Array;
+    readonly pendingVaultMetaDigest?: Uint8Array;
   };
 }
 
 interface ProfileMetadataWriterApi extends ProfileMetadataReaderApi {
   rename(profileName: string): void;
-  replaceVaultMetaDigest(digest: Uint8Array): void;
+  prepareVaultMetaDigest(input: {
+    readonly currentDigest: Uint8Array;
+    readonly pendingDigest: Uint8Array;
+  }): void;
+  finalizeVaultMetaDigest(input: {
+    readonly currentDigest: Uint8Array;
+    readonly pendingDigest: Uint8Array;
+  }): void;
+  cancelVaultMetaDigest(input: {
+    readonly currentDigest: Uint8Array;
+    readonly pendingDigest: Uint8Array;
+  }): void;
 }
 
 interface VaultTransactionApi {
@@ -242,22 +254,70 @@ describe('vault transactions and folder repositories', () => {
       vaultMetaDigest(),
     );
 
-    const replacement = vaultMetaDigest(77);
+    const current = vaultMetaDigest();
+    const pending = vaultMetaDigest(77);
     database.transaction((transaction) => {
       transaction.profileMetadata.rename('Renamed Profile');
-      transaction.profileMetadata.replaceVaultMetaDigest(replacement);
+      transaction.profileMetadata.prepareVaultMetaDigest({
+        currentDigest: current,
+        pendingDigest: pending,
+      });
     });
-    replacement.fill(0);
+    pending.fill(0);
+    expect(database.profileMetadata.get()).toEqual({
+      profileName: 'Renamed Profile',
+      vaultMetaDigest: vaultMetaDigest(),
+      pendingVaultMetaDigest: vaultMetaDigest(77),
+    });
+
+    const readPending = database.profileMetadata.get();
+    readPending.pendingVaultMetaDigest?.fill(0);
+    expect(database.profileMetadata.get().pendingVaultMetaDigest).toEqual(
+      vaultMetaDigest(77),
+    );
+
+    database.transaction((transaction) => {
+      transaction.profileMetadata.finalizeVaultMetaDigest({
+        currentDigest: current,
+        pendingDigest: vaultMetaDigest(77),
+      });
+    });
     expect(database.profileMetadata.get()).toEqual({
       profileName: 'Renamed Profile',
       vaultMetaDigest: vaultMetaDigest(77),
     });
+
+    const next = vaultMetaDigest(88);
+    database.transaction((transaction) => {
+      transaction.profileMetadata.prepareVaultMetaDigest({
+        currentDigest: vaultMetaDigest(77),
+        pendingDigest: next,
+      });
+      transaction.profileMetadata.cancelVaultMetaDigest({
+        currentDigest: vaultMetaDigest(77),
+        pendingDigest: next,
+      });
+    });
+    expect(database.profileMetadata.get().pendingVaultMetaDigest).toBeUndefined();
+
     expectStorageCode(
       () =>
         database.transaction((transaction) => {
-          transaction.profileMetadata.replaceVaultMetaDigest(
-            new Uint8Array(31),
-          );
+          transaction.profileMetadata.prepareVaultMetaDigest({
+            currentDigest: vaultMetaDigest(77),
+            pendingDigest: new Uint8Array(31),
+          });
+        }),
+      'STORAGE_OPERATION_FAILED',
+    );
+
+    expectStorageCode(
+      () =>
+        database.transaction((transaction) => {
+          transaction.profileMetadata.prepareVaultMetaDigest({
+            currentDigest: vaultMetaDigest(66),
+            pendingDigest: next,
+          });
         }),
       'STORAGE_OPERATION_FAILED',
     );

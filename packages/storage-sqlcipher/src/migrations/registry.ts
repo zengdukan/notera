@@ -1,8 +1,11 @@
 import { StorageError } from '../errors';
 import { BASE_SCHEMA_VERSION } from '../schema/baseline-v1';
+import { V2_PENDING_VAULT_META_DIGEST } from '../schema/v2';
 import type { Migration } from './types';
 
-export const PRODUCTION_MIGRATIONS: readonly Migration[] = Object.freeze([]);
+export const PRODUCTION_MIGRATIONS: readonly Migration[] = Object.freeze([
+  V2_PENDING_VAULT_META_DIGEST,
+]);
 
 export const CURRENT_SCHEMA_VERSION =
   PRODUCTION_MIGRATIONS.at(-1)?.targetVersion ?? BASE_SCHEMA_VERSION;

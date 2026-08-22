@@ -54,6 +54,10 @@ interface BaselineV1Module {
   ): void;
 }
 
+interface SchemaV2Module {
+  readonly V2_PENDING_VAULT_META_DIGEST: Migration;
+}
+
 interface SnapshotDatabaseModule {
   createVaultDatabase(options: {
     filePath: string;
@@ -83,6 +87,11 @@ function runnerModule(): RunnerModule {
 function baselineV1Module(): BaselineV1Module {
   // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
   return require('../schema/baseline-v1') as BaselineV1Module;
+}
+
+function schemaV2Module(): SchemaV2Module {
+  // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
+  return require('../schema/v2') as SchemaV2Module;
 }
 
 function databaseModuleWithProductionMigrations(
@@ -176,8 +185,11 @@ afterEach(() => {
 describe('schema migrations', () => {
   it('derives the current version and selects only the continuous suffix', () => {
     const registry = registryModule();
-    expect(registry.CURRENT_SCHEMA_VERSION).toBe(1);
-    expect(registry.selectProductionMigrations(1)).toEqual([]);
+    expect(registry.CURRENT_SCHEMA_VERSION).toBe(2);
+    expect(registry.selectProductionMigrations(1)).toEqual([
+      schemaV2Module().V2_PENDING_VAULT_META_DIGEST,
+    ]);
+    expect(registry.selectProductionMigrations(2)).toEqual([]);
 
     const v2 = migration(2);
     const v3 = migration(3);
@@ -310,12 +322,14 @@ describe('schema migrations', () => {
     const v2 = migration(
       2,
       (database) => {
+        schemaV2Module().V2_PENDING_VAULT_META_DIGEST.migrate(database);
         database.exec(`
           CREATE TABLE lifecycle_audit(value TEXT NOT NULL);
           INSERT INTO lifecycle_audit VALUES ('v2');
         `);
       },
       (database) => {
+        schemaV2Module().V2_PENDING_VAULT_META_DIGEST.validate(database);
         const row = database.prepare('SELECT value FROM lifecycle_audit').get();
         if ((row as { value?: unknown } | undefined)?.value !== 'v2') {
           throw new Error('v2 validation failed');
@@ -350,6 +364,7 @@ describe('schema migrations', () => {
     const filePath = tempDatabasePath('open-suffix.db');
     createBaselineDatabase(filePath);
     const v2 = migration(2, (database) => {
+      schemaV2Module().V2_PENDING_VAULT_META_DIGEST.migrate(database);
       database.exec(`
         CREATE TABLE lifecycle_audit(value TEXT NOT NULL);
         INSERT INTO lifecycle_audit VALUES ('v2');
@@ -464,7 +479,7 @@ describe('schema migrations', () => {
       );
       INSERT INTO schema_metadata VALUES (1, 0);
     `);
-    runnerModule().runMigrations(migrated, 0, 1, [
+    runnerModule().runMigrations(migrated, 0, 2, [
       migration(1, (database) => {
         database.exec('DROP TABLE schema_metadata');
         baselineV1Module().createBaselineV1(database, {
@@ -474,6 +489,7 @@ describe('schema migrations', () => {
           createdAt: 1,
         });
       }),
+      schemaV2Module().V2_PENDING_VAULT_META_DIGEST,
     ]);
 
     const fresh = openTestConnection(freshPath);

@@ -17,6 +17,13 @@ import {
 } from './helpers';
 
 interface VaultDatabaseHandle {
+  readonly profileMetadata?: {
+    get(): {
+      readonly profileName: string;
+      readonly vaultMetaDigest: Uint8Array;
+      readonly pendingVaultMetaDigest?: Uint8Array;
+    };
+  };
   close(): void;
 }
 
@@ -52,7 +59,7 @@ function expectStorageCode(operation: () => unknown, code: string): void {
 
 afterEach(cleanupTempDatabases);
 
-describe('vault schema v1', () => {
+describe('current vault schema', () => {
   it('creates the complete metadata, domain, index, and trigram schema', () => {
     const filePath = tempDatabasePath();
     const vault = databaseModule().createVaultDatabase({
@@ -103,12 +110,13 @@ describe('vault schema v1', () => {
 
     expect(
       connection.prepare('SELECT schema_version FROM schema_metadata').get(),
-    ).toEqual({ schema_version: 1 });
+    ).toEqual({ schema_version: 2 });
     expect(
       connection
         .prepare(
           `SELECT vault_id, root_folder_id, profile_name,
-                  length(vault_meta_digest) AS digest_bytes
+                  length(vault_meta_digest) AS digest_bytes,
+                  pending_vault_meta_digest
            FROM vault_metadata`,
         )
         .get(),
@@ -117,6 +125,7 @@ describe('vault schema v1', () => {
       root_folder_id: TEST_ROOT_FOLDER_ID,
       profile_name: '真实 Profile 名称',
       digest_bytes: 32,
+      pending_vault_meta_digest: null,
     });
     expect(
       connection
@@ -174,6 +183,27 @@ describe('vault schema v1', () => {
       })
       .close();
 
+    const pendingDigest = vaultMetaDigest(103);
+    const connection = openTestConnection(filePath);
+    connection
+      .prepare(
+        `UPDATE vault_metadata SET pending_vault_meta_digest = ?
+         WHERE singleton = 1`,
+      )
+      .run(Buffer.from(pendingDigest));
+    connection.close();
+
+    const pendingOpen = databaseModule().openVaultDatabase({
+      filePath,
+      databaseKey: databaseKey(),
+      expectedVaultId: TEST_VAULT_ID,
+      expectedVaultMetaDigest: pendingDigest,
+    });
+    expect(pendingOpen.profileMetadata?.get().pendingVaultMetaDigest).toEqual(
+      pendingDigest,
+    );
+    pendingOpen.close();
+
     databaseModule()
       .openVaultDatabase({
         filePath,
@@ -217,7 +247,7 @@ describe('vault schema v1', () => {
       `DROP TABLE schema_metadata;
        CREATE TABLE schema_metadata(schema_version TEXT);
        INSERT INTO schema_metadata VALUES ('invalid')`,
-      'UPDATE schema_metadata SET schema_version = 2',
+      'UPDATE schema_metadata SET schema_version = 3',
     ] as const;
 
     scenarios.forEach((mutation, index) => {
@@ -273,7 +303,7 @@ describe('vault schema v1', () => {
     const publicApi = require('../index') as Record<string, unknown>;
     expect(publicApi.createVaultDatabase).toBeInstanceOf(Function);
     expect(publicApi.openVaultDatabase).toBeInstanceOf(Function);
-    expect(publicApi.CURRENT_SCHEMA_VERSION).toBe(1);
+    expect(publicApi.CURRENT_SCHEMA_VERSION).toBe(2);
     expect(publicApi.openNativeConnection).toBeUndefined();
     expect(publicApi.CURRENT_SCHEMA_SQL).toBeUndefined();
     expect(publicApi.runMigrations).toBeUndefined();
