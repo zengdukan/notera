@@ -408,6 +408,19 @@ export function batchTrash(
     if (root === undefined) return invalidState();
     return root.id;
   });
-  database.transaction((transaction) => transaction.trash.apply({ entries }));
+  database.transaction((transaction) => {
+    transaction.trash.apply({ entries });
+    const references = new AttachmentReferenceCoordinator(
+      transaction.attachments,
+    ).moveNotesToTrash(
+      new Map(
+        entries
+          .filter((entry) => entry.objectType === 'NOTE')
+          .map((entry) => [entry.objectId as Note['id'], entry.id]),
+      ),
+    );
+    transaction.attachments.removeReferences(references.remove);
+    transaction.attachments.addReferences(references.add);
+  });
   return Object.freeze({ trashEntryIds: Object.freeze(rootIds) });
 }

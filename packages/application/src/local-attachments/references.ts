@@ -1,11 +1,13 @@
 import {
   createCurrentNoteAttachmentReference,
   createNoteVersionAttachmentReference,
+  createTrashAttachmentReference,
   type AttachmentReference,
   type CurrentNoteAttachmentReference,
   type NoteId,
   type NoteVersionAttachmentReference,
   type NoteVersionId,
+  type TrashEntryId,
 } from '@notera/domain';
 import type { AttachmentReader } from '@notera/storage-sqlcipher';
 
@@ -100,5 +102,55 @@ export class AttachmentReferenceCoordinator {
           }),
         ),
     );
+  }
+
+  moveNotesToTrash(
+    noteTrashEntryIds: ReadonlyMap<NoteId, TrashEntryId>,
+  ): ReferenceReplacement {
+    const current = this.attachments.listReferencesForNotes([
+      ...noteTrashEntryIds.keys(),
+    ]);
+    return Object.freeze({
+      remove: immutable(current),
+      add: immutable(
+        current.flatMap((reference) => {
+          const trashEntryId = noteTrashEntryIds.get(reference.noteId);
+          return trashEntryId === undefined
+            ? []
+            : [
+                createTrashAttachmentReference({
+                  vaultId: reference.vaultId,
+                  attachmentId: reference.attachmentId,
+                  trashEntryId,
+                }),
+              ];
+        }),
+      ),
+    });
+  }
+
+  restoreTrashEntries(
+    trashNoteIds: ReadonlyMap<TrashEntryId, NoteId>,
+  ): ReferenceReplacement {
+    const trashed = this.attachments.listReferencesForTrashEntries([
+      ...trashNoteIds.keys(),
+    ]);
+    return Object.freeze({
+      remove: immutable(trashed),
+      add: immutable(
+        trashed.flatMap((reference) => {
+          const noteId = trashNoteIds.get(reference.trashEntryId);
+          return noteId === undefined
+            ? []
+            : [
+                createCurrentNoteAttachmentReference({
+                  vaultId: reference.vaultId,
+                  attachmentId: reference.attachmentId,
+                  noteId,
+                }),
+              ];
+        }),
+      ),
+    });
   }
 }

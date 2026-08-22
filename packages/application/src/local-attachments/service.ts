@@ -10,10 +10,12 @@ import type {
   LocalAttachmentsService,
 } from './types';
 import { importAttachment } from './import';
+import { collectBlobIds, collectGarbage } from './gc';
 import { attachmentSummary } from './mapping';
 import { mapReadError } from './errors';
 import { openAttachmentReader } from './reader';
 import { requireActiveNote, validateListInput } from './validation';
+import { normalizeAttachmentId, normalizeNoteId } from './validation';
 
 export interface LocalAttachmentsDependencies {
   readonly getSession: () => ProfileSession | undefined;
@@ -90,6 +92,44 @@ class SessionLocalAttachmentsService implements LocalAttachmentsService {
         now: this.now,
       }),
     );
+  }
+
+  removeFromNote(
+    input: Parameters<LocalAttachmentsService['removeFromNote']>[0],
+  ): Promise<void> {
+    const session = this.dependencies.getSession();
+    if (session === undefined) {
+      return Promise.reject(new ApplicationError('PROFILE_LOCKED'));
+    }
+    return session.run(async (resources) => {
+      const noteId = normalizeNoteId(input?.noteId);
+      const attachmentId = normalizeAttachmentId(input?.attachmentId);
+      requireActiveNote(resources.database, noteId);
+      const blobIds = resources.database.transaction((transaction) => {
+        const reference = transaction.attachments
+          .listReferencesForAttachments([attachmentId])
+          .find(
+            (value) => value.source === 'NOTE' && value.noteId === noteId,
+          );
+        if (reference === undefined) {
+          throw new ApplicationError('ENTITY_NOT_FOUND');
+        }
+        transaction.attachments.removeReferences([reference]);
+        return transaction.attachments.deleteUnreferencedAttachments(
+          [attachmentId],
+          this.now(),
+        );
+      });
+      await collectBlobIds(resources, blobIds);
+    });
+  }
+
+  collectGarbage() {
+    const session = this.dependencies.getSession();
+    if (session === undefined) {
+      return Promise.reject(new ApplicationError('PROFILE_LOCKED'));
+    }
+    return session.run(collectGarbage);
   }
 }
 

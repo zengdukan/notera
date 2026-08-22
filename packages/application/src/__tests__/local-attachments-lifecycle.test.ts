@@ -4,6 +4,58 @@ import { cleanupTempRoots, tempRoot } from './helpers';
 afterEach(() => cleanupTempRoots());
 
 describe('attachment reference lifecycle', () => {
+  it('removes independent attachments while retaining a shared SHA blob', async () => {
+    const manager = await createProfileManager({ appDataRoot: tempRoot() });
+    const profile = await manager.createProfile({
+      displayName: 'References',
+      password: 'correct horse battery staple',
+    });
+    const note = await manager.localNotes.createNote({
+      folderId: profile.rootFolderId,
+      title: 'Shared blob',
+    });
+    const bytes = new Uint8Array([4, 5, 6]);
+    const importOne = () =>
+      manager.localAttachments.importAttachment({
+        noteId: note.id,
+        fileName: 'shared.bin',
+        mimeType: 'application/octet-stream',
+        source: (async function* attachmentSource() {
+          yield bytes;
+        })(),
+      });
+    const first = await importOne();
+    const second = await importOne();
+
+    await manager.localAttachments.removeFromNote({
+      noteId: note.id,
+      attachmentId: first.id,
+    });
+    await expect(
+      manager.localAttachments.openReader(first.id),
+    ).rejects.toMatchObject({ code: 'ENTITY_NOT_FOUND' });
+    const reader = await manager.localAttachments.openReader(second.id);
+    await expect(
+      (async () => {
+        const chunks: number[] = [];
+        for await (const chunk of reader.stream()) chunks.push(...chunk);
+        return chunks;
+      })(),
+    ).resolves.toEqual([...bytes]);
+    await reader.close();
+
+    await manager.localAttachments.removeFromNote({
+      noteId: note.id,
+      attachmentId: second.id,
+    });
+    await expect(manager.localAttachments.collectGarbage()).resolves.toEqual({
+      scannedCount: 0,
+      collectedCount: 0,
+      retryCount: 0,
+    });
+    await manager.close();
+  });
+
   it('keeps explicit attachment references independent from draft ADF', async () => {
     const manager = await createProfileManager({ appDataRoot: tempRoot() });
     const profile = await manager.createProfile({

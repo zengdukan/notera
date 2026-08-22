@@ -37,10 +37,21 @@ export interface AttachmentContentReader {
   close(): Promise<void>;
 }
 
+export interface AttachmentGcReport {
+  readonly scannedCount: number;
+  readonly collectedCount: number;
+  readonly retryCount: number;
+}
+
 export interface LocalAttachmentsService {
   importAttachment(input: ImportAttachmentInput): Promise<AttachmentSummary>;
   listForNote(
     input: ListAttachmentsForNoteInput,
   ): Promise<Page<AttachmentSummary>>;
   openReader(attachmentId: AttachmentId): Promise<AttachmentContentReader>;
+  removeFromNote(input: {
+    readonly noteId: NoteId;
+    readonly attachmentId: AttachmentId;
+  }): Promise<void>;
+  collectGarbage(): Promise<AttachmentGcReport>;
 }

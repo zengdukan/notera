@@ -200,9 +200,13 @@ export function trashNote(
   database.transaction((transaction) => {
     const note = transaction.notes.get(noteId);
     if (note === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
-    transaction.trash.apply(
-      trashDomainNote({ note, trashEntryId, deletedAt: now }),
-    );
+    const plan = trashDomainNote({ note, trashEntryId, deletedAt: now });
+    transaction.trash.apply(plan);
+    const references = new AttachmentReferenceCoordinator(
+      transaction.attachments,
+    ).moveNotesToTrash(new Map([[note.id, trashEntryId]]));
+    transaction.attachments.removeReferences(references.remove);
+    transaction.attachments.addReferences(references.add);
   });
   return Object.freeze({ trashEntryId });
 }

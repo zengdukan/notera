@@ -5,6 +5,8 @@ import type { VaultDatabase } from '@notera/storage-sqlcipher';
 
 import { ApplicationError } from '../errors';
 import type { ProfileSession } from '../session';
+import type { SessionResources } from '../session';
+import { collectBlobIds } from '../local-attachments/gc';
 import {
   batchAddTags,
   batchCopy,
@@ -94,6 +96,19 @@ class SessionLocalNotesService implements LocalNotesService {
       .catch((error) => {
         throw mapLocalNotesError(error, mode);
       });
+  }
+
+  private runResources<Result>(
+    mode: 'READ' | 'WRITE',
+    operation: (resources: SessionResources) => Promise<Result> | Result,
+  ): Promise<Result> {
+    const session = this.dependencies.getSession();
+    if (session === undefined) {
+      return Promise.reject(new ApplicationError('PROFILE_LOCKED'));
+    }
+    return session.run(operation).catch((error) => {
+      throw mapLocalNotesError(error, mode);
+    });
   }
 
   listChildren(input: ListChildrenInput) {
@@ -268,15 +283,23 @@ class SessionLocalNotesService implements LocalNotesService {
   deleteTrashPermanent(
     trashEntryId: Parameters<LocalNotesService['deleteTrashPermanent']>[0],
   ) {
-    return this.run('WRITE', (database) =>
-      deleteTrashPermanent(database, trashEntryId),
-    );
+    return this.runResources('WRITE', async (resources) => {
+      const result = deleteTrashPermanent(
+        resources.database,
+        trashEntryId,
+        this.now(),
+      );
+      await collectBlobIds(resources, result.blobIds);
+      return Object.freeze({ deletedCount: result.deletedCount });
+    });
   }
 
   purgeExpiredTrash() {
-    return this.run('WRITE', (database) =>
-      purgeExpiredTrash(database, this.now()),
-    );
+    return this.runResources('WRITE', async (resources) => {
+      const result = purgeExpiredTrash(resources.database, this.now());
+      await collectBlobIds(resources, result.blobIds);
+      return Object.freeze({ deletedCount: result.deletedCount });
+    });
   }
 
   batchMove(input: Parameters<LocalNotesService['batchMove']>[0]) {

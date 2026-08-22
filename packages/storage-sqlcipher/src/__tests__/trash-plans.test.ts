@@ -255,21 +255,29 @@ describe('trash and content plans', () => {
     const source = note(1);
     const copied = note(2);
     const attachmentId = '72000000-0000-4000-8000-000000000001';
+    const blobId = '73000000-0000-4000-8000-000000000001';
     const rawBefore = openTestConnection(filePath);
     rawBefore
       .prepare(
-        `INSERT INTO attachments(
-         id, blob_id, vault_id, file_name, mime_type, byte_length,
-         local_state, file_key, manifest_version, manifest, created_at, updated_at
-       ) VALUES (?, ?, ?, 'a.txt', 'text/plain', 1, 'READY', ?, 1, ?, 1, 1)`,
+        `INSERT INTO attachment_blobs(
+         blob_id, vault_id, content_sha256, byte_length, local_state,
+         file_key, manifest_version, manifest, created_at, updated_at
+       ) VALUES (?, ?, ?, 1, 'READY', ?, 1, ?, 1, 1)`,
       )
       .run(
-        attachmentId,
-        '73000000-0000-4000-8000-000000000001',
+        blobId,
         TEST_VAULT_ID,
+        Buffer.alloc(32, 2),
         Buffer.alloc(32, 1),
         Buffer.from('{}'),
       );
+    rawBefore
+      .prepare(
+        `INSERT INTO attachments(
+         id, blob_id, vault_id, file_name, mime_type, created_at
+       ) VALUES (?, ?, ?, 'a.txt', 'text/plain', 1)`,
+      )
+      .run(attachmentId, blobId, TEST_VAULT_ID);
     rawBefore.close();
     const copiedReference = createCurrentNoteAttachmentReference({
       vaultId: TEST_VAULT_ID,

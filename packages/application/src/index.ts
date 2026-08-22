@@ -25,6 +25,7 @@ export type {
 export type {
   AttachmentAvailability,
   AttachmentContentReader,
+  AttachmentGcReport,
   AttachmentSummary,
   ImportAttachmentInput,
   ListAttachmentsForNoteInput,

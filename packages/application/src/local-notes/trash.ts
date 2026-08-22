@@ -10,6 +10,7 @@ import {
 import type { VaultDatabase } from '@notera/storage-sqlcipher';
 
 import { ApplicationError } from '../errors';
+import { AttachmentReferenceCoordinator } from '../local-attachments/references';
 import type { Page, PageRequest } from '../types';
 import type { TrashItem } from './types';
 
@@ -95,7 +96,20 @@ export function trashFolder(
     noteTrashEntryIds,
     deletedAt: now,
   });
-  database.transaction((transaction) => transaction.trash.apply(plan));
+  database.transaction((transaction) => {
+    transaction.trash.apply(plan);
+    const references = new AttachmentReferenceCoordinator(
+      transaction.attachments,
+    ).moveNotesToTrash(
+      new Map(
+        plan.entries
+          .filter((entry) => entry.objectType === 'NOTE')
+          .map((entry) => [entry.objectId as Note['id'], entry.id]),
+      ),
+    );
+    transaction.attachments.removeReferences(references.remove);
+    transaction.attachments.addReferences(references.add);
+  });
   const root = plan.entries.find(({ objectId }) => objectId === folderId);
   if (root === undefined) throw new ApplicationError('OPERATION_FAILED');
   return Object.freeze({ trashEntryId: root.id });
@@ -149,24 +163,82 @@ export function restoreTrash(
       entry.id === root.id ? rootTarget : entry.originalParentId,
     ]),
   );
-  database.transaction((transaction) =>
-    transaction.trash.restore({ entries, targetFolderIds: targets, now }),
-  );
+  database.transaction((transaction) => {
+    const references = new AttachmentReferenceCoordinator(
+      transaction.attachments,
+    ).restoreTrashEntries(
+      new Map(
+        entries
+          .filter((entry) => entry.objectType === 'NOTE')
+          .map((entry) => [entry.id, entry.objectId as Note['id']]),
+      ),
+    );
+    transaction.attachments.removeReferences(references.remove);
+    transaction.trash.restore({ entries, targetFolderIds: targets, now });
+    transaction.attachments.addReferences(references.add);
+  });
 }
 
-export function deleteTrashPermanent(database: VaultDatabase, value: unknown) {
+function versionIdsForNotes(
+  database: VaultDatabase,
+  noteIds: readonly Note['id'][],
+) {
+  return noteIds.flatMap((noteId) => {
+    const result = [];
+    let cursor: string | undefined;
+    do {
+      const page = database.history.listForNote(noteId, {
+        limit: 100,
+        ...(cursor === undefined ? {} : { cursor }),
+      });
+      result.push(...page.items.map(({ id }) => id));
+      cursor = page.nextCursor;
+    } while (cursor !== undefined);
+    return result;
+  });
+}
+
+function deleteEntries(
+  database: VaultDatabase,
+  entries: readonly TrashEntry[],
+  now: Timestamp,
+  mode: 'PERMANENT' | 'EXPIRED',
+) {
+  const noteIds = entries
+    .filter((entry) => entry.objectType === 'NOTE')
+    .map((entry) => entry.objectId as Note['id']);
+  const versionIds = versionIdsForNotes(database, noteIds);
+  const references = [
+    ...database.attachments.listReferencesForNotes(noteIds),
+    ...database.attachments.listReferencesForVersions(versionIds),
+    ...database.attachments.listReferencesForTrashEntries(
+      entries.map(({ id }) => id),
+    ),
+  ];
+  const attachmentIds = [...new Set(references.map(({ attachmentId }) => attachmentId))];
+  const blobIds = database.transaction((transaction) => {
+    transaction.attachments.removeReferences(references);
+    if (mode === 'PERMANENT') transaction.trash.deletePermanent(entries);
+    else transaction.trash.purgeExpired(entries);
+    return transaction.attachments.deleteUnreferencedAttachments(
+      attachmentIds,
+      now,
+    );
+  });
+  return Object.freeze({ deletedCount: entries.length, blobIds });
+}
+
+export function deleteTrashPermanent(
+  database: VaultDatabase,
+  value: unknown,
+  now: Timestamp,
+) {
   const entries = database.trash.listGroup(asTrashEntryId(value));
   if (entries.length === 0) throw new ApplicationError('ENTITY_NOT_FOUND');
-  database.transaction((transaction) =>
-    transaction.trash.deletePermanent(entries),
-  );
-  return Object.freeze({ deletedCount: entries.length });
+  return deleteEntries(database, entries, now, 'PERMANENT');
 }
 
 export function purgeExpiredTrash(database: VaultDatabase, now: Timestamp) {
   const entries = database.trash.listExpiredGroups(now);
-  database.transaction((transaction) =>
-    transaction.trash.purgeExpired(entries),
-  );
-  return Object.freeze({ deletedCount: entries.length });
+  return deleteEntries(database, entries, now, 'EXPIRED');
 }
