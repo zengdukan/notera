@@ -29,6 +29,15 @@ describe('LocalNotesService history use cases', () => {
     });
     const tag = await localNotes.createTag('current');
     await localNotes.addTagToNote({ noteId: note.id, tagId: tag.id });
+    const historicalAttachment =
+      await manager.localAttachments.importAttachment({
+        noteId: note.id,
+        fileName: 'historical.txt',
+        mimeType: 'text/plain',
+        source: (async function* attachmentSource() {
+          yield new Uint8Array([1]);
+        })(),
+      });
 
     const permanent = await localNotes.createPermanentVersion({
       noteId: note.id,
@@ -58,6 +67,14 @@ describe('LocalNotesService history use cases', () => {
       versionId: permanent.versionId,
       versionName: '里程碑',
     });
+    const currentAttachment = await manager.localAttachments.importAttachment({
+      noteId: note.id,
+      fileName: 'current.txt',
+      mimeType: 'text/plain',
+      source: (async function* attachmentSource() {
+        yield new Uint8Array([2]);
+      })(),
+    });
 
     const changed = await localNotes.saveDraft({
       noteId: note.id,
@@ -85,6 +102,11 @@ describe('LocalNotesService history use cases', () => {
       noteId: note.id,
       contentVersion: 4,
       protectionVersionId: expect.any(String),
+    });
+    await expect(
+      manager.localAttachments.listForNote({ noteId: note.id, limit: 10 }),
+    ).resolves.toMatchObject({
+      items: [expect.objectContaining({ id: historicalAttachment.id })],
     });
     const history = await localNotes.listHistory({
       noteId: note.id,
@@ -118,6 +140,26 @@ describe('LocalNotesService history use cases', () => {
       document: historicalDocument,
       tags: [],
     });
+    await expect(
+      manager.localAttachments.listForNote({ noteId: copied.id, limit: 10 }),
+    ).resolves.toMatchObject({
+      items: [expect.objectContaining({ id: historicalAttachment.id })],
+    });
+    const protectionCopy = await localNotes.copyHistory({
+      noteId: note.id,
+      versionId: restored.protectionVersionId,
+      targetFolderId: profile.rootFolderId,
+    });
+    expect(
+      (
+        await manager.localAttachments.listForNote({
+          noteId: protectionCopy.id,
+          limit: 10,
+        })
+      ).items.map(({ id }) => id),
+    ).toEqual(
+      expect.arrayContaining([historicalAttachment.id, currentAttachment.id]),
+    );
     await expect(
       localNotes.restoreHistory({
         noteId: note.id,

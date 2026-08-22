@@ -16,6 +16,7 @@ import {
 import type { VaultDatabase } from '@notera/storage-sqlcipher';
 
 import { ApplicationError } from '../errors';
+import { AttachmentReferenceCoordinator } from '../local-attachments/references';
 import type { Page } from '../types';
 import { historySummary, noteSummary } from './mapping';
 import { getActiveNoteEntity } from './notes';
@@ -130,7 +131,14 @@ export function createPermanentVersion(
       ? null
       : checkedVersionName(input.versionName),
   );
-  database.transaction((transaction) => transaction.history.insert(version));
+  database.transaction((transaction) => {
+    transaction.history.insert(version);
+    transaction.attachments.addReferences(
+      new AttachmentReferenceCoordinator(
+        transaction.attachments,
+      ).snapshotNote(note.id, version.id),
+    );
+  });
   return historySummary(version);
 }
 
@@ -191,12 +199,17 @@ export function restoreHistory(
       protectionVersionId: asNoteVersionId(protectionId),
       restoredAt: now,
     });
+    const references = new AttachmentReferenceCoordinator(
+      transaction.attachments,
+    ).restoreVersion(note.id, version.id, plan.protectionVersion.id);
     transaction.history.restore(
       version,
       plan.protectionVersion,
       plan.note,
       expected,
     );
+    transaction.attachments.removeReferences(references.remove);
+    transaction.attachments.addReferences(references.add);
     return Object.freeze({
       noteId: plan.note.id,
       contentVersion: plan.note.contentVersion,
@@ -224,14 +237,21 @@ export function copyHistory(
       throw new ApplicationError('PARENT_FOLDER_INVALID');
     }
     const source = getActiveNoteEntity(database, noteId);
-    const plan = copyDomainNote({
+    const newNoteId = asNoteId(id);
+    const basePlan = copyDomainNote({
       source: { ...source, title: version.title, document: version.document },
-      newNoteId: asNoteId(id),
+      newNoteId,
       targetFolder,
       sortOrder: asSortOrder(0),
       noteTags: [],
       attachmentReferences: [],
       createdAt: now,
+    });
+    const plan = Object.freeze({
+      ...basePlan,
+      attachmentReferences: new AttachmentReferenceCoordinator(
+        transaction.attachments,
+      ).copyVersion(version.id, newNoteId),
     });
     transaction.contentPlans.insertNoteCopy(plan);
     return plan.note;

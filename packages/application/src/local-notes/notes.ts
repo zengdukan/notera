@@ -16,6 +16,7 @@ import {
 import type { VaultDatabase } from '@notera/storage-sqlcipher';
 
 import { ApplicationError } from '../errors';
+import { AttachmentReferenceCoordinator } from '../local-attachments/references';
 import type { Page, PageRequest } from '../types';
 import { noteDetail, noteSummary } from './mapping';
 import type { NoteDetail, NoteSummary } from './types';
@@ -166,14 +167,21 @@ export function copyNote(
         tagId: tag.id,
       }),
     );
-    const plan = copyDomainNote({
+    const newNoteId = asNoteId(id);
+    const basePlan = copyDomainNote({
       source,
-      newNoteId: asNoteId(id),
+      newNoteId,
       targetFolder,
       sortOrder: source.sortOrder,
       noteTags,
       attachmentReferences: [],
       createdAt: now,
+    });
+    const plan = Object.freeze({
+      ...basePlan,
+      attachmentReferences: new AttachmentReferenceCoordinator(
+        transaction.attachments,
+      ).copyNotes([source.id], new Map([[source.id, newNoteId]])),
     });
     transaction.contentPlans.insertNoteCopy(plan);
     return plan.note;

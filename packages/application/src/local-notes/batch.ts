@@ -19,6 +19,7 @@ import {
 import type { VaultDatabase } from '@notera/storage-sqlcipher';
 
 import { ApplicationError } from '../errors';
+import { AttachmentReferenceCoordinator } from '../local-attachments/references';
 import { getActiveNoteEntity } from './notes';
 import type { EntryRef } from './types';
 
@@ -275,7 +276,12 @@ export function batchCopy(
       const subtreeNotes = notes.filter((note) =>
         subtreeIds.has(note.folderId),
       );
-      return copyFolderTree({
+      const noteIdMap = new Map(
+        subtreeNotes.map(({ id }) => [id, asNoteId(randomId())]),
+      );
+      return {
+        noteIdMap,
+        plan: copyFolderTree({
         sourceFolderId: folder.id,
         targetParent: targetFolder,
         folders: normalized.folders,
@@ -285,30 +291,65 @@ export function batchCopy(
         folderIdMap: new Map(
           subtree.map(({ id }) => [id, asFolderId(randomId())]),
         ),
-        noteIdMap: new Map(
-          subtreeNotes.map(({ id }) => [id, asNoteId(randomId())]),
-        ),
+        noteIdMap,
         createdAt: now,
-      });
+        }),
+      };
     });
   const notePlans = normalized.targets
     .filter((target) => target.kind === 'note')
-    .map(({ note }) =>
-      copyNote({
+    .map(({ note }) => {
+      const newNoteId = asNoteId(randomId());
+      return {
+        sourceNoteId: note.id,
+        newNoteId,
+        plan: copyNote({
         source: note,
-        newNoteId: asNoteId(randomId()),
+        newNoteId,
         targetFolder,
         sortOrder: note.sortOrder,
         noteTags: noteTags(database, note),
         attachmentReferences: [],
         createdAt: now,
-      }),
-    );
+        }),
+      };
+    });
+  const targetNoteIdMap = new Map([
+    ...folderPlans.flatMap(({ noteIdMap }) => [...noteIdMap]),
+    ...notePlans.map(({ sourceNoteId, newNoteId }) => [
+      sourceNoteId,
+      newNoteId,
+    ] as const),
+  ]);
+  const copiedReferences = new AttachmentReferenceCoordinator(
+    database.attachments,
+  ).copyNotes([...targetNoteIdMap.keys()], targetNoteIdMap);
   database.transaction((transaction) => {
-    folderPlans.forEach((plan) =>
-      transaction.contentPlans.insertFolderTreeCopy(plan),
+    folderPlans.forEach(({ plan, noteIdMap }) => {
+      const targetIds = new Set(noteIdMap.values());
+      transaction.contentPlans.insertFolderTreeCopy(
+        Object.freeze({
+          ...plan,
+          attachmentReferences: Object.freeze(
+            copiedReferences.filter((reference) =>
+              targetIds.has(reference.noteId),
+            ),
+          ),
+        }),
+      );
+    });
+    notePlans.forEach(({ plan, newNoteId }) =>
+      transaction.contentPlans.insertNoteCopy(
+        Object.freeze({
+          ...plan,
+          attachmentReferences: Object.freeze(
+            copiedReferences.filter(
+              (reference) => reference.noteId === newNoteId,
+            ),
+          ),
+        }),
+      ),
     );
-    notePlans.forEach((plan) => transaction.contentPlans.insertNoteCopy(plan));
   });
 }
 

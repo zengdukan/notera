@@ -72,6 +72,14 @@ describe('LocalNotesService note use cases', () => {
       folderId: target.id,
       contentVersion: 2,
     });
+    const attachment = await manager.localAttachments.importAttachment({
+      noteId: created.id,
+      fileName: 'copy.txt',
+      mimeType: 'text/plain',
+      source: (async function* attachmentSource() {
+        yield new Uint8Array([1, 2, 3]);
+      })(),
+    });
     const copied = await localNotes.copyNote({
       noteId: created.id,
       targetFolderId: profile.rootFolderId,
@@ -85,6 +93,11 @@ describe('LocalNotesService note use cases', () => {
     await expect(localNotes.getNote(copied.id)).resolves.toMatchObject({
       document,
       tags: [],
+    });
+    await expect(
+      manager.localAttachments.listForNote({ noteId: copied.id, limit: 10 }),
+    ).resolves.toMatchObject({
+      items: [expect.objectContaining({ id: attachment.id })],
     });
 
     const recent = await localNotes.listRecent({ limit: 20 });
