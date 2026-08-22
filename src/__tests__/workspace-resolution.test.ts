@@ -32,4 +32,16 @@ describe('workspace package resolution', () => {
       (storageSqlcipher as Record<string, unknown>).runMigrations,
     ).toBeUndefined();
   });
+
+  it('exposes attachment storage without filesystem or crypto internals', () => {
+    expect(attachments.createAttachmentStore).toBeInstanceOf(Function);
+    expect(attachments.ATTACHMENT_CHUNK_BYTES).toBe(5 * 1024 * 1024);
+    expect(attachments.ATTACHMENT_MANIFEST_VERSION).toBe(1);
+    expect(attachments.MAX_ATTACHMENT_BYTES).toBe(100 * 1024 * 1024);
+    const attachmentApi = attachments as Record<string, unknown>;
+    expect(attachmentApi.encodeManifestV1).toBeUndefined();
+    expect(attachmentApi.deriveBlobPath).toBeUndefined();
+    expect(attachmentApi.BlobLeaseRegistry).toBeUndefined();
+    expect(attachmentApi.encryptAead).toBeUndefined();
+  });
 });

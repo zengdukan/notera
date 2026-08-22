@@ -6,13 +6,14 @@ import { importEncryptedBlob } from './importer';
 import { BlobLeaseRegistry } from './leases';
 import { createAttachmentPaths } from './paths';
 import { openBlobReader } from './reader';
-import { recoverStaging } from './recovery';
+import { inventoryFinalBlobs, recoverStaging } from './recovery';
 import type {
   AttachmentStore,
   BlobReader,
   ImportBlobInput,
   ImportedBlob,
   OpenBlobReaderInput,
+  ReconcileReport,
   StartupRecoveryReport,
 } from './types';
 
@@ -26,6 +27,8 @@ class LocalAttachmentStore implements AttachmentStore {
   private readonly activeImports = new Set<Promise<ImportedBlob>>();
 
   private readonly readers = new Set<BlobReader>();
+
+  private readonly activeReconciles = new Set<Promise<ReconcileReport>>();
 
   private readonly leases = new BlobLeaseRegistry();
 
@@ -102,6 +105,43 @@ class LocalAttachmentStore implements AttachmentStore {
     }
   }
 
+  async reconcile(
+    knownBlobIds: ReadonlySet<BlobId>,
+  ): Promise<ReconcileReport> {
+    if (this.closed) throw new AttachmentStorageError('STORE_CLOSED');
+    if (!(knownBlobIds instanceof Set)) {
+      throw new AttachmentStorageError('INVALID_ATTACHMENT_INPUT');
+    }
+    const known = new Set<BlobId>();
+    try {
+      knownBlobIds.forEach((value) => known.add(asBlobId(value)));
+    } catch {
+      throw new AttachmentStorageError('INVALID_ATTACHMENT_INPUT');
+    }
+    const operation = inventoryFinalBlobs(this.paths.blobsRoot).then(
+      (inventory) => {
+        const disk = inventory.blobIds;
+        const missingBlobIds = [...known]
+          .filter((blobId) => !disk.has(blobId))
+          .sort();
+        const orphanBlobIds = [...disk]
+          .filter((blobId) => !known.has(blobId))
+          .sort();
+        return Object.freeze({
+          missingBlobIds: Object.freeze(missingBlobIds),
+          orphanBlobIds: Object.freeze(orphanBlobIds),
+          unexpectedEntryCount: inventory.unexpectedEntryCount,
+        });
+      },
+    );
+    this.activeReconciles.add(operation);
+    try {
+      return await operation;
+    } finally {
+      this.activeReconciles.delete(operation);
+    }
+  }
+
   close(): Promise<void> {
     if (this.closeOperation) return this.closeOperation;
     this.closed = true;
@@ -110,6 +150,7 @@ class LocalAttachmentStore implements AttachmentStore {
     this.closeOperation = Promise.allSettled([
       ...this.activeImports,
       ...closeReaders,
+      ...this.activeReconciles,
     ]).then(() => {
       this.leases.close();
       openRoots.delete(this.paths.profileRoot);

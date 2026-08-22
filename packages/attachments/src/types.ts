@@ -53,11 +53,18 @@ export interface BlobReader {
   close(): Promise<void>;
 }
 
+export interface ReconcileReport {
+  readonly missingBlobIds: readonly BlobId[];
+  readonly orphanBlobIds: readonly BlobId[];
+  readonly unexpectedEntryCount: number;
+}
+
 export interface AttachmentStore {
   readonly startupRecovery: StartupRecoveryReport;
   importBlob(input: ImportBlobInput): Promise<ImportedBlob>;
   openReader(input: OpenBlobReaderInput): Promise<BlobReader>;
   collectBlob(blobId: BlobId): Promise<void>;
+  reconcile(knownBlobIds: ReadonlySet<BlobId>): Promise<ReconcileReport>;
   close(): Promise<void>;
 }
 import type { BlobId, VaultId } from '@notera/domain';
