@@ -32,8 +32,6 @@ type RequestFor<Key extends RequestKey> = (typeof requestContracts)[Key];
 type RequestInput<Key extends RequestKey> = z.output<
   RequestFor<Key>['request']
 >;
-type ResponseData<Key extends RequestKey> = z.input<RequestFor<Key>['data']>;
-
 interface RuntimeRequestContract extends ErrorContract {
   readonly key: string;
   readonly channel: string;
@@ -49,9 +47,7 @@ export interface IpcBinding {
 
 export function defineIpcBinding<Key extends RequestKey>(
   key: Key,
-  invoke: (
-    input: RequestInput<Key>,
-  ) => Promise<ResponseData<Key>> | ResponseData<Key>,
+  invoke: (input: RequestInput<Key>) => Promise<unknown> | unknown,
 ): IpcBinding {
   return Object.freeze({
     key,
