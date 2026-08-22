@@ -16,27 +16,37 @@ module.exports = {
     forbiddenDependency(
       'domain-no-project-dependencies',
       '^packages/domain/',
-      '^(packages/(crypto|storage-sqlcipher|attachments|application)/|src/)',
+      '^(packages/(crypto|storage-sqlcipher|attachments|application|export)/|src/)',
     ),
     forbiddenDependency(
       'crypto-no-project-dependencies',
       '^packages/crypto/',
-      '^(packages/(domain|storage-sqlcipher|attachments|application)/|src/)',
+      '^(packages/(domain|storage-sqlcipher|attachments|application|export)/|src/)',
     ),
     forbiddenDependency(
       'storage-only-depends-on-domain',
       '^packages/storage-sqlcipher/',
-      '^(packages/(crypto|attachments|application)/|src/)',
+      '^(packages/(crypto|attachments|application|export)/|src/)',
     ),
     forbiddenDependency(
       'attachments-only-depends-on-domain-and-crypto',
       '^packages/attachments/',
-      '^(packages/(storage-sqlcipher|application)/|src/)',
+      '^(packages/(storage-sqlcipher|application|export)/|src/)',
     ),
     forbiddenDependency(
       'application-does-not-depend-on-desktop',
       '^packages/application/',
       '^src/',
+    ),
+    forbiddenDependency(
+      'application-does-not-depend-on-export',
+      '^packages/application/',
+      '^packages/export/',
+    ),
+    forbiddenDependency(
+      'export-only-depends-on-domain',
+      '^packages/export/',
+      '^(packages/(crypto|storage-sqlcipher|attachments|application)/|src/)',
     ),
     forbiddenDependency(
       'shared-no-project-dependencies',
