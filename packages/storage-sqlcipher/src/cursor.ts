@@ -10,11 +10,13 @@ interface CursorPayload {
   readonly fingerprint: string;
   readonly sortOrder: number;
   readonly lastId: string;
+  readonly secondary?: string;
 }
 
 export interface KeysetCursor {
   readonly sortOrder: number;
   readonly lastId: string;
+  readonly secondary?: string;
 }
 
 function invalidCursor(): never {
@@ -32,6 +34,7 @@ export function encodeCursor(
     fingerprint,
     sortOrder: value.sortOrder,
     lastId: value.lastId,
+    ...(value.secondary === undefined ? {} : { secondary: value.secondary }),
   };
   return Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
 }
@@ -66,9 +69,11 @@ export function parsePageRequest(
     }
     const record = parsed as Record<string, unknown>;
     const keys = Object.keys(record).sort();
+    const keyList = keys.join(',');
     if (
-      keys.join(',') !==
-      'fingerprint,kind,lastId,sortOrder,version' ||
+      (keyList !== 'fingerprint,kind,lastId,sortOrder,version' &&
+        keyList !==
+          'fingerprint,kind,lastId,secondary,sortOrder,version') ||
       record.version !== 1 ||
       record.kind !== kind ||
       record.fingerprint !== fingerprint ||
@@ -76,13 +81,17 @@ export function parsePageRequest(
       !Number.isSafeInteger(record.sortOrder) ||
       record.sortOrder < 0 ||
       typeof record.lastId !== 'string' ||
-      !CANONICAL_UUID.test(record.lastId)
+      !CANONICAL_UUID.test(record.lastId) ||
+      ('secondary' in record && typeof record.secondary !== 'string')
     ) {
       return invalidCursor();
     }
     return {
       sortOrder: record.sortOrder,
       lastId: record.lastId,
+      ...(typeof record.secondary === 'string'
+        ? { secondary: record.secondary }
+        : {}),
     };
   } catch {
     return invalidCursor();

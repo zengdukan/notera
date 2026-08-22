@@ -1,6 +1,9 @@
 import type {
   Folder,
   FolderId,
+  ContentVersion,
+  Note,
+  NoteId,
   VaultId,
   VaultIdentity,
 } from '@notera/domain';
@@ -34,6 +37,7 @@ export interface FolderReader {
   listAll(): readonly Folder[];
   listChildren(parentId: FolderId, page: PageRequest): Page<Folder>;
   listSubtree(rootId: FolderId): readonly Folder[];
+  listContent(folderId: FolderId, page: PageRequest): Page<Folder | Note>;
 }
 
 export interface FolderWriter extends FolderReader {
@@ -45,6 +49,28 @@ export interface FolderWriter extends FolderReader {
 export interface VaultTransaction {
   readonly profileMetadata: ProfileMetadataWriter;
   readonly folders: FolderWriter;
+  readonly notes: NoteWriter;
+}
+
+export interface NoteReader {
+  get(id: NoteId): Note | undefined;
+  listByFolder(folderId: FolderId, page: PageRequest): Page<Note>;
+  listRecent(page: PageRequest): Page<Note>;
+}
+
+export interface NoteWriter extends NoteReader {
+  insert(note: Note): void;
+  replaceContent(note: Note, expectedContentVersion: ContentVersion): void;
+  replaceLocation(note: Note): void;
+  replaceSortOrders(notes: readonly Note[]): void;
+}
+
+export interface NormalizedSearchText {
+  readonly text: string;
+  readonly sourceRanges: readonly Readonly<{
+    start: number;
+    end: number;
+  }>[];
 }
 
 export interface CreateVaultDatabaseOptions {

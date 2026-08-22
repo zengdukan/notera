@@ -14,6 +14,7 @@ import {
   asProfileMetadataReader,
   ProfileMetadataRepository,
 } from './repositories/profile-metadata';
+import { asNoteReader, NoteRepository } from './repositories/notes';
 import {
   createCurrentSchema,
   CURRENT_SCHEMA_VERSION,
@@ -22,6 +23,7 @@ import { readSchemaVersion, validateVaultMetadata } from './schema/inspect';
 import type {
   CreateVaultDatabaseOptions,
   FolderReader,
+  NoteReader,
   OpenVaultDatabaseOptions,
   ProfileMetadataReader,
   VaultTransaction,
@@ -54,6 +56,8 @@ export class VaultDatabase {
 
   readonly folders: FolderReader;
 
+  readonly notes: NoteReader;
+
   private readonly vaultId: VaultId;
 
   constructor(connection: SqlcipherConnection, vaultId: VaultId) {
@@ -64,6 +68,9 @@ export class VaultDatabase {
     );
     this.folders = asFolderReader(
       new FolderRepository(() => this.requireConnection(), vaultId),
+    );
+    this.notes = asNoteReader(
+      new NoteRepository(() => this.requireConnection(), vaultId),
     );
   }
 
@@ -96,6 +103,11 @@ export class VaultDatabase {
         guard,
       ),
       folders: new FolderRepository(
+        () => this.requireConnection(),
+        this.vaultId,
+        guard,
+      ),
+      notes: new NoteRepository(
         () => this.requireConnection(),
         this.vaultId,
         guard,
