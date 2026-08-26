@@ -14,7 +14,10 @@ import {
 } from 'electron';
 
 import MenuBuilder from './menu';
+import { startElectronDemoMedia } from './demo-media/electron-lifecycle';
+import type { DemoMediaServer } from './demo-media/server';
 import { createMainRuntime, type MainRuntime } from './runtime';
+import { createMediaApiArgument } from '../shared/atlassian-editor/media-runtime';
 import { resolveHtmlPath } from './util';
 import { createSecureWindow } from './window';
 
@@ -41,6 +44,7 @@ protocol.registerSchemesAsPrivileged([
 
 let mainWindow: BrowserWindow | undefined;
 let runtime: MainRuntime | undefined;
+let demoMediaServer: DemoMediaServer | undefined;
 let shutdown: Promise<void> | undefined;
 let exitAllowed = false;
 
@@ -49,6 +53,8 @@ function fixedLog(code: string): void {
 }
 
 async function start(): Promise<void> {
+  const appDataRoot = app.getPath('userData');
+  demoMediaServer = await startElectronDemoMedia({ appDataRoot });
   const preloadPath = app.isPackaged
     ? path.join(__dirname, 'preload.js')
     : path.join(__dirname, '../../.erb/dll/preload.js');
@@ -69,6 +75,7 @@ async function start(): Promise<void> {
     preloadPath,
     entryUrl,
     iconPath,
+    additionalArguments: [createMediaApiArgument(demoMediaServer.apiBaseUrl)],
   }) as BrowserWindow;
   mainWindow.on('closed', () => {
     mainWindow = undefined;
@@ -76,7 +83,7 @@ async function start(): Promise<void> {
   new MenuBuilder(mainWindow).buildMenu();
 
   runtime = await createMainRuntime({
-    appDataRoot: app.getPath('userData'),
+    appDataRoot,
     window: mainWindow,
     electron: {
       createProfileManager,
@@ -154,13 +161,14 @@ app.on('before-quit', (event) => {
   if (exitAllowed) return;
   event.preventDefault();
   if (shutdown !== undefined) return;
-  shutdown = Promise.resolve(runtime?.close())
-    .catch(() => undefined)
-    .then(() => {
-      exitAllowed = true;
-      app.exit(0);
-      return undefined;
-    });
+  shutdown = Promise.all([
+    Promise.resolve(runtime?.close()).catch(() => undefined),
+    Promise.resolve(demoMediaServer?.close()).catch(() => undefined),
+  ]).then(() => {
+    exitAllowed = true;
+    app.exit(0);
+    return undefined;
+  });
 });
 
 app.on('window-all-closed', () => app.quit());
@@ -168,7 +176,8 @@ app.on('window-all-closed', () => app.quit());
 app
   .whenReady()
   .then(start)
-  .catch(() => {
+  .catch(async () => {
+    await Promise.resolve(demoMediaServer?.close()).catch(() => undefined);
     fixedLog('START_FAILED');
     app.exit(1);
   });

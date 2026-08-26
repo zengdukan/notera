@@ -9,6 +9,10 @@ import {
   type NoteraApi,
   type SubscribeMethod,
 } from '../shared';
+import {
+  parseMediaApiArgument,
+  type AtlassianEditorRuntime,
+} from '../shared/atlassian-editor/media-runtime';
 
 interface RequestContractShape {
   readonly channel: string;
@@ -165,3 +169,9 @@ const noteraApi = {
 } satisfies NoteraApi;
 
 contextBridge.exposeInMainWorld('notera', noteraApi);
+contextBridge.exposeInMainWorld(
+  'atlassianEditor',
+  Object.freeze({
+    mediaApiBaseUrl: parseMediaApiArgument(process.argv),
+  } satisfies AtlassianEditorRuntime),
+);

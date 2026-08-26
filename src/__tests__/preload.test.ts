@@ -22,20 +22,43 @@ function loadPreload(): NoteraApi {
     // eslint-disable-next-line global-require
     require('../main/preload');
   });
-  expect(mockExposeInMainWorld).toHaveBeenCalledTimes(1);
+  expect(mockExposeInMainWorld).toHaveBeenCalledTimes(2);
   expect(mockExposeInMainWorld).toHaveBeenCalledWith(
     'notera',
     expect.any(Object),
   );
-  return mockExposeInMainWorld.mock.calls[0][1] as NoteraApi;
+  return mockExposeInMainWorld.mock.calls.find(
+    ([name]) => name === 'notera',
+  )?.[1] as NoteraApi;
 }
 
 describe('validated preload bridge', () => {
+  const originalArgv = process.argv;
+
   beforeEach(() => {
+    process.argv = [
+      'electron',
+      '--atlassian-editor-media-api-base-url=http://127.0.0.1:43125/api/media',
+    ];
     mockExposeInMainWorld.mockClear();
     mockInvoke.mockReset();
     mockOn.mockReset();
     mockRemoveListener.mockReset();
+  });
+
+  afterAll(() => {
+    process.argv = originalArgv;
+  });
+
+  it('exposes only the validated read-only Atlassian Editor runtime address', () => {
+    loadPreload();
+
+    expect(mockExposeInMainWorld).toHaveBeenCalledWith(
+      'atlassianEditor',
+      Object.freeze({
+        mediaApiBaseUrl: 'http://127.0.0.1:43125/api/media',
+      }),
+    );
   });
 
   it('exposes only the named Notera business modules', () => {

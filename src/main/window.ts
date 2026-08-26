@@ -32,6 +32,7 @@ export interface BrowserWindowFactory {
     readonly icon?: string;
     readonly webPreferences: {
       readonly preload: string;
+      readonly additionalArguments?: readonly string[];
       readonly contextIsolation: true;
       readonly sandbox: true;
       readonly nodeIntegration: false;
@@ -65,6 +66,7 @@ export function createSecureWindow(input: {
   readonly preloadPath: string;
   readonly entryUrl: string;
   readonly iconPath?: string;
+  readonly additionalArguments?: readonly string[];
 }): SecureWindowPort {
   const window = input.factory.create({
     show: false,
@@ -73,6 +75,9 @@ export function createSecureWindow(input: {
     ...(input.iconPath === undefined ? {} : { icon: input.iconPath }),
     webPreferences: {
       preload: input.preloadPath,
+      ...(input.additionalArguments === undefined
+        ? {}
+        : { additionalArguments: input.additionalArguments }),
       contextIsolation: true,
       sandbox: true,
       nodeIntegration: false,

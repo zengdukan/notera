@@ -55,6 +55,9 @@ function setup() {
     shell,
     preloadPath: 'D:\\app\\preload.js',
     entryUrl: 'https://notera.local/index.html',
+    additionalArguments: [
+      '--atlassian-editor-media-api-base-url=http://127.0.0.1:43125/api/media',
+    ],
   });
   return {
     created,
@@ -89,6 +92,9 @@ describe('secure BrowserWindow', () => {
     expect(state.options).toMatchObject({
       webPreferences: {
         preload: 'D:\\app\\preload.js',
+        additionalArguments: [
+          '--atlassian-editor-media-api-base-url=http://127.0.0.1:43125/api/media',
+        ],
         contextIsolation: true,
         sandbox: true,
         nodeIntegration: false,
