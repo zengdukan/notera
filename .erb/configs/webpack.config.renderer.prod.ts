@@ -166,6 +166,7 @@ const configuration: webpack.Configuration = {
     }),
 
     new webpack.DefinePlugin({
+      'process.env': JSON.stringify({}),
       'process.type': '"renderer"',
     }),
   ],

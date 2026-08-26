@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import type webpack from 'webpack';
 
@@ -13,6 +14,19 @@ function getLoaderName(entry: string | LoaderEntry): string | undefined {
 }
 
 describe('Compiled webpack configuration', () => {
+  it.each([
+    'webpack.config.renderer.dev.ts',
+    'webpack.config.renderer.dev.dll.ts',
+    'webpack.config.renderer.prod.ts',
+  ])('replaces the Node process environment in %s', (configName) => {
+    const configSource = readFileSync(
+      path.join(process.cwd(), '.erb', 'configs', configName),
+      'utf8',
+    );
+
+    expect(configSource).toContain("'process.env': JSON.stringify({}),");
+  });
+
   it('shares the embedded Confluence shim with every renderer build', () => {
     expect(baseConfig.resolve?.alias).toEqual(
       expect.objectContaining({
