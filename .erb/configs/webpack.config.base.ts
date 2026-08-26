@@ -2,6 +2,7 @@
  * Base webpack config used across other specific configs
  */
 
+import path from 'path';
 import webpack from 'webpack';
 import TsconfigPathsPlugins from 'tsconfig-paths-webpack-plugin';
 import webpackPaths from './webpack.paths';
@@ -59,9 +60,15 @@ const configuration: webpack.Configuration = {
    * Determine the array of extensions that should be used to resolve modules.
    */
   resolve: {
+    alias: {
+      '@atlaskit/embedded-confluence/page': path.join(
+        webpackPaths.srcRendererPath,
+        'export/shims/embedded-confluence-page.tsx',
+      ),
+    },
     extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'],
     modules: [webpackPaths.srcPath, webpackPaths.packagesPath, 'node_modules'],
-    // There is no need to add aliases here, the paths in tsconfig get mirrored
+    // Mirror the remaining path mappings declared in tsconfig.
     plugins: [new TsconfigPathsPlugins()],
   },
 

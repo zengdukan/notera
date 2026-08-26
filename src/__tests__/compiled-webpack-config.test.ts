@@ -1,3 +1,4 @@
+import path from 'node:path';
 import type webpack from 'webpack';
 
 import baseConfig from '../../.erb/configs/webpack.config.base';
@@ -12,6 +13,21 @@ function getLoaderName(entry: string | LoaderEntry): string | undefined {
 }
 
 describe('Compiled webpack configuration', () => {
+  it('shares the embedded Confluence shim with every renderer build', () => {
+    expect(baseConfig.resolve?.alias).toEqual(
+      expect.objectContaining({
+        '@atlaskit/embedded-confluence/page': path.join(
+          process.cwd(),
+          'src',
+          'renderer',
+          'export',
+          'shims',
+          'embedded-confluence-page.tsx',
+        ),
+      }),
+    );
+  });
+
   it('transforms Atlaskit CSS before TypeScript and Babel processing', () => {
     const scriptRule = baseConfig.module?.rules?.find((rule) => {
       if (rule === null || typeof rule !== 'object' || !('test' in rule)) {

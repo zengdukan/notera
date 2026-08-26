@@ -39,15 +39,6 @@ const configuration: webpack.Configuration = {
     },
   },
 
-  resolve: {
-    alias: {
-      '@atlaskit/embedded-confluence/page': path.join(
-        webpackPaths.srcRendererPath,
-        'export/shims/embedded-confluence-page.tsx',
-      ),
-    },
-  },
-
   module: {
     rules: [
       {
