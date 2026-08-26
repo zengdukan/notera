@@ -17,17 +17,34 @@ const configuration: webpack.Configuration = {
       {
         test: /\.[jt]sx?$/,
         include: [webpackPaths.srcPath, webpackPaths.packagesPath],
-        use: {
-          loader: 'ts-loader',
-          options: {
-            // Remove this line to enable type checking in webpack builds
-            transpileOnly: true,
-            compilerOptions: {
-              module: 'nodenext',
-              moduleResolution: 'nodenext',
+        use: [
+          {
+            loader: 'babel-loader',
+            options: {
+              babelrc: false,
+              configFile: false,
             },
           },
-        },
+          {
+            loader: 'ts-loader',
+            options: {
+              // Remove this line to enable type checking in webpack builds
+              transpileOnly: true,
+              compilerOptions: {
+                module: 'nodenext',
+                moduleResolution: 'nodenext',
+              },
+            },
+          },
+          {
+            // Webpack applies loaders right-to-left, so Compiled sees TSX before
+            // ts-loader lowers JSX and Babel receives plain JavaScript last.
+            loader: '@compiled/webpack-loader',
+            options: {
+              importSources: ['@atlaskit/css'],
+            },
+          },
+        ],
       },
     ],
   },

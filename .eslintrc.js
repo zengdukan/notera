@@ -1,6 +1,6 @@
 module.exports = {
-  extends: 'erb',
-  plugins: ['@typescript-eslint'],
+  extends: ['erb', 'plugin:@atlaskit/design-system/recommended'],
+  plugins: ['@typescript-eslint', '@atlaskit/design-system'],
   rules: {
     // A temporary hack related to IDE not resolving correct package.json
     'import/no-extraneous-dependencies': 'off',
@@ -96,6 +96,12 @@ module.exports = {
         jest: true,
       },
       rules: {
+        // The hidden PDF renderer deliberately emits native semantic markup;
+        // ADS visual primitives would change the exported document structure.
+        '@atlaskit/design-system/no-html-heading': 'off',
+        '@atlaskit/design-system/no-html-image': 'off',
+        '@atlaskit/design-system/use-heading': 'off',
+        '@atlaskit/design-system/use-primitives-text': 'off',
         'consistent-return': 'off',
         'func-names': 'off',
         'import/prefer-default-export': 'off',
