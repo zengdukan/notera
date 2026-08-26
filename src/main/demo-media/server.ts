@@ -69,10 +69,15 @@ export async function startDemoMediaServer(
   const app = express();
   app.disable('x-powered-by');
   app.use((request, response, next) => {
+    const requestedHeaders = request.get('Access-Control-Request-Headers');
+    response.vary('Origin');
+    response.vary('Access-Control-Request-Headers');
     response.set({
       'Access-Control-Allow-Origin': request.headers.origin || '*',
       'Access-Control-Allow-Headers':
-        'Authorization, Content-Type, Range, X-Client-Id',
+        requestedHeaders && requestedHeaders.trim().length > 0
+          ? requestedHeaders
+          : 'Authorization, Content-Type, Range, X-Client-Id',
       'Access-Control-Allow-Methods': 'GET, HEAD, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Expose-Headers':
         'Content-Length, Content-Range, Content-Disposition',

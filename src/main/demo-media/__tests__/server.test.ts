@@ -47,6 +47,35 @@ describe('demo Media HTTP service', () => {
     });
   });
 
+  it('allows every header requested by a CORS preflight', async () => {
+    const requestedHeaders =
+      'authorization,content-type,x-b3-traceid,x-b3-spanid,x-notera-custom';
+    const response = await request('/upload/createWithFiles', {
+      headers: {
+        origin: 'http://localhost:1212',
+        'access-control-request-headers': requestedHeaders,
+        'access-control-request-method': 'POST',
+      },
+      method: 'OPTIONS',
+    });
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get('access-control-allow-origin')).toBe(
+      'http://localhost:1212',
+    );
+    expect(response.headers.get('access-control-allow-headers')).toBe(
+      requestedHeaders,
+    );
+    expect(
+      response.headers
+        .get('vary')
+        ?.split(',')
+        .map((value) => value.trim()),
+    ).toEqual(
+      expect.arrayContaining(['Origin', 'Access-Control-Request-Headers']),
+    );
+  });
+
   it('uploads, queries, ranges, previews, and deletes a binary', async () => {
     const upload = await request(
       '/file/binary?collection=demo&occurrenceKey=occ-1&name=pixel.png',
