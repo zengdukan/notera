@@ -9,8 +9,27 @@ type LoaderEntry = {
   options?: Record<string, unknown>;
 };
 
+type WarningMatcher = {
+  module?: RegExp;
+  message?: RegExp;
+};
+
 function getLoaderName(entry: string | LoaderEntry): string | undefined {
   return typeof entry === 'string' ? entry : entry.loader;
+}
+
+function ignoresWarning(moduleName: string, message: string): boolean {
+  return (baseConfig.ignoreWarnings ?? []).some((warning) => {
+    if (warning instanceof RegExp || typeof warning === 'function') {
+      return false;
+    }
+
+    const matcher = warning as WarningMatcher;
+    return (
+      (matcher.module?.test(moduleName) ?? true) &&
+      (matcher.message?.test(message) ?? true)
+    );
+  });
 }
 
 describe('Compiled webpack configuration', () => {
@@ -70,5 +89,36 @@ describe('Compiled webpack configuration', () => {
     ) as LoaderEntry | undefined;
 
     expect(compiledLoader?.options?.importSources).toEqual(['@atlaskit/css']);
+  });
+});
+
+describe('Webpack warning filters', () => {
+  const dynamicDependencyWarning =
+    'Critical dependency: the request of a dependency is an expression';
+
+  it.each([
+    './node_modules/@atlaskit/editor-common/dist/esm/quick-insert/assets/index.js',
+    './node_modules/@atlaskit/give-kudos/dist/esm/common/utils/fetch-messages-for-locale.js',
+    './node_modules/@atlaskit/link-datasource/dist/esm/common/utils/locale/fetch-messages-for-locale.js',
+  ])('ignores the known dynamic import warning from %s', (moduleName) => {
+    expect(ignoresWarning(moduleName, dynamicDependencyWarning)).toBe(true);
+  });
+
+  it('keeps dynamic dependency warnings from unrelated modules', () => {
+    expect(
+      ignoresWarning(
+        './node_modules/express/lib/view.js',
+        dynamicDependencyWarning,
+      ),
+    ).toBe(false);
+  });
+
+  it('keeps other warnings from the known Atlaskit modules', () => {
+    expect(
+      ignoresWarning(
+        './node_modules/@atlaskit/editor-common/dist/esm/quick-insert/assets/index.js',
+        'Module parse failed',
+      ),
+    ).toBe(false);
   });
 });

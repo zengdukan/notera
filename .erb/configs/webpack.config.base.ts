@@ -13,6 +13,15 @@ const configuration: webpack.Configuration = {
 
   stats: 'errors-only',
 
+  ignoreWarnings: [
+    {
+      module:
+        /[\\/]node_modules[\\/]@atlaskit[\\/](?:editor-common[\\/]dist[\\/]esm[\\/]quick-insert[\\/]assets[\\/]index|give-kudos[\\/]dist[\\/]esm[\\/]common[\\/]utils[\\/]fetch-messages-for-locale|link-datasource[\\/]dist[\\/]esm[\\/]common[\\/]utils[\\/]locale[\\/]fetch-messages-for-locale)\.js$/,
+      message:
+        /^Critical dependency: the request of a dependency is an expression$/,
+    },
+  ],
+
   module: {
     rules: [
       {
