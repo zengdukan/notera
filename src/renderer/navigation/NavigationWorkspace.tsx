@@ -16,6 +16,9 @@ import {
 } from '../app/session';
 import { noteKey, recentKey, treeKey } from '../app/query-keys';
 import { FavoritesModal } from '../favorites/FavoritesModal';
+import { createExportController } from '../export/export-controller';
+import { ExportModal } from '../export/ExportModal';
+import { ExportOperationStore } from '../export/export-operation';
 import { CreateVersionModal } from '../history/CreateVersionModal';
 import { createHistoryController } from '../history/history-controller';
 import { HistoryModal } from '../history/HistoryModal';
@@ -67,6 +70,10 @@ type Overlay =
   | {
       readonly kind: 'trash-bin';
       readonly folders: readonly LoadedFolderPickerItem[];
+    }
+  | {
+      readonly kind: 'export-note';
+      readonly note: Extract<ContentEntry, { kind: 'note' }>;
     }
   | { readonly kind: 'create-folder'; readonly parentFolderId: string }
   | { readonly kind: 'rename'; readonly entry: ContentEntry }
@@ -138,6 +145,7 @@ function UnlockedNavigationWorkspace({
   const [editingNoteId, setEditingNoteId] = useState<string>();
   const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(new Set());
   const [overlay, setOverlay] = useState<Overlay>();
+  const exportStore = useMemo(() => new ExportOperationStore(), []);
   const historyController = useMemo(() => createHistoryController({
     client,
     queryClient,
@@ -162,6 +170,28 @@ function UnlockedNavigationWorkspace({
     queryClient,
     profileId: profile.localProfileId,
   }), [client, profile.localProfileId, queryClient]);
+  const exportController = useMemo(() => createExportController({
+    client,
+    lifecycle,
+    store: exportStore,
+    getActiveNoteId: () => selection?.kind === 'note' ? selection.id : undefined,
+  }), [client, exportStore, lifecycle, selection]);
+
+  useEffect(() => {
+    const unsubscribeProgress = client.subscribe(
+      'operation.progress',
+      (payload) => exportStore.applyProgress(payload),
+    );
+    const unsubscribeCompleted = client.subscribe(
+      'operation.completed',
+      (payload) => exportStore.applyCompleted(payload),
+    );
+    return () => {
+      unsubscribeProgress?.();
+      unsubscribeCompleted?.();
+      exportStore.clear();
+    };
+  }, [client, exportStore]);
   const controller = useMemo(
     () =>
       createContentController({
@@ -333,6 +363,20 @@ function UnlockedNavigationWorkspace({
         ),
       };
     }
+    if (overlay.kind === 'export-note') {
+      return {
+        kind: overlay.kind,
+        title: 'Export',
+        content: (
+          <ExportModal
+            noteId={overlay.note.id}
+            controller={exportController}
+            store={exportStore}
+            onReturnToEdit={() => setOverlay(undefined)}
+          />
+        ),
+      };
+    }
     if (overlay.kind === 'message') {
       return { kind: overlay.kind, title: overlay.title, content: <Text>Available in this offline workspace.</Text> };
     }
@@ -436,7 +480,7 @@ function UnlockedNavigationWorkspace({
         />
       ),
     };
-  }, [client, controller, dispatch, historyController, openListedNote, overlay, profile, trashController]);
+  }, [client, controller, dispatch, exportController, exportStore, historyController, openListedNote, overlay, profile, trashController]);
 
   const openSettings = async () => {
     const [device, profileSettings] = await Promise.all([
@@ -476,6 +520,12 @@ function UnlockedNavigationWorkspace({
     rename: (value) => setOverlay({ kind: 'rename', entry: value }),
     openMove: (value) => void openFolderOperation('move', value),
     openCopy: (value) => void openFolderOperation('copy', value),
+    export: (value) => {
+      if (value.kind === 'note') {
+        if (exportStore.getSnapshot()?.state !== 'RUNNING') exportStore.clear();
+        setOverlay({ kind: 'export-note', note: value });
+      }
+    },
     openTrash: (value) => setOverlay({ kind: 'trash', entry: value }),
   });
 
@@ -497,7 +547,8 @@ function UnlockedNavigationWorkspace({
       setOverlay({ kind: 'history', note: entry, folders });
       return;
     }
-    setOverlay({ kind: 'message', title: 'Export' });
+    if (exportStore.getSnapshot()?.state !== 'RUNNING') exportStore.clear();
+    setOverlay({ kind: 'export-note', note: entry });
   };
 
   return (

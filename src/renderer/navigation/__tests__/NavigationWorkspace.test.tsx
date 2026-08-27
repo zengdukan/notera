@@ -45,7 +45,7 @@ jest.mock('../../notes/NoteWorkspace', () => ({
   NoteWorkspace: ({ note, lifecycle, onMore }: {
     note?: typeof firstNote;
     lifecycle: ActiveDocumentLifecycle;
-    onMore(action: 'create-version' | 'history', note: typeof firstNote): void;
+    onMore(action: 'create-version' | 'history' | 'export', note: typeof firstNote): void;
   }) => {
     useEffect(() => {
       if (!note) return undefined;
@@ -58,6 +58,7 @@ jest.mock('../../notes/NoteWorkspace', () => ({
           <>
             <button type="button" onClick={() => onMore('create-version', note)}>Create version</button>
             <button type="button" onClick={() => onMore('history', note)}>History</button>
+            <button type="button" onClick={() => onMore('export', note)}>Export</button>
           </>
         ) : null}
       </div>
@@ -86,6 +87,7 @@ jest.mock('../../recent/RecentModal', () => ({ RecentModal: () => <div>Recent no
 jest.mock('../../history/CreateVersionModal', () => ({ CreateVersionModal: () => <div>Create version form</div> }));
 jest.mock('../../history/HistoryModal', () => ({ HistoryModal: () => <div>History workspace</div> }));
 jest.mock('../../trash/TrashModal', () => ({ TrashModal: () => <div>Trash workspace</div> }));
+jest.mock('../../export/ExportModal', () => ({ ExportModal: () => <div>Export workspace</div> }));
 jest.mock('../../shared-ui/ModalHost', () => ({
   ModalHost: ({ modal }: { modal: { title: string; content: ReactNode } | null }) => (
     modal === null ? null : <div role="dialog" aria-label={modal.title}>{modal.content}</div>
@@ -218,5 +220,7 @@ describe('NavigationWorkspace', () => {
     expect(screen.getByText('Create version form')).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'History' }));
     expect(await screen.findByText('History workspace')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+    expect(screen.getByText('Export workspace')).toBeVisible();
   });
 });
