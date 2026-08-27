@@ -125,6 +125,7 @@ export interface SearchResult {
   readonly noteId: NoteId;
   readonly title: string;
   readonly excerpt: string;
+  readonly folderPath: readonly FolderPathItem[];
   readonly updatedAt: Timestamp;
   readonly highlights: readonly SearchHighlight[];
 }

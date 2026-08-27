@@ -9,6 +9,7 @@ import {
   profileSummarySchema,
   sessionStateSchema,
 } from '../contracts/profile';
+import { searchContracts, searchResultSchema } from '../contracts/search';
 
 const ids = {
   profile: '10000000-0000-4000-8000-000000000001',
@@ -286,5 +287,31 @@ describe('note IPC contracts', () => {
     expect(
       noteContracts.listRecent.request.parse({ cursor: 'next', limit: 20 }),
     ).toEqual({ cursor: 'next', limit: 20 });
+  });
+});
+
+describe('search IPC contracts', () => {
+  it('returns each result with its complete ordered folder path', () => {
+    const result = {
+      noteId: ids.note,
+      title: 'Note',
+      excerpt: 'Body',
+      folderPath: [
+        { id: ids.root, name: '' },
+        { id: ids.folder, name: 'Folder' },
+      ],
+      updatedAt: 1,
+      highlights: [{ field: 'title' as const, start: 0, end: 4 }],
+    };
+
+    expect(searchResultSchema.parse(result)).toEqual(result);
+    expect(searchContracts.query.response.parse({
+      ret: true,
+      data: { items: [result] },
+    })).toBeDefined();
+    expect(searchResultSchema.safeParse({
+      ...result,
+      folderPath: undefined,
+    }).success).toBe(false);
   });
 });

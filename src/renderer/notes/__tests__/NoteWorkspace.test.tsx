@@ -1,10 +1,11 @@
 /** @jest-environment jsdom */
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import type { NoteraClient } from '../../platform/notera-client';
+import { noteKey } from '../../app/query-keys';
 import { configureFeatureFlags } from '../../atlassian-editor/feature-flags';
 import { ActiveDocumentLifecycle } from '../document-lifecycle';
 import { NoteWriteCoordinator } from '../note-write-coordinator';
@@ -80,7 +81,7 @@ function setup(options: { saveRejects?: boolean; initiallyEditing?: boolean } = 
       <NoteWorkspace {...props} />
     </QueryClientProvider>,
   );
-  return { request, lifecycle, props };
+  return { request, lifecycle, props, queryClient };
 }
 
 describe('NoteWorkspace', () => {
@@ -140,5 +141,19 @@ describe('NoteWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Add to favorites' }));
     await waitFor(() => expect(request).toHaveBeenCalledWith('favorite.add', { noteId: noteEntry.id }));
     expect(screen.getByRole('button', { name: 'Remove from favorites' })).toBeVisible();
+  });
+
+  it('reflects favorite facts changed by another product surface', async () => {
+    const { queryClient } = setup();
+    expect(await screen.findByRole('button', { name: 'Add to favorites' })).toBeVisible();
+
+    act(() => {
+      queryClient.setQueryData(noteKey('profile', noteEntry.id), (current: unknown) => ({
+        ...(current as Record<string, unknown>),
+        isFavorite: true,
+      }));
+    });
+
+    expect(await screen.findByRole('button', { name: 'Remove from favorites' })).toBeVisible();
   });
 });

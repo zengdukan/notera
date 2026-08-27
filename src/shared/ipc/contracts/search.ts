@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { limitedUnicodeString, timestampSchema, uuidSchema } from '../common';
 import { defineRequestContract } from '../contract';
 import { cursorPageRequestSchema, cursorPageSchema } from '../pagination';
+import { folderPathItemSchema } from './content-tree';
 
 export const highlightRangeSchema = z.strictObject({
   field: z.enum(['title', 'excerpt']),
@@ -13,6 +14,7 @@ const searchResultBaseSchema = z.strictObject({
   noteId: uuidSchema,
   title: limitedUnicodeString(1000),
   excerpt: limitedUnicodeString(2000),
+  folderPath: z.array(folderPathItemSchema).min(1).max(1000),
   updatedAt: timestampSchema,
   highlights: z.array(highlightRangeSchema).max(1000),
 });

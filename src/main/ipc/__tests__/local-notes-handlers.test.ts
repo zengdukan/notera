@@ -70,6 +70,10 @@ const searchResult = {
   noteId,
   title: 'Note',
   excerpt: 'Excerpt',
+  folderPath: [
+    { id: targetFolderId, name: '' },
+    { id: folderId, name: 'Folder' },
+  ],
   updatedAt: 1,
   highlights: [],
 };

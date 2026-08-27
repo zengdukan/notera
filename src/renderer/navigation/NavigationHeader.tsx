@@ -25,8 +25,11 @@ export function NavigationHeader({
         <IconButton label="Lock profile" icon={LockIcon} appearance="subtle" onClick={onLock} />
       </Inline>
       <Inline alignBlock="center" space="space.050">
-        <Button shouldFitContainer iconBefore={SearchIcon} onClick={onSearch}>
-          Search
+        <Button shouldFitContainer iconBefore={SearchIcon} onClick={onSearch} aria-label="Search">
+          <Inline spread="space-between" grow="fill">
+            <Text>Search</Text>
+            <Text color="color.text.subtle">Ctrl + J</Text>
+          </Inline>
         </Button>
         <DropdownMenu<HTMLButtonElement>
           trigger={({ triggerRef, ...props }) => (

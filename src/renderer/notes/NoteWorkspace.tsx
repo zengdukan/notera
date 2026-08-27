@@ -138,6 +138,17 @@ export function NoteWorkspace({
   }, [loader, note]);
 
   useEffect(() => {
+    if (!note) return undefined;
+    const key = noteKey(profileId, note.id);
+    const syncFavoriteFact = () => {
+      const detail = queryClient.getQueryData<RequestData<'note.get'>>(key);
+      if (detail !== undefined) setIsFavorite(detail.isFavorite);
+    };
+    syncFavoriteFact();
+    return queryClient.getQueryCache().subscribe(syncFavoriteFact);
+  }, [note, profileId, queryClient]);
+
+  useEffect(() => {
     if (!session || !loaded) return undefined;
     const coordinator = createSaveCoordinator({
       getState: () => sessionRef.current as DocumentSessionState,

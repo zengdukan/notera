@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -13,7 +14,11 @@ import {
   type SessionAction,
   type UnlockedSession,
 } from '../app/session';
+import { noteKey, recentKey } from '../app/query-keys';
+import { FavoritesModal } from '../favorites/FavoritesModal';
 import type { NoteraClient } from '../platform/notera-client';
+import { RecentModal } from '../recent/RecentModal';
+import { SearchModal } from '../search/SearchModal';
 import { ActiveDocumentLifecycle } from '../notes/document-lifecycle';
 import { NoteWorkspace } from '../notes/NoteWorkspace';
 import { NoteWriteCoordinator } from '../notes/note-write-coordinator';
@@ -40,6 +45,9 @@ import { QueryContentTree } from './tree-queries';
 
 type Overlay =
   | { readonly kind: 'message'; readonly title: string }
+  | { readonly kind: 'search' }
+  | { readonly kind: 'favorites' }
+  | { readonly kind: 'recent' }
   | { readonly kind: 'create-folder'; readonly parentFolderId: string }
   | { readonly kind: 'rename'; readonly entry: ContentEntry }
   | { readonly kind: 'trash'; readonly entry: ContentEntry }
@@ -149,8 +157,90 @@ function UnlockedNavigationWorkspace({
     await controller.createNote(folderId);
   };
 
+  const openListedNote = useCallback(async (
+    noteId: string,
+    knownPath?: readonly { readonly id: string }[],
+  ): Promise<boolean> => {
+    if (selection?.kind === 'note' && selection.id !== noteId) {
+      try {
+        await lifecycle.flush();
+      } catch {
+        return false;
+      }
+    }
+    try {
+      const detail = await client.request('note.get', { noteId });
+      const path = knownPath ?? (
+        await client.request('contentTree.getFolderPath', { folderId: detail.folderId })
+      ).items;
+      queryClient.setQueryData(noteKey(profile.localProfileId, noteId), detail);
+      setExpandedIds((current) => new Set([
+        ...current,
+        ...path.map((item) => item.id),
+      ]));
+      setEditingNoteId(undefined);
+      setSelection(detail);
+      setOverlay(undefined);
+      await queryClient.invalidateQueries({ queryKey: recentKey(profile.localProfileId) });
+      return true;
+    } catch {
+      return false;
+    }
+  }, [client, lifecycle, profile.localProfileId, queryClient, selection]);
+
+  useEffect(() => {
+    const openSearch = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'j') {
+        event.preventDefault();
+        setOverlay({ kind: 'search' });
+      }
+    };
+    window.addEventListener('keydown', openSearch);
+    return () => window.removeEventListener('keydown', openSearch);
+  }, []);
+
   const modal = useMemo<HostedModal | null>(() => {
     if (overlay === undefined) return null;
+    if (overlay.kind === 'search') {
+      return {
+        kind: overlay.kind,
+        title: 'Search',
+        content: (
+          <SearchModal
+            client={client}
+            profileId={profile.localProfileId}
+            rootFolderId={profile.rootFolderId}
+            onOpen={(result) => openListedNote(result.noteId, result.folderPath)}
+          />
+        ),
+      };
+    }
+    if (overlay.kind === 'favorites') {
+      return {
+        kind: overlay.kind,
+        title: 'Favorites',
+        content: (
+          <FavoritesModal
+            client={client}
+            profileId={profile.localProfileId}
+            onOpen={(note) => openListedNote(note.id)}
+          />
+        ),
+      };
+    }
+    if (overlay.kind === 'recent') {
+      return {
+        kind: overlay.kind,
+        title: 'Recent',
+        content: (
+          <RecentModal
+            client={client}
+            profileId={profile.localProfileId}
+            onOpen={(note) => openListedNote(note.id)}
+          />
+        ),
+      };
+    }
     if (overlay.kind === 'message') {
       return { kind: overlay.kind, title: overlay.title, content: <Text>Available in this offline workspace.</Text> };
     }
@@ -254,7 +344,7 @@ function UnlockedNavigationWorkspace({
         />
       ),
     };
-  }, [client, controller, dispatch, overlay, profile]);
+  }, [client, controller, dispatch, openListedNote, overlay, profile]);
 
   const openSettings = async () => {
     const [device, profileSettings] = await Promise.all([
@@ -316,7 +406,7 @@ function UnlockedNavigationWorkspace({
           <NavigationHeader
             profileName={profile.displayName}
             onLock={() => void client.request('profile.lock', {})}
-            onSearch={() => setOverlay({ kind: 'message', title: 'Search' })}
+            onSearch={() => setOverlay({ kind: 'search' })}
             onCreateNote={() => void createNote()}
             onCreateFolder={() => setOverlay({ kind: 'create-folder', parentFolderId: selection?.kind === 'folder' ? selection.id : selection?.kind === 'note' ? selection.folderId : profile.rootFolderId })}
           />
@@ -341,8 +431,8 @@ function UnlockedNavigationWorkspace({
             getActions={getActions}
           />
         )}
-        onFavorites={() => setOverlay({ kind: 'message', title: 'Favorites' })}
-        onRecent={() => setOverlay({ kind: 'message', title: 'Recent' })}
+        onFavorites={() => setOverlay({ kind: 'favorites' })}
+        onRecent={() => setOverlay({ kind: 'recent' })}
         onTrash={() => setOverlay({ kind: 'message', title: 'Trash' })}
         onSettings={() => void openSettings()}
       >

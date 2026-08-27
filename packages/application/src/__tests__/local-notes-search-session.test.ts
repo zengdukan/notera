@@ -31,13 +31,11 @@ describe('LocalNotesService search and session integration', () => {
     });
     await service.saveDraft({
       noteId: inside.id,
-      expectedContentVersion: 1,
       title: inside.title,
       document: document('needle body'),
     });
     await service.saveDraft({
       noteId: outside.id,
-      expectedContentVersion: 1,
       title: outside.title,
       document: document('needle body'),
     });
@@ -53,15 +51,16 @@ describe('LocalNotesService search and session integration', () => {
         cursor: vault.nextCursor,
       }),
     ).rejects.toMatchObject({ code: 'INVALID_CURSOR' });
-    expect(
-      (
-        await service.search({
-          query: 'needle',
-          folderId: folder.id,
-          limit: 10,
-        })
-      ).items.map(({ noteId }) => noteId),
-    ).toEqual([inside.id]);
+    const scoped = await service.search({
+      query: 'needle',
+      folderId: folder.id,
+      limit: 10,
+    });
+    expect(scoped.items.map(({ noteId }) => noteId)).toEqual([inside.id]);
+    expect(scoped.items[0].folderPath).toEqual([
+      { id: first.rootFolderId, name: '' },
+      { id: folder.id, name: 'Scoped' },
+    ]);
 
     await service.trashFolder(folder.id);
     await expect(
