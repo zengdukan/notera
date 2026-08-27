@@ -31,6 +31,7 @@ describe('profile IPC contracts', () => {
       'notera:profile:create',
       'notera:profile:unlock',
       'notera:profile:lock',
+      'notera:profile:touch-activity',
       'notera:profile:switch',
       'notera:profile:rename',
       'notera:profile:change-password',
@@ -134,6 +135,7 @@ describe('content tree IPC contracts', () => {
       Object.values(contentTreeContracts).map((contract) => contract.channel),
     ).toEqual([
       'notera:content-tree:list-children',
+      'notera:content-tree:get-folder-path',
       'notera:content-tree:create-folder',
       'notera:content-tree:rename-folder',
       'notera:content-tree:move-folder',
@@ -228,6 +230,7 @@ describe('note IPC contracts', () => {
     ).toEqual([
       'notera:note:create',
       'notera:note:get',
+      'notera:note:rename',
       'notera:note:save-draft',
       'notera:note:move',
       'notera:note:copy',
@@ -236,33 +239,29 @@ describe('note IPC contracts', () => {
     ]);
   });
 
-  it('requires expected content version when saving a draft', () => {
+  it('saves a draft without exposing a local version conflict branch', () => {
     const request = {
       noteId: ids.note,
-      expectedContentVersion: 1,
       title: 'Draft',
       document: emptyDocument,
     };
 
     expect(noteContracts.saveDraft.request.parse(request)).toEqual(request);
-    expect(
-      noteContracts.saveDraft.request.safeParse({
-        noteId: ids.note,
-        title: 'Draft',
-        document: emptyDocument,
-      }).success,
-    ).toBe(false);
+    expect(noteContracts.saveDraft.request.safeParse({
+      ...request,
+      expectedContentVersion: 1,
+    }).success).toBe(false);
     expect(
       noteContracts.saveDraft.response.parse({
         ret: true,
         data: { noteId: ids.note, contentVersion: 2, savedAt: 2 },
       }),
     ).toBeDefined();
-    expect(
+    expect(() =>
       noteContracts.saveDraft.response.parse(
         ipcFailure('CONTENT_VERSION_CONFLICT'),
       ),
-    ).toEqual(ipcFailure('CONTENT_VERSION_CONFLICT'));
+    ).toThrow();
   });
 
   it('returns strict note details without vault or database identifiers', () => {
@@ -275,6 +274,7 @@ describe('note IPC contracts', () => {
       contentVersion: 1,
       createdAt: 1,
       updatedAt: 1,
+      isFavorite: false,
       tags: [{ id: ids.tag, name: 'tag', updatedAt: 1 }],
     };
 

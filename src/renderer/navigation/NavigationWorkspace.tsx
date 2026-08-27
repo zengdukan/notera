@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useState,
   type Dispatch,
@@ -13,7 +14,10 @@ import {
   type UnlockedSession,
 } from '../app/session';
 import type { NoteraClient } from '../platform/notera-client';
-import { readyNoteMutationGuard } from '../notes/note-mutation-guard';
+import { ActiveDocumentLifecycle } from '../notes/document-lifecycle';
+import { NoteWorkspace } from '../notes/NoteWorkspace';
+import { NoteWriteCoordinator } from '../notes/note-write-coordinator';
+import type { NoteMoreAction } from '../notes/StickyNoteHeader';
 import { CreateFolderModal } from '../notes/CreateFolderModal';
 import { MoveContentModal } from '../notes/MoveContentModal';
 import { RenameContentModal } from '../notes/RenameContentModal';
@@ -55,10 +59,22 @@ type Overlay =
 export function NavigationWorkspace({
   client,
   children,
+  lifecycle: providedLifecycle,
+  writeCoordinator: providedWriteCoordinator,
 }: {
   readonly client: NoteraClient;
-  readonly children: ReactNode;
+  readonly children?: ReactNode;
+  readonly lifecycle?: ActiveDocumentLifecycle;
+  readonly writeCoordinator?: NoteWriteCoordinator;
 }) {
+  const lifecycle = useMemo(
+    () => providedLifecycle ?? new ActiveDocumentLifecycle(),
+    [providedLifecycle],
+  );
+  const writeCoordinator = useMemo(
+    () => providedWriteCoordinator ?? new NoteWriteCoordinator(),
+    [providedWriteCoordinator],
+  );
   const { state, dispatch } = useSession();
   if (state.status !== 'unlocked') return null;
   return (
@@ -66,6 +82,8 @@ export function NavigationWorkspace({
       client={client}
       profile={state.profile}
       dispatch={dispatch}
+      lifecycle={lifecycle}
+      writeCoordinator={writeCoordinator}
     >
       {children}
     </UnlockedNavigationWorkspace>
@@ -77,14 +95,19 @@ function UnlockedNavigationWorkspace({
   profile,
   dispatch,
   children,
+  lifecycle,
+  writeCoordinator,
 }: {
   readonly client: NoteraClient;
   readonly profile: UnlockedSession;
   readonly dispatch: Dispatch<SessionAction>;
   readonly children: ReactNode;
+  readonly lifecycle: ActiveDocumentLifecycle;
+  readonly writeCoordinator: NoteWriteCoordinator;
 }) {
   const queryClient = useQueryClient();
   const [selection, setSelection] = useState<ContentEntry>();
+  const [editingNoteId, setEditingNoteId] = useState<string>();
   const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(new Set());
   const [overlay, setOverlay] = useState<Overlay>();
   const controller = useMemo(
@@ -95,12 +118,36 @@ function UnlockedNavigationWorkspace({
         profileId: profile.localProfileId,
         rootFolderId: profile.rootFolderId,
         getSelection: () => selection,
-        guard: readyNoteMutationGuard,
+        guard: lifecycle,
+        writeCoordinator,
         select: setSelection,
-        beginEditing: () => undefined,
+        beginEditing: setEditingNoteId,
       }),
-    [client, profile.localProfileId, profile.rootFolderId, queryClient, selection],
+    [client, lifecycle, profile.localProfileId, profile.rootFolderId, queryClient, selection, writeCoordinator],
   );
+
+  useEffect(() => () => lifecycle.clear(), [lifecycle]);
+
+  const selectWithFlush = async (entry: ContentEntry) => {
+    if (selection?.kind === 'note' && selection.id !== entry.id) {
+      try {
+        await lifecycle.flush();
+      } catch {
+        return;
+      }
+    }
+    setEditingNoteId(undefined);
+    setSelection(entry);
+  };
+
+  const createNote = async (folderId?: string) => {
+    try {
+      await lifecycle.flush();
+    } catch {
+      return;
+    }
+    await controller.createNote(folderId);
+  };
 
   const modal = useMemo<HostedModal | null>(() => {
     if (overlay === undefined) return null;
@@ -232,8 +279,8 @@ function UnlockedNavigationWorkspace({
   };
 
   const getActions = (entry: ContentEntry) => createContentActions(entry, {
-    open: setSelection,
-    createNote: (folderId) => controller.createNote(folderId),
+    open: (value) => void selectWithFlush(value),
+    createNote: (folderId) => void createNote(folderId),
     openCreateFolder: (folder) => {
       if (folder.kind === 'folder') {
         setOverlay({ kind: 'create-folder', parentFolderId: folder.id });
@@ -245,6 +292,23 @@ function UnlockedNavigationWorkspace({
     openTrash: (value) => setOverlay({ kind: 'trash', entry: value }),
   });
 
+  const handleNoteMore = (action: NoteMoreAction, entry: Extract<ContentEntry, { kind: 'note' }>) => {
+    if (action === 'move' || action === 'copy') {
+      void openFolderOperation(action, entry);
+      return;
+    }
+    if (action === 'trash') {
+      setOverlay({ kind: 'trash', entry });
+      return;
+    }
+    const titles: Record<Exclude<NoteMoreAction, 'move' | 'copy' | 'trash'>, string> = {
+      'create-version': 'Create version',
+      history: 'History',
+      export: 'Export',
+    };
+    setOverlay({ kind: 'message', title: titles[action] });
+  };
+
   return (
     <>
       <ResizableNavigation
@@ -253,7 +317,7 @@ function UnlockedNavigationWorkspace({
             profileName={profile.displayName}
             onLock={() => void client.request('profile.lock', {})}
             onSearch={() => setOverlay({ kind: 'message', title: 'Search' })}
-            onCreateNote={() => void controller.createNote()}
+            onCreateNote={() => void createNote()}
             onCreateFolder={() => setOverlay({ kind: 'create-folder', parentFolderId: selection?.kind === 'folder' ? selection.id : selection?.kind === 'note' ? selection.folderId : profile.rootFolderId })}
           />
         )}
@@ -264,7 +328,7 @@ function UnlockedNavigationWorkspace({
             rootFolderId={profile.rootFolderId}
             expandedIds={expandedIds}
             selected={selection}
-            onOpen={setSelection}
+            onOpen={(entry) => void selectWithFlush(entry)}
             onToggle={(folderId, expanded) =>
               setExpandedIds((current) => {
                 const next = new Set(current);
@@ -272,7 +336,7 @@ function UnlockedNavigationWorkspace({
                 return next;
               })
             }
-            onCreateNote={(entry) => void controller.createNote(entry.id)}
+            onCreateNote={(entry) => void createNote(entry.id)}
             onCreateFolder={(entry) => setOverlay({ kind: 'create-folder', parentFolderId: entry.id })}
             getActions={getActions}
           />
@@ -282,7 +346,17 @@ function UnlockedNavigationWorkspace({
         onTrash={() => setOverlay({ kind: 'message', title: 'Trash' })}
         onSettings={() => void openSettings()}
       >
-        {children}
+        {children ?? (
+          <NoteWorkspace
+            client={client}
+            profileId={profile.localProfileId}
+            note={selection?.kind === 'note' ? selection : undefined}
+            initiallyEditing={selection?.kind === 'note' && editingNoteId === selection.id}
+            lifecycle={lifecycle}
+            writeCoordinator={writeCoordinator}
+            onMore={handleNoteMore}
+          />
+        )}
       </ResizableNavigation>
       <ModalHost modal={modal} onClose={() => setOverlay(undefined)} />
     </>

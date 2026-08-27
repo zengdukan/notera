@@ -24,6 +24,7 @@ export const tagSummarySchema = z.strictObject({
 export const noteDetailSchema = noteSummarySchema.extend({
   document: adfDocumentSchema,
   createdAt: timestampSchema,
+  isFavorite: z.boolean(),
   tags: z.array(tagSummarySchema).max(1000),
 });
 
@@ -81,7 +82,6 @@ export const noteSaveDraft = defineRequestContract({
   channel: 'notera:note:save-draft',
   request: z.strictObject({
     noteId: uuidSchema,
-    expectedContentVersion: contentVersionSchema,
     title: noteTitleSchema,
     document: adfDocumentSchema,
   }),
@@ -89,7 +89,6 @@ export const noteSaveDraft = defineRequestContract({
   errors: [
     'PROFILE_LOCKED',
     'ENTITY_NOT_FOUND',
-    'CONTENT_VERSION_CONFLICT',
     'CONTENT_VERSION_OVERFLOW',
     'SAVE_FAILED',
     'DISK_FULL',

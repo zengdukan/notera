@@ -1,6 +1,5 @@
 import {
   asAdfDocument,
-  asContentVersion,
   asFolderId,
   asNoteId,
   asSortOrder,
@@ -112,18 +111,33 @@ export function saveDraft(
   database: VaultDatabase,
   input: {
     readonly noteId: unknown;
-    readonly expectedContentVersion: unknown;
     readonly title: unknown;
     readonly document: unknown;
   },
   now: Timestamp,
 ) {
   const noteId = asNoteId(input?.noteId);
-  const expectedContentVersion = asContentVersion(
-    input?.expectedContentVersion,
-  );
   const title = checkedTitle(input?.title);
   const document = asAdfDocument(input?.document);
+  const attachmentIds: unknown[] = [];
+  const stack: unknown[] = [document];
+  while (stack.length > 0) {
+    const value = stack.pop();
+    if (Array.isArray(value)) {
+      stack.push(...value);
+    } else if (value !== null && typeof value === 'object') {
+      const record = value as Record<string, unknown>;
+      if (
+        record.type === 'media' &&
+        record.attrs !== null &&
+        typeof record.attrs === 'object' &&
+        'id' in record.attrs
+      ) {
+        attachmentIds.push((record.attrs as Record<string, unknown>).id);
+      }
+      stack.push(...Object.values(record));
+    }
+  }
   const updated = database.transaction((transaction) => {
     const current = getActiveNoteEntity(database, noteId);
     const next = updateNoteContent(current, {
@@ -131,7 +145,11 @@ export function saveDraft(
       document,
       updatedAt: now,
     });
-    transaction.notes.replaceContent(next, expectedContentVersion);
+    const references = new AttachmentReferenceCoordinator(
+      transaction.attachments,
+    ).currentNoteReferences(current.id, current.vaultId, attachmentIds);
+    transaction.notes.replaceContent(next, current.contentVersion);
+    transaction.attachments.replaceNoteReferences(current.id, references);
     return next;
   });
   return Object.freeze({

@@ -3,28 +3,81 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-const mockDocument = {
-  version: 1,
-  type: 'doc',
-  content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Saved' }] }],
+const initialDocument = {
+  version: 1 as const,
+  type: 'doc' as const,
+  content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Initial' }] }],
 };
-const mockGetValue = jest.fn(async () => mockDocument);
+const changedDocument = {
+  version: 1 as const,
+  type: 'doc' as const,
+  content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Changed' }] }],
+};
+const requestDocument = jest.fn((receive: (document: unknown) => void) => {
+  receive(changedDocument);
+});
+const execute = jest.fn();
+const command = (name: string) => jest.fn(() => Symbol(name));
+const showMediaPicker = jest.fn();
+const mockInsertMath = jest.fn(async () => true);
+const mockInsertMermaid = jest.fn(async () => true);
+const mockEditorApi = {
+  core: { actions: { execute, requestDocument } },
+  undoRedoPlugin: { actions: { undo: jest.fn(), redo: jest.fn() } },
+  textFormatting: {
+    commands: {
+      toggleStrong: command('strong'),
+      toggleEm: command('em'),
+      toggleUnderline: command('underline'),
+      toggleStrike: command('strike'),
+      toggleCode: command('code'),
+      toggleSuperscript: command('superscript'),
+      toggleSubscript: command('subscript'),
+    },
+  },
+  blockType: { commands: { setTextLevel: command('text-level'), clearFormatting: command('clear') } },
+  hyperlink: { commands: { showLinkToolbar: command('link') } },
+  list: {
+    commands: {
+      toggleBulletList: command('bullet-list'),
+      toggleOrderedList: command('ordered-list'),
+      outdentList: command('outdent'),
+      indentList: command('indent'),
+    },
+  },
+  taskDecision: { commands: { toggleTaskList: command('task-list') } },
+  table: { commands: { insertTableWithSize: command('table') } },
+  textColor: { commands: { changeColor: command('text-color') } },
+  highlight: { commands: { changeColor: command('highlight') } },
+  date: { commands: { insertDate: command('date') } },
+  status: { commands: { insertStatus: command('status') } },
+  media: { sharedState: { currentState: () => ({ showMediaPicker }) } },
+  emoji: { actions: { openTypeAhead: jest.fn() } },
+};
+const mockEditorActions = {
+  focus: jest.fn(),
+  replaceSelection: jest.fn(),
+};
 const mockPreset = { add: jest.fn() };
 mockPreset.add.mockReturnValue(mockPreset);
 
 jest.mock('@atlaskit/editor-core/composable-editor', () => ({
   ComposableEditor: (props: {
-    onEditorReady(actions: { getValue: typeof mockGetValue }): void;
-    primaryToolbarComponents?: React.ReactNode;
+    appearance: string;
+    defaultValue: unknown;
+    onChange(): void;
+    onEditorReady(actions: typeof mockEditorActions): void;
   }) => {
     const React = jest.requireActual<typeof import('react')>('react');
-    React.useEffect(() => {
-      props.onEditorReady({ getValue: mockGetValue });
-    }, [props]);
-    return React.createElement(
-      'div',
-      { 'data-testid': 'composable-editor' },
-      props.primaryToolbarComponents,
+    React.useEffect(() => props.onEditorReady(mockEditorActions), [props]);
+    return (
+      <div
+        data-appearance={props.appearance}
+        data-document={JSON.stringify(props.defaultValue)}
+        data-testid="composable-editor"
+      >
+        <button type="button" onClick={props.onChange}>Simulate document change</button>
+      </div>
     );
   },
 }));
@@ -32,31 +85,13 @@ jest.mock('@atlaskit/editor-core/preset-universal', () => ({
   useUniversalPreset: () => mockPreset,
 }));
 jest.mock('@atlaskit/editor-core/use-preset', () => ({
-  usePreset: (factory: () => unknown) => ({ preset: factory() }),
+  usePreset: (factory: () => unknown) => ({ preset: factory(), editorApi: mockEditorApi }),
 }));
-jest.mock('@atlaskit/editor-plugins/block-controls', () => ({
-  blockControlsPlugin: Symbol('block-controls'),
-}));
-jest.mock('@atlaskit/editor-plugins/caption', () => ({
-  captionPlugin: Symbol('caption'),
-}));
-jest.mock('@atlaskit/editor-plugins/grid', () => ({
-  gridPlugin: Symbol('grid'),
-}));
-jest.mock('@atlaskit/editor-plugins/highlight', () => ({
-  highlightPlugin: Symbol('highlight'),
-}));
-jest.mock('@atlaskit/editor-plugins/media', () => ({
-  mediaPlugin: Symbol('media'),
-}));
-jest.mock('@atlaskit/editor-common/provider-factory', () => ({
-  ProviderFactory: { create: jest.fn(() => ({})) },
-}));
-jest.mock('@atlaskit/renderer', () => ({
-  ReactRenderer: ({ document }: { document: unknown }) => (
-    <output aria-label="Published ADF">{JSON.stringify(document)}</output>
-  ),
-}));
+jest.mock('@atlaskit/editor-plugins/block-controls', () => ({ blockControlsPlugin: Symbol('block-controls') }));
+jest.mock('@atlaskit/editor-plugins/caption', () => ({ captionPlugin: Symbol('caption') }));
+jest.mock('@atlaskit/editor-plugins/grid', () => ({ gridPlugin: Symbol('grid') }));
+jest.mock('@atlaskit/editor-plugins/highlight', () => ({ highlightPlugin: Symbol('highlight') }));
+jest.mock('@atlaskit/editor-plugins/media', () => ({ mediaPlugin: Symbol('media') }));
 jest.mock('../media-provider', () => ({ mediaProvider: Promise.resolve({}) }));
 jest.mock('../emoji/get-emoji-provider', () => ({
   currentUser: { id: 'user' },
@@ -64,6 +99,7 @@ jest.mock('../emoji/get-emoji-provider', () => ({
 }));
 jest.mock('../math', () => ({
   createMathExtensionProvider: jest.fn(() => ({})),
+  insertMathFromToolbar: mockInsertMath,
   mathDoubleClickPlugin: jest.fn(() => Symbol('math-double-click')),
   mathExtensionHandlers: {},
   mathInputRulePlugin: Symbol('math-input-rule'),
@@ -71,62 +107,87 @@ jest.mock('../math', () => ({
 }));
 jest.mock('../mermaid', () => ({
   createMermaidExtensionProvider: jest.fn(() => ({})),
-  insertMermaidFromToolbar: jest.fn(async () => undefined),
+  insertMermaidFromToolbar: mockInsertMermaid,
   mermaidDoubleClickPlugin: jest.fn(() => Symbol('mermaid-double-click')),
   mermaidExtensionHandlers: {},
-  MermaidToolbarButton: ({ isDisabled }: { isDisabled?: boolean }) => (
-    <button disabled={isDisabled} type="button">
-      Insert Mermaid diagram
-    </button>
-  ),
   useMermaidEditor: jest.fn(() => jest.fn()),
 }));
 
 import { Editor } from '../editor';
 
-describe('Atlaskit editor example shell', () => {
+describe('Atlaskit product editor', () => {
   beforeEach(() => {
-    mockGetValue.mockClear();
-    mockPreset.add.mockClear();
+    jest.clearAllMocks();
+    mockPreset.add.mockReturnValue(mockPreset);
   });
 
-  it('keeps title and layout controls in local component state', async () => {
-    const user = userEvent.setup();
-    render(<Editor />);
+  it('renders a chromeless editor without demo-owned page controls', () => {
+    render(<Editor document={initialDocument} onChange={jest.fn()} />);
 
-    const title = screen.getByLabelText('Page title');
-    expect(title).toHaveValue('Untitled page');
-    expect(screen.getByTestId('composable-editor')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Fixed width' })).toBeVisible();
-
-    await user.clear(title);
-    await user.type(title, 'Local draft');
-    await user.click(screen.getByRole('button', { name: 'Fixed width' }));
-    expect(screen.getByRole('button', { name: 'Full width' })).toBeVisible();
-
-    await user.click(screen.getByRole('button', { name: 'Clear' }));
-    expect(title).toHaveValue('Untitled page');
-    expect(mockGetValue).not.toHaveBeenCalled();
+    expect(screen.getByTestId('composable-editor')).toHaveAttribute('data-appearance', 'chromeless');
+    expect(screen.getByTestId('composable-editor')).toHaveAttribute(
+      'data-document',
+      JSON.stringify(initialDocument),
+    );
+    expect(screen.queryByLabelText('Page title')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Publish' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Fixed width|Full width/ })).not.toBeInTheDocument();
   });
 
-  it('publishes the in-memory ADF and returns to editing', async () => {
+  it('reads changed ADF through the public editor API callback', async () => {
     const user = userEvent.setup();
-    render(<Editor />);
-    await waitFor(() => {
-      expect(
-        screen.getByRole('button', { name: 'Insert Mermaid diagram' }),
-      ).toBeEnabled();
-    });
+    const onChange = jest.fn();
+    render(<Editor document={initialDocument} onChange={onChange} />);
 
-    await user.click(screen.getByRole('button', { name: 'Publish' }));
-    await waitFor(() => {
-      expect(screen.getByLabelText('Published ADF')).toHaveTextContent('Saved');
-    });
-    expect(mockGetValue).toHaveBeenCalledTimes(1);
-    expect(screen.getByLabelText('Page title')).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Simulate document change' }));
 
-    await user.click(screen.getByRole('button', { name: 'Edit' }));
-    expect(screen.getByTestId('composable-editor')).toBeInTheDocument();
-    expect(screen.getByLabelText('Page title')).toBeEnabled();
+    expect(requestDocument).toHaveBeenCalledWith(expect.any(Function), { alwaysFire: true });
+    expect(onChange).toHaveBeenCalledWith(changedDocument);
+  });
+
+  it('exposes toolbar actions backed by the public editor API', async () => {
+    const onToolbarReady = jest.fn();
+    render(
+      <Editor
+        document={initialDocument}
+        onChange={jest.fn()}
+        onToolbarReady={onToolbarReady}
+      />,
+    );
+
+    await waitFor(() => expect(onToolbarReady).toHaveBeenCalled());
+    const toolbar = onToolbarReady.mock.calls.at(-1)?.[0];
+    toolbar('bold');
+
+    expect(mockEditorApi.textFormatting.commands.toggleStrong).toHaveBeenCalled();
+    expect(execute).toHaveBeenCalledWith(expect.any(Symbol));
+  });
+
+  it('maps formatting, lists and insert actions without private editor state', async () => {
+    const onToolbarReady = jest.fn();
+    render(<Editor document={initialDocument} onChange={jest.fn()} onToolbarReady={onToolbarReady} />);
+    await waitFor(() => expect(onToolbarReady).toHaveBeenCalled());
+    const toolbar = onToolbarReady.mock.calls.at(-1)?.[0];
+
+    for (const action of [
+      'undo', 'redo', 'heading-2', 'italic', 'underline', 'strike', 'inline-code',
+      'superscript', 'subscript', 'link', 'bullet-list', 'number-list', 'task-list',
+      'outdent', 'indent', 'table', 'text-color', 'highlight-color', 'date', 'status',
+      'media', 'emoji', 'math', 'mermaid', 'rule', 'layout', 'panel', 'code-block',
+    ]) {
+      toolbar(action);
+    }
+
+    expect(mockEditorApi.undoRedoPlugin.actions.undo).toHaveBeenCalled();
+    expect(mockEditorApi.blockType.commands.setTextLevel).toHaveBeenCalledWith('heading2', expect.anything());
+    expect(mockEditorApi.list.commands.toggleBulletList).toHaveBeenCalled();
+    expect(mockEditorApi.table.commands.insertTableWithSize).toHaveBeenCalled();
+    expect(showMediaPicker).toHaveBeenCalled();
+    expect(mockEditorApi.emoji.actions.openTypeAhead).toHaveBeenCalled();
+    expect(mockInsertMath).toHaveBeenCalledWith(expect.any(Function), mockEditorActions);
+    expect(mockInsertMermaid).toHaveBeenCalledWith(expect.any(Function), mockEditorActions);
+    expect(mockEditorActions.replaceSelection).toHaveBeenCalled();
+    expect((mockEditorActions as Record<string, unknown>)._privateGetEditorView).toBeUndefined();
   });
 });

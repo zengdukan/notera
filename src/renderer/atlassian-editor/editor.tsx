@@ -1,11 +1,6 @@
-import {
-  type ReactElement,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, type ReactElement } from 'react';
 import { type EditorActions, type EditorProps } from '@atlaskit/editor-core';
+import { INPUT_METHOD } from '@atlaskit/editor-common/analytics';
 import { ComposableEditor } from '@atlaskit/editor-core/composable-editor';
 import { useUniversalPreset } from '@atlaskit/editor-core/preset-universal';
 import { usePreset } from '@atlaskit/editor-core/use-preset';
@@ -14,14 +9,14 @@ import { captionPlugin } from '@atlaskit/editor-plugins/caption';
 import { gridPlugin } from '@atlaskit/editor-plugins/grid';
 import { highlightPlugin } from '@atlaskit/editor-plugins/highlight';
 import { mediaPlugin } from '@atlaskit/editor-plugins/media';
-import { ProviderFactory } from '@atlaskit/editor-common/provider-factory';
-import { ReactRenderer } from '@atlaskit/renderer';
-import type { DocNode } from '@atlaskit/adf-schema';
 
+import type { AdfDocument } from '../../shared/ipc/adf';
+import type { ToolbarExecutor } from '../editor/toolbar-actions';
 import { mediaProvider } from './media-provider';
-import { currentUser, getEmojiProvider } from './emoji/get-emoji-provider';
+import { emojiProvider } from '../editor/editor-providers';
 import {
   createMathExtensionProvider,
+  insertMathFromToolbar,
   mathDoubleClickPlugin,
   mathExtensionHandlers,
   mathInputRulePlugin,
@@ -32,128 +27,29 @@ import {
   insertMermaidFromToolbar,
   mermaidDoubleClickPlugin,
   mermaidExtensionHandlers,
-  MermaidToolbarButton,
   useMermaidEditor,
 } from './mermaid';
 
-const EMPTY_DOCUMENT = {
-  version: 1,
-  type: 'doc',
-  content: [
-    {
-      type: 'paragraph',
-      content: [
-        {
-          type: 'text',
-          text: 'This editor uses only the public @atlaskit/editor-core API.',
-        },
-      ],
-    },
-  ],
-};
-
-const emojiProvider = getEmojiProvider({
-  currentUser,
-  uploadSupported: false,
-});
-
-const rendererProviders = ProviderFactory.create({
-  emojiProvider,
-  mediaProvider,
-});
-
-type Appearance = 'full-page' | 'full-width';
-
-/**
- * Mirrors the editor wrapper used by editor-core/examples/5-full-page.tsx.
- * The published universal preset always adds mediaInsertPlugin when media is
- * enabled. That plugin owns the File/Link popup and has no public option for a
- * File-only UI. Build the universal preset without media, then add the public
- * grid/media/caption plugins back. With no mediaInsertPlugin, Atlaskit's media
- * toolbar, insert menu, and quick insert all fall back to showMediaPicker(),
- * which opens the local file picker directly.
- */
-function FullPageComposableEditor(props: EditorProps) {
-  const openMathEditor = useMathEditor();
-  const openMermaidEditor = useMermaidEditor();
-  const mediaOptions = props.media;
-  const universalPreset = useUniversalPreset({
-    props: {
-      ...props,
-      media: undefined,
-    },
-    initialPluginConfiguration: {
-      insertBlockPlugin: {
-        // Suppress Atlaskit's mediaInsert toolbar button. A local-upload-only
-        // replacement is added below. Supplying this object changes all button
-        // defaults to disabled, so keep every other default button explicit.
-        toolbarButtons: {
-          codeBlock: { enabled: false },
-          emoji: { enabled: true },
-          insert: { enabled: true },
-          layout: { enabled: true },
-          media: { enabled: false },
-          mention: { enabled: true },
-          table: { enabled: true },
-          taskList: { enabled: true },
-        },
-      },
-    },
-  });
-  const { preset } = usePreset(() => {
-    let localMediaPreset = universalPreset;
-
-    if (mediaOptions) {
-      localMediaPreset = localMediaPreset
-        .add([gridPlugin, { shouldCalcBreakoutGridLines: true }])
-        .add([
-          mediaPlugin,
-          {
-            ...mediaOptions,
-            allowAdvancedToolBarOptions:
-              mediaOptions.allowAdvancedToolBarOptions ?? true,
-            allowBreakoutSnapPoints: true,
-            allowDropzoneDropLine: true,
-            allowImagePreview: mediaOptions.allowImagePreview ?? true,
-            allowLazyLoading: true,
-            allowMarkingUploadsAsIncomplete: false,
-            allowMediaSingleEditable: true,
-            allowRemoteDimensionsFetch: true,
-            editorAppearance: props.appearance,
-            fullWidthEnabled: props.appearance === 'full-width',
-            isCopyPasteEnabled: true,
-          },
-        ]);
-
-      if (mediaOptions.allowCaptions) {
-        localMediaPreset = localMediaPreset.add(captionPlugin);
-      }
-    }
-
-    return localMediaPreset
-      .add(highlightPlugin)
-      .add(blockControlsPlugin)
-      .add(mathInputRulePlugin)
-      .add(mathDoubleClickPlugin(openMathEditor))
-      .add(mermaidDoubleClickPlugin(openMermaidEditor));
-  }, [
-    mediaOptions,
-    openMathEditor,
-    openMermaidEditor,
-    props.appearance,
-    universalPreset,
-  ]);
-
-  return <ComposableEditor {...props} preset={preset} />;
+export interface ProductEditorProps {
+  readonly document: AdfDocument;
+  readonly onChange: (document: AdfDocument) => void;
+  readonly onEditorReady?: (actions: EditorActions) => void;
+  readonly onToolbarReady?: (execute: ToolbarExecutor) => void;
+  readonly shouldFocus?: boolean;
+  readonly primaryToolbarComponents?: ReactElement[];
 }
 
-type EditorPropsWithLanguagePicker = {
-  languagePicker?: ReactElement;
-};
-
-export function Editor({ languagePicker }: EditorPropsWithLanguagePicker) {
+export function Editor({
+  document,
+  onChange,
+  onEditorReady,
+  onToolbarReady,
+  shouldFocus = false,
+  primaryToolbarComponents,
+}: ProductEditorProps) {
   const openMathEditor = useMathEditor();
   const openMermaidEditor = useMermaidEditor();
+  const editorActions = useRef<EditorActions | null>(null);
   const mathExtensionProvider = useMemo(
     () => createMathExtensionProvider(openMathEditor),
     [openMathEditor],
@@ -162,66 +58,35 @@ export function Editor({ languagePicker }: EditorPropsWithLanguagePicker) {
     () => createMermaidExtensionProvider(openMermaidEditor),
     [openMermaidEditor],
   );
-  const editorActions = useRef<EditorActions | null>(null);
-  const [title, setTitle] = useState('Untitled page');
-  const [document, setDocument] = useState<DocNode>(EMPTY_DOCUMENT as DocNode);
-  const [isEditing, setIsEditing] = useState(true);
-  const [isEditorReady, setIsEditorReady] = useState(false);
-  const [appearance, setAppearance] = useState<Appearance>('full-width');
-
-  const handleEditorReady = useCallback((actions: EditorActions) => {
-    editorActions.current = actions;
-    setIsEditorReady(true);
-  }, []);
-
-  const handleInsertMermaid = useCallback(async () => {
-    await insertMermaidFromToolbar(openMermaidEditor, editorActions.current);
-  }, [openMermaidEditor]);
-
-  const primaryToolbarComponents = useMemo(
-    () => [
-      <MermaidToolbarButton
-        isDisabled={!isEditorReady}
-        key="mermaid-toolbar-button"
-        onClick={() => void handleInsertMermaid()}
-      />,
-      ...(languagePicker ? [languagePicker] : []),
-    ],
-    [handleInsertMermaid, isEditorReady, languagePicker],
+  const mediaOptions: NonNullable<EditorProps['media']> = useMemo(
+    () => ({
+      provider: mediaProvider,
+      allowMediaSingle: true,
+      allowMediaGroup: true,
+      allowMediaSingleEditable: true,
+      allowImagePreview: true,
+      allowAdvancedToolBarOptions: true,
+      allowResizing: true,
+      allowResizingInTables: true,
+      allowAltTextOnImages: true,
+      allowCaptions: true,
+      allowMediaInlineImages: true,
+      allowLinking: false,
+      enableDownloadButton: true,
+      featureFlags: { mediaInline: true },
+      isCopyPasteEnabled: true,
+      waitForMediaUpload: true,
+    }),
+    [],
   );
-
-  const publish = useCallback(async () => {
-    const value = await editorActions.current?.getValue();
-
-    if (!value) {
-      return;
-    }
-
-    setDocument(value as DocNode);
-    setIsEditing(false);
-  }, []);
-
-  const clearDraft = useCallback(() => {
-    setTitle('Untitled page');
-    setDocument(EMPTY_DOCUMENT as DocNode);
-    setIsEditing(true);
-  }, []);
-
-  const editorProps: EditorProps = {
-    appearance,
+  const editorConfiguration: EditorProps = {
+    appearance: 'chromeless',
     allowBlockType: {},
     allowBreakout: true,
     allowDate: true,
-    allowExpand: {
-      allowInsertion: true,
-      allowInteractiveExpand: true,
-    },
-    allowExtension: {
-      allowBreakout: true,
-    },
-    allowFindReplace: {
-      allowMatchCase: true,
-    },
+    allowExpand: { allowInsertion: true, allowInteractiveExpand: true },
+    allowExtension: { allowBreakout: true },
+    allowFindReplace: { allowMatchCase: true },
     allowHelpDialog: true,
     allowIndentation: true,
     showIndentationButtons: true,
@@ -245,122 +110,151 @@ export function Editor({ languagePicker }: EditorPropsWithLanguagePicker) {
     allowTasksAndDecisions: true,
     allowTextAlignment: true,
     allowTextColor: true,
-    allowUndoRedoButtons: true,
-    codeBlock: {
-      allowCopyToClipboard: true,
-    },
-    media: {
-      provider: mediaProvider,
-      allowMediaSingle: true,
-      allowMediaGroup: true,
-      allowMediaSingleEditable: true,
-      allowImagePreview: true,
-      allowAdvancedToolBarOptions: true,
-      allowResizing: true,
-      allowResizingInTables: true,
-      allowAltTextOnImages: true,
-      allowCaptions: true,
-      allowMediaInlineImages: true,
-      // This controls link actions on an inserted media node. The insertion UI
-      // is made upload-only by omitting mediaInsertPlugin in the preset above.
-      allowLinking: false,
-      enableDownloadButton: true,
-      featureFlags: {
-        mediaInline: true,
-      },
-      isCopyPasteEnabled: true,
-      waitForMediaUpload: true,
-    },
-    defaultValue: document,
-    emojiProvider,
-    extensionHandlers: {
-      ...mathExtensionHandlers,
-      ...mermaidExtensionHandlers,
-    },
-    extensionProviders: [mathExtensionProvider, mermaidExtensionProvider],
-    featureFlags: {
-      twoLineEditorToolbar: true,
-    },
-    onEditorReady: handleEditorReady,
-    placeholder:
-      "Type '/' to insert content, or use Markdown shortcuts such as # and *.",
-    primaryToolbarComponents,
-    quickInsert: true,
-    shouldFocus: isEditing,
+    codeBlock: { allowCopyToClipboard: true },
+    extensionHandlers: { ...mathExtensionHandlers, ...mermaidExtensionHandlers },
+    media: mediaOptions,
+    placeholder: "Type '/' to insert content, or use Markdown shortcuts such as # and *.",
   };
+  const universalPreset = useUniversalPreset({
+    props: {
+      ...editorConfiguration,
+      media: undefined,
+    },
+    initialPluginConfiguration: {
+      insertBlockPlugin: {
+        toolbarButtons: {
+          codeBlock: { enabled: false },
+          emoji: { enabled: true },
+          insert: { enabled: true },
+          layout: { enabled: true },
+          media: { enabled: false },
+          mention: { enabled: false },
+          table: { enabled: true },
+          taskList: { enabled: true },
+        },
+      },
+    },
+  });
+  const { preset, editorApi } = usePreset(() => {
+    let productPreset = universalPreset
+      .add([gridPlugin, { shouldCalcBreakoutGridLines: true }])
+      .add([
+        mediaPlugin,
+        {
+          ...mediaOptions,
+          allowBreakoutSnapPoints: true,
+          allowDropzoneDropLine: true,
+          allowLazyLoading: true,
+          allowMarkingUploadsAsIncomplete: false,
+          allowRemoteDimensionsFetch: true,
+          editorAppearance: 'chromeless',
+          fullWidthEnabled: true,
+        },
+      ])
+      .add(captionPlugin);
+
+    productPreset = productPreset
+      .add(highlightPlugin)
+      .add(blockControlsPlugin)
+      .add(mathInputRulePlugin)
+      .add(mathDoubleClickPlugin(openMathEditor))
+      .add(mermaidDoubleClickPlugin(openMermaidEditor));
+    return productPreset;
+  }, [mediaOptions, openMathEditor, openMermaidEditor, universalPreset]);
+
+  const handleChange = useCallback(() => {
+    editorApi?.core.actions.requestDocument(
+      (value) => {
+        if (value) onChange(value as AdfDocument);
+      },
+      { alwaysFire: true },
+    );
+  }, [editorApi, onChange]);
+  const handleEditorReady = useCallback(
+    (actions: EditorActions) => {
+      editorActions.current = actions;
+      onEditorReady?.(actions);
+    },
+    [onEditorReady],
+  );
+  const executeToolbar = useCallback<ToolbarExecutor>(
+    (action) => {
+      const execute = editorApi?.core.actions.execute;
+      const textFormatting = editorApi?.textFormatting?.commands;
+      const insert = (node: object) => {
+        const inserted = editorActions.current?.replaceSelection(node) ?? false;
+        if (inserted) editorActions.current?.focus();
+      };
+      switch (action) {
+        case 'undo': editorApi?.undoRedoPlugin?.actions.undo(); return;
+        case 'redo': editorApi?.undoRedoPlugin?.actions.redo(); return;
+        case 'paragraph': execute?.(editorApi?.blockType?.commands.setTextLevel('normal', INPUT_METHOD.TOOLBAR)); return;
+        case 'heading-1': execute?.(editorApi?.blockType?.commands.setTextLevel('heading1', INPUT_METHOD.TOOLBAR)); return;
+        case 'heading-2': execute?.(editorApi?.blockType?.commands.setTextLevel('heading2', INPUT_METHOD.TOOLBAR)); return;
+        case 'heading-3': execute?.(editorApi?.blockType?.commands.setTextLevel('heading3', INPUT_METHOD.TOOLBAR)); return;
+        case 'bold': execute?.(textFormatting?.toggleStrong(INPUT_METHOD.TOOLBAR)); return;
+        case 'italic': execute?.(textFormatting?.toggleEm(INPUT_METHOD.TOOLBAR)); return;
+        case 'underline': execute?.(textFormatting?.toggleUnderline(INPUT_METHOD.TOOLBAR)); return;
+        case 'strike': execute?.(textFormatting?.toggleStrike(INPUT_METHOD.TOOLBAR)); return;
+        case 'inline-code': execute?.(textFormatting?.toggleCode(INPUT_METHOD.TOOLBAR)); return;
+        case 'superscript': execute?.(textFormatting?.toggleSuperscript(INPUT_METHOD.TOOLBAR)); return;
+        case 'subscript': execute?.(textFormatting?.toggleSubscript(INPUT_METHOD.TOOLBAR)); return;
+        case 'link': execute?.(editorApi?.hyperlink?.commands.showLinkToolbar(INPUT_METHOD.TOOLBAR)); return;
+        case 'bullet-list': execute?.(editorApi?.list?.commands.toggleBulletList(INPUT_METHOD.TOOLBAR)); return;
+        case 'number-list': execute?.(editorApi?.list?.commands.toggleOrderedList(INPUT_METHOD.TOOLBAR)); return;
+        case 'task-list': execute?.(editorApi?.taskDecision?.commands.toggleTaskList()); return;
+        case 'outdent': execute?.(editorApi?.list?.commands.outdentList(INPUT_METHOD.TOOLBAR)); return;
+        case 'indent': execute?.(editorApi?.list?.commands.indentList(INPUT_METHOD.TOOLBAR)); return;
+        case 'table': execute?.(editorApi?.table?.commands.insertTableWithSize(3, 3, INPUT_METHOD.PICKER)); return;
+        case 'text-color': execute?.(editorApi?.textColor?.commands.changeColor('#0052CC', INPUT_METHOD.TOOLBAR)); return;
+        case 'highlight-color': execute?.(editorApi?.highlight?.commands.changeColor({ color: '#FFF0B3', inputMethod: INPUT_METHOD.TOOLBAR })); return;
+        case 'clear-formatting': execute?.(editorApi?.blockType?.commands.clearFormatting(INPUT_METHOD.TOOLBAR)); return;
+        case 'date': execute?.(editorApi?.date?.commands.insertDate({ inputMethod: INPUT_METHOD.TOOLBAR })); return;
+        case 'status': execute?.(editorApi?.status?.commands.insertStatus(INPUT_METHOD.TOOLBAR)); return;
+        case 'media': editorApi?.media?.sharedState.currentState()?.showMediaPicker?.(); return;
+        case 'emoji': editorApi?.emoji?.actions.openTypeAhead(INPUT_METHOD.TOOLBAR); return;
+        case 'math': void insertMathFromToolbar(openMathEditor, editorActions.current); return;
+        case 'mermaid': void insertMermaidFromToolbar(openMermaidEditor, editorActions.current); return;
+        case 'rule': insert({ type: 'rule' }); return;
+        case 'layout':
+          insert({
+            type: 'layoutSection',
+            content: [
+              { type: 'layoutColumn', content: [{ type: 'paragraph', content: [] }] },
+              { type: 'layoutColumn', content: [{ type: 'paragraph', content: [] }] },
+            ],
+          });
+          return;
+        case 'panel': insert({ type: 'panel', attrs: { panelType: 'info' }, content: [{ type: 'paragraph', content: [] }] }); return;
+        case 'code-block': insert({ type: 'codeBlock', attrs: { language: null }, content: [] }); return;
+        case 'align':
+        case 'text-style':
+        case 'more-formatting':
+        case 'list':
+        case 'insert':
+          return;
+        default:
+          return action satisfies never;
+      }
+    },
+    [editorApi, openMathEditor, openMermaidEditor],
+  );
+  useEffect(() => onToolbarReady?.(executeToolbar), [executeToolbar, onToolbarReady]);
 
   return (
-    <main className={`full-page-example full-page-example--${appearance}`}>
-      <header className="example-header">
-        <div>
-          <span className="example-eyebrow">ATLASKIT EDITOR</span>
-          <strong>Full-page example</strong>
-        </div>
-
-        <div className="example-actions">
-          <button
-            type="button"
-            onClick={() =>
-              setAppearance((current) =>
-                current === 'full-page' ? 'full-width' : 'full-page',
-              )
-            }
-          >
-            {appearance === 'full-page' ? 'Full width' : 'Fixed width'}
-          </button>
-          <button type="button" onClick={clearDraft}>
-            Clear
-          </button>
-          {isEditing ? (
-            <button className="button-primary" type="button" onClick={publish}>
-              Publish
-            </button>
-          ) : (
-            <button
-              className="button-primary"
-              type="button"
-              onClick={() => setIsEditing(true)}
-            >
-              Edit
-            </button>
-          )}
-        </div>
-      </header>
-
-      <section className="example-content">
-        <input
-          aria-label="Page title"
-          className="page-title"
-          disabled={!isEditing}
-          onChange={(event) => setTitle(event.target.value)}
-          placeholder="Untitled page"
-          value={title}
-        />
-        {isEditing ? (
-          <FullPageComposableEditor key={appearance} {...editorProps} />
-        ) : (
-          <ReactRenderer
-            adfStage="stage0"
-            allowAltTextOnImages
-            allowColumnSorting
-            allowCopyToClipboard
-            allowWrapCodeBlock
-            appearance={appearance}
-            dataProviders={rendererProviders}
-            document={document}
-            extensionHandlers={{
-              ...mathExtensionHandlers,
-              ...mermaidExtensionHandlers,
-            }}
-            media={{
-              allowCaptions: true,
-              allowLinking: false,
-              enableDownloadButton: true,
-            }}
-            shouldOpenMediaViewer
-          />
-        )}
-      </section>
-    </main>
+    <ComposableEditor
+      appearance="chromeless"
+      defaultValue={document}
+      emojiProvider={emojiProvider}
+      extensionProviders={[mathExtensionProvider, mermaidExtensionProvider]}
+      featureFlags={{ twoLineEditorToolbar: false }}
+      media={mediaOptions}
+      onChange={handleChange}
+      onEditorReady={handleEditorReady}
+      preset={preset}
+      primaryToolbarComponents={primaryToolbarComponents}
+      quickInsert
+      shouldFocus={shouldFocus}
+    />
   );
 }

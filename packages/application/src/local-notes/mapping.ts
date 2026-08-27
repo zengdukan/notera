@@ -50,10 +50,21 @@ export function tagSummary(tag: Tag): TagSummary {
 }
 
 export function noteDetail(database: VaultDatabase, note: Note): NoteDetail {
+  let cursor: string | undefined;
+  let isFavorite = false;
+  do {
+    const page = database.favorites.list({
+      limit: 100,
+      ...(cursor === undefined ? {} : { cursor }),
+    });
+    isFavorite = page.items.some((favorite) => favorite.noteId === note.id);
+    cursor = isFavorite ? undefined : page.nextCursor;
+  } while (cursor !== undefined);
   return Object.freeze({
     ...noteSummary(note),
     document: note.document,
     createdAt: note.createdAt,
+    isFavorite,
     tags: Object.freeze(database.tags.listForNote(note.id).map(tagSummary)),
   });
 }

@@ -60,6 +60,7 @@ export interface TagSummary {
 export interface NoteDetail extends NoteSummary {
   readonly document: AdfDocument;
   readonly createdAt: Timestamp;
+  readonly isFavorite: boolean;
   readonly tags: readonly TagSummary[];
 }
 
@@ -169,7 +170,6 @@ export interface LocalNotesService {
   }): Promise<NoteSummary>;
   saveDraft(input: {
     readonly noteId: NoteId;
-    readonly expectedContentVersion: number;
     readonly title: string;
     readonly document: AdfDocument;
   }): Promise<{

@@ -37,6 +37,7 @@ describe('LocalNotesService note use cases', () => {
       folderId: profile.rootFolderId,
       document: { type: 'doc', version: 1 },
       contentVersion: 1,
+      isFavorite: false,
       tags: [],
     });
     expect(created).not.toHaveProperty('sortOrder');
@@ -55,7 +56,6 @@ describe('LocalNotesService note use cases', () => {
 
     const saved = await localNotes.saveDraft({
       noteId: created.id,
-      expectedContentVersion: 2,
       title: 'Saved',
       document,
     });
@@ -64,14 +64,20 @@ describe('LocalNotesService note use cases', () => {
       contentVersion: 3,
       savedAt: expect.any(Number),
     });
-    await expect(
-      localNotes.saveDraft({
-        noteId: created.id,
-        expectedContentVersion: 2,
-        title: 'Stale',
-        document,
-      }),
-    ).rejects.toMatchObject({ code: 'CONTENT_VERSION_CONFLICT' });
+    await expect(localNotes.saveDraft({
+      noteId: created.id,
+      title: 'Saved again',
+      document,
+    })).resolves.toMatchObject({ contentVersion: 4 });
+
+    await localNotes.addFavorite(created.id);
+    await expect(localNotes.getNote(created.id)).resolves.toMatchObject({
+      isFavorite: true,
+    });
+    await localNotes.removeFavorite(created.id);
+    await expect(localNotes.getNote(created.id)).resolves.toMatchObject({
+      isFavorite: false,
+    });
 
     const moved = await localNotes.moveNote({
       noteId: created.id,
@@ -79,9 +85,9 @@ describe('LocalNotesService note use cases', () => {
     });
     expect(moved).toMatchObject({
       id: created.id,
-      title: 'Saved',
+      title: 'Saved again',
       folderId: target.id,
-      contentVersion: 3,
+      contentVersion: 4,
     });
     const attachment = await manager.localAttachments.importAttachment({
       noteId: created.id,
@@ -96,7 +102,7 @@ describe('LocalNotesService note use cases', () => {
       targetFolderId: profile.rootFolderId,
     });
     expect(copied).toMatchObject({
-      title: 'Saved',
+      title: 'Saved again',
       folderId: profile.rootFolderId,
       contentVersion: 1,
     });

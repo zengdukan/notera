@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 
 import type { NoteraClient } from '../../platform/notera-client';
+import { NoteWriteCoordinator } from '../../notes/note-write-coordinator';
 import { createContentController } from '../content-controller';
 
 const note = {
@@ -88,5 +89,28 @@ describe('content controller', () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['profile', 'profile', 'tree', 'target'] });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['profile', 'profile', 'path'] });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['profile', 'profile', 'search'] });
+  });
+
+  it('serializes note renames through the shared note writer', async () => {
+    const renamed = { ...note, title: 'Renamed', contentVersion: 2, updatedAt: 2 };
+    const request = jest.fn(async () => renamed);
+    const writer = new NoteWriteCoordinator();
+    const run = jest.spyOn(writer, 'run');
+    const controller = createContentController({
+      client: { request } as unknown as NoteraClient,
+      queryClient: new QueryClient(),
+      profileId: 'profile',
+      rootFolderId: 'root',
+      getSelection: () => note,
+      guard: { flushBefore: jest.fn(async () => 'ready') },
+      writeCoordinator: writer,
+      select: jest.fn(),
+      beginEditing: jest.fn(),
+    });
+
+    await controller.rename(note, 'Renamed');
+
+    expect(run).toHaveBeenCalledWith('note', expect.any(Function));
+    expect(request).toHaveBeenCalledWith('note.rename', { noteId: 'note', title: 'Renamed' });
   });
 });

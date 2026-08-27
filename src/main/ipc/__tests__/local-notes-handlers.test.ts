@@ -33,7 +33,13 @@ const note = {
   updatedAt: 1,
 };
 const tag = { id: tagId, name: 'Tag', updatedAt: 1 };
-const noteDetail = { ...note, document, createdAt: 1, tags: [tag] };
+const noteDetail = {
+  ...note,
+  document,
+  createdAt: 1,
+  isFavorite: false,
+  tags: [tag],
+};
 const favorite = { ...note, favoriteSortOrder: 0 };
 const history = {
   versionId,
@@ -157,13 +163,11 @@ const cases: readonly MappingCase[] = [
     method: 'saveDraft',
     request: {
       noteId,
-      expectedContentVersion: 1,
       title: 'Note',
       document,
     },
     applicationArgument: {
       noteId,
-      expectedContentVersion: 1,
       title: 'Note',
       document,
     },

@@ -11,6 +11,7 @@ import {
 } from '../app/query-keys';
 import type { NoteraClient } from '../platform/notera-client';
 import type { NoteMutationGuard } from '../notes/note-mutation-guard';
+import type { NoteWriteCoordinator } from '../notes/note-write-coordinator';
 import { resolveCreationFolderId, type NavigationSelection } from './navigation-reducer';
 
 export type ContentEntry =
@@ -49,6 +50,7 @@ export function createContentController(input: {
   readonly rootFolderId: string;
   readonly getSelection: () => NavigationSelection | ContentEntry | undefined;
   readonly guard: NoteMutationGuard;
+  readonly writeCoordinator?: Pick<NoteWriteCoordinator, 'run'>;
   readonly select: (entry: ContentEntry | undefined) => void;
   readonly beginEditing: (noteId: string) => void;
 }) {
@@ -106,10 +108,13 @@ export function createContentController(input: {
           invalidatePathsAndSearch(),
         ]);
       } else {
-        const renamed = await input.client.request('note.rename', {
+        const rename = () => input.client.request('note.rename', {
           noteId: entry.id,
           title: name,
         });
+        const renamed = input.writeCoordinator
+          ? await input.writeCoordinator.run(entry.id, rename)
+          : await rename();
         syncSelection(entry, renamed);
         await Promise.all([
           invalidateTree(entry.folderId),

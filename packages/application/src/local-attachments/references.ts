@@ -1,4 +1,5 @@
 import {
+  asAttachmentId,
   createCurrentNoteAttachmentReference,
   createNoteVersionAttachmentReference,
   createTrashAttachmentReference,
@@ -8,8 +9,11 @@ import {
   type NoteVersionAttachmentReference,
   type NoteVersionId,
   type TrashEntryId,
+  type VaultId,
 } from '@notera/domain';
 import type { AttachmentReader } from '@notera/storage-sqlcipher';
+
+import { ApplicationError } from '../errors';
 
 export interface ReferenceReplacement {
   readonly remove: readonly AttachmentReference[];
@@ -25,6 +29,27 @@ export class AttachmentReferenceCoordinator {
 
   constructor(attachments: AttachmentReader) {
     this.attachments = attachments;
+  }
+
+  currentNoteReferences(
+    noteId: NoteId,
+    vaultId: VaultId,
+    values: readonly unknown[],
+  ): readonly CurrentNoteAttachmentReference[] {
+    return immutable(
+      [...new Set(values)].map((value) => {
+        const attachmentId = asAttachmentId(value);
+        const attachment = this.attachments.getAttachment(attachmentId);
+        if (attachment === undefined || attachment.vaultId !== vaultId) {
+          throw new ApplicationError('ENTITY_NOT_FOUND');
+        }
+        return createCurrentNoteAttachmentReference({
+          vaultId,
+          attachmentId,
+          noteId,
+        });
+      }),
+    );
   }
 
   copyNotes(

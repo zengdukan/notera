@@ -8,6 +8,7 @@ export {
 } from './extension';
 export { mathDoubleClickPlugin } from './double-click';
 export { mathInputRulePlugin } from './input-rules';
+export { insertMathFromToolbar } from './toolbar-action';
 export {
   createMathAdf,
   MATH_EXTENSION_KEY,

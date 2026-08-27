@@ -5,6 +5,9 @@ jest.mock('react-scrolllock', () => ({
   default: ({ children }: { children: ReactNode }) => children,
   TouchScrollable: ({ children }: { children: ReactNode }) => children,
 }));
+jest.mock('../../navigation/NavigationWorkspace', () => ({
+  NavigationWorkspace: () => <div>Note workspace</div>,
+}));
 
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

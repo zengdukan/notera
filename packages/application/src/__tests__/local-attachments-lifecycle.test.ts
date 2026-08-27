@@ -57,7 +57,7 @@ describe('attachment reference lifecycle', () => {
     await manager.close();
   });
 
-  it('keeps explicit attachment references independent from draft ADF', async () => {
+  it('replaces current note attachment references from saved ADF atomically', async () => {
     const manager = await createProfileManager({ appDataRoot: tempRoot() });
     const profile = await manager.createProfile({
       displayName: 'References',
@@ -78,12 +78,11 @@ describe('attachment reference lifecycle', () => {
 
     await manager.localNotes.saveDraft({
       noteId: note.id,
-      expectedContentVersion: note.contentVersion,
       title: note.title,
       document: {
         type: 'doc',
         version: 1,
-        content: [{ type: 'media', attrs: { id: 'untrusted-adf-id' } }],
+        content: [{ type: 'media', attrs: { id: attachment.id } }],
       },
     });
 
@@ -91,6 +90,23 @@ describe('attachment reference lifecycle', () => {
       manager.localAttachments.listForNote({ noteId: note.id, limit: 10 }),
     ).resolves.toMatchObject({
       items: [expect.objectContaining({ id: attachment.id })],
+    });
+
+    await expect(manager.localNotes.saveDraft({
+      noteId: note.id,
+      title: 'Invalid attachment must roll back',
+      document: {
+        type: 'doc',
+        version: 1,
+        content: [{
+          type: 'media',
+          attrs: { id: '10000000-0000-4000-8000-000000000099' },
+        }],
+      },
+    })).rejects.toBeDefined();
+    await expect(manager.localNotes.getNote(note.id)).resolves.toMatchObject({
+      title: note.title,
+      contentVersion: 2,
     });
     await manager.close();
   });

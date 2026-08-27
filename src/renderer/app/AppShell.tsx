@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Heading from '@atlaskit/heading';
 import { Box, Stack, Text, xcss } from '@atlaskit/primitives';
 import Spinner from '@atlaskit/spinner';
@@ -10,21 +10,19 @@ import { handleCloseRequest, type CloseFailureChoice } from '../profile/close-gu
 import { ProfileGate } from '../profile/ProfileGate';
 import type { ProfileListItem } from '../profile/ProfileList';
 import { NavigationWorkspace } from '../navigation/NavigationWorkspace';
+import { ActiveDocumentLifecycle } from '../notes/document-lifecycle';
+import { NoteWriteCoordinator } from '../notes/note-write-coordinator';
 import { useSession } from './session';
 
 const shellStyles = xcss({
   minHeight: '100vh',
   backgroundColor: 'elevation.surface',
-  padding: 'space.300',
 });
+const accessStyles = xcss({ padding: 'space.300' });
 
 export function AppShell({
   client,
-  documentCloseGuard = {
-    isDirty: () => false,
-    flush: async () => undefined,
-    chooseAfterFailure: async () => 'stay' as const,
-  },
+  documentCloseGuard,
 }: {
   readonly client: NoteraClient;
   readonly documentCloseGuard?: {
@@ -34,6 +32,16 @@ export function AppShell({
   };
 }) {
   const { state, dispatch } = useSession();
+  const lifecycle = useMemo(() => new ActiveDocumentLifecycle(), []);
+  const writeCoordinator = useMemo(() => new NoteWriteCoordinator(), []);
+  const activeCloseGuard = useMemo(
+    () => documentCloseGuard ?? {
+      isDirty: lifecycle.isDirty,
+      flush: lifecycle.flush,
+      chooseAfterFailure: async () => 'stay' as const,
+    },
+    [documentCloseGuard, lifecycle],
+  );
   const [loaded, setLoaded] = useState(false);
   const [profiles, setProfiles] = useState<readonly ProfileListItem[]>([]);
 
@@ -74,19 +82,21 @@ export function AppShell({
       client.subscribe('app.closeRequested', ({ requestId }) => {
         void handleCloseRequest({
           requestId,
-          ...documentCloseGuard,
+          ...activeCloseGuard,
           complete: (value) => client.request('app.completeClose', value),
         }).catch(() => undefined);
       }),
-    [client, documentCloseGuard],
+    [activeCloseGuard, client],
   );
 
   return (
     <Box as="main" xcss={shellStyles}>
-      <Stack space="space.200">
-        <Heading size="xlarge">
-          <FormattedMessage id="app.name" />
-        </Heading>
+      {state.status !== 'unlocked' ? (
+        <Box xcss={accessStyles}>
+          <Stack space="space.200">
+            <Heading size="xlarge">
+              <FormattedMessage id="app.name" />
+            </Heading>
         {!loaded || state.status === 'booting' || state.status === 'unlocking' ? (
           <Box as="div" role="status">
             <Stack alignInline="center" space="space.100">
@@ -97,16 +107,11 @@ export function AppShell({
             </Stack>
           </Box>
         ) : null}
-        {loaded &&
-        (state.status === 'locked' || state.status === 'unlocked') ? (
-          <ProfileGate client={client} profiles={profiles}>
-            <NavigationWorkspace client={client}>
-              <Text as="p">
-                <FormattedMessage id="app.workspaceReady" />
-              </Text>
-            </NavigationWorkspace>
-          </ProfileGate>
-        ) : null}
+            {loaded && state.status === 'locked' ? (
+              <ProfileGate client={client} profiles={profiles}>
+                {null}
+              </ProfileGate>
+            ) : null}
         {state.status === 'fatal' ? (
           <Box as="div" role="alert">
             <Text as="p">
@@ -114,7 +119,18 @@ export function AppShell({
             </Text>
           </Box>
         ) : null}
-      </Stack>
+          </Stack>
+        </Box>
+      ) : null}
+      {loaded && state.status === 'unlocked' ? (
+        <ProfileGate client={client} profiles={profiles}>
+          <NavigationWorkspace
+            client={client}
+            lifecycle={lifecycle}
+            writeCoordinator={writeCoordinator}
+          />
+        </ProfileGate>
+      ) : null}
     </Box>
   );
 }
