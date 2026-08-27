@@ -3,6 +3,9 @@ const profilePrefix = (profileId: string) => ['profile', profileId] as const;
 export const treeKey = (profileId: string, folderId: string) =>
   [...profilePrefix(profileId), 'tree', folderId] as const;
 
+export const treesKey = (profileId: string) =>
+  [...profilePrefix(profileId), 'tree'] as const;
+
 export const noteKey = (profileId: string, noteId: string) =>
   [...profilePrefix(profileId), 'note', noteId] as const;
 

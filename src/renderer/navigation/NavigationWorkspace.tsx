@@ -23,6 +23,8 @@ import { localVersionName } from '../history/local-version-name';
 import type { NoteraClient } from '../platform/notera-client';
 import { RecentModal } from '../recent/RecentModal';
 import { SearchModal } from '../search/SearchModal';
+import { createTrashController } from '../trash/trash-controller';
+import { TrashModal } from '../trash/TrashModal';
 import { ActiveDocumentLifecycle } from '../notes/document-lifecycle';
 import { NoteWorkspace } from '../notes/NoteWorkspace';
 import { NoteWriteCoordinator } from '../notes/note-write-coordinator';
@@ -60,6 +62,10 @@ type Overlay =
   | {
       readonly kind: 'history';
       readonly note: Extract<ContentEntry, { kind: 'note' }>;
+      readonly folders: readonly LoadedFolderPickerItem[];
+    }
+  | {
+      readonly kind: 'trash-bin';
       readonly folders: readonly LoadedFolderPickerItem[];
     }
   | { readonly kind: 'create-folder'; readonly parentFolderId: string }
@@ -151,6 +157,11 @@ function UnlockedNavigationWorkspace({
       });
     },
   }), [client, lifecycle, profile.localProfileId, profile.rootFolderId, queryClient, writeCoordinator]);
+  const trashController = useMemo(() => createTrashController({
+    client,
+    queryClient,
+    profileId: profile.localProfileId,
+  }), [client, profile.localProfileId, queryClient]);
   const controller = useMemo(
     () =>
       createContentController({
@@ -306,6 +317,22 @@ function UnlockedNavigationWorkspace({
         ),
       };
     }
+    if (overlay.kind === 'trash-bin') {
+      return {
+        kind: overlay.kind,
+        title: 'Trash',
+        width: 'large',
+        content: (
+          <TrashModal
+            client={client}
+            profileId={profile.localProfileId}
+            rootFolderId={profile.rootFolderId}
+            folders={overlay.folders}
+            controller={trashController}
+          />
+        ),
+      };
+    }
     if (overlay.kind === 'message') {
       return { kind: overlay.kind, title: overlay.title, content: <Text>Available in this offline workspace.</Text> };
     }
@@ -409,7 +436,7 @@ function UnlockedNavigationWorkspace({
         />
       ),
     };
-  }, [client, controller, dispatch, historyController, openListedNote, overlay, profile]);
+  }, [client, controller, dispatch, historyController, openListedNote, overlay, profile, trashController]);
 
   const openSettings = async () => {
     const [device, profileSettings] = await Promise.all([
@@ -431,6 +458,11 @@ function UnlockedNavigationWorkspace({
       folders,
       disabledIds: disabledFolderIdsFor(entry, folders),
     });
+  };
+
+  const openTrash = async () => {
+    const folders = await loadFolderPickerItems(client, profile.rootFolderId);
+    setOverlay({ kind: 'trash-bin', folders });
   };
 
   const getActions = (entry: ContentEntry) => createContentActions(entry, {
@@ -502,7 +534,7 @@ function UnlockedNavigationWorkspace({
         )}
         onFavorites={() => setOverlay({ kind: 'favorites' })}
         onRecent={() => setOverlay({ kind: 'recent' })}
-        onTrash={() => setOverlay({ kind: 'message', title: 'Trash' })}
+        onTrash={() => void openTrash()}
         onSettings={() => void openSettings()}
       >
         {children ?? (

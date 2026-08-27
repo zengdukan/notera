@@ -15,14 +15,15 @@ const secondNote = { ...firstNote, id: 'second', title: 'Second' };
 const mockFlush = jest.fn(async () => undefined);
 
 jest.mock('../ResizableNavigation', () => ({
-  ResizableNavigation: ({ header, tree, children, onFavorites, onRecent }: {
+  ResizableNavigation: ({ header, tree, children, onFavorites, onRecent, onTrash }: {
     header: ReactNode; tree: ReactNode; children: ReactNode;
-    onFavorites(): void; onRecent(): void;
+    onFavorites(): void; onRecent(): void; onTrash(): void;
   }) => (
     <div>
       {header}
       <button type="button" onClick={onFavorites}>Favorites</button>
       <button type="button" onClick={onRecent}>Recent</button>
+      <button type="button" onClick={onTrash}>Trash</button>
       {tree}<main>{children}</main>
     </div>
   ),
@@ -84,6 +85,7 @@ jest.mock('../../favorites/FavoritesModal', () => ({ FavoritesModal: () => <div>
 jest.mock('../../recent/RecentModal', () => ({ RecentModal: () => <div>Recent notes</div> }));
 jest.mock('../../history/CreateVersionModal', () => ({ CreateVersionModal: () => <div>Create version form</div> }));
 jest.mock('../../history/HistoryModal', () => ({ HistoryModal: () => <div>History workspace</div> }));
+jest.mock('../../trash/TrashModal', () => ({ TrashModal: () => <div>Trash workspace</div> }));
 jest.mock('../../shared-ui/ModalHost', () => ({
   ModalHost: ({ modal }: { modal: { title: string; content: ReactNode } | null }) => (
     modal === null ? null : <div role="dialog" aria-label={modal.title}>{modal.content}</div>
@@ -170,9 +172,12 @@ describe('NavigationWorkspace', () => {
     expect(screen.queryByRole('dialog', { name: 'Search' })).not.toBeInTheDocument();
   });
 
-  it('opens favorites and recent product modals from the navigation', async () => {
+  it('opens favorites, recent, and trash product modals from the navigation', async () => {
     const user = userEvent.setup();
-    const client = { request: jest.fn(), subscribe: jest.fn() } as unknown as NoteraClient;
+    const client = {
+      request: jest.fn(async (key: string) => key === 'contentTree.listChildren' ? { items: [] } : {}),
+      subscribe: jest.fn(),
+    } as unknown as NoteraClient;
     render(
       <QueryClientProvider client={new QueryClient()}>
         <SessionProvider>
@@ -187,6 +192,8 @@ describe('NavigationWorkspace', () => {
     expect(screen.getByText('Favorite notes')).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Recent' }));
     expect(screen.getByText('Recent notes')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Trash' }));
+    expect(await screen.findByText('Trash workspace')).toBeVisible();
   });
 
   it('opens create-version and history product modals from the note menu', async () => {
