@@ -59,6 +59,7 @@ function eventMethod(api: NoteraApi, key: EventKey): UnknownSubscribe {
     'profile.locked': api.events.onProfileLocked as UnknownSubscribe,
     'operation.progress': api.events.onOperationProgress as UnknownSubscribe,
     'operation.completed': api.events.onOperationCompleted as UnknownSubscribe,
+    'app.closeRequested': api.events.onAppCloseRequested as UnknownSubscribe,
   };
   return methods[key];
 }

@@ -47,11 +47,13 @@ function setup(confirm = true) {
   const confirmation = {
     confirmRemove: jest.fn(async () => confirm),
   };
+  const activity = { touchActivity: jest.fn() };
   const dependencies: ProfileHandlerDependencies = {
     manager,
     lifecycle,
     gate,
     confirmation,
+    activity,
   };
   return {
     bindings: createProfileBindings(dependencies),
@@ -59,6 +61,7 @@ function setup(confirm = true) {
     lifecycle,
     gateRun,
     confirmation,
+    activity,
   };
 }
 
@@ -72,13 +75,14 @@ function binding(
 }
 
 describe('profile IPC handlers', () => {
-  it('binds exactly the nine profile requests', () => {
+  it('binds exactly the ten profile requests', () => {
     expect(setup().bindings.map((value) => value.key)).toEqual([
       'profile.list',
       'profile.getSessionState',
       'profile.create',
       'profile.unlock',
       'profile.lock',
+      'profile.touchActivity',
       'profile.switch',
       'profile.rename',
       'profile.changePassword',
@@ -109,6 +113,9 @@ describe('profile IPC handlers', () => {
     await expect(
       binding(state.bindings, 'profile.lock').invoke({}),
     ).resolves.toEqual({});
+    await expect(
+      binding(state.bindings, 'profile.touchActivity').invoke({}),
+    ).resolves.toEqual({});
     await binding(state.bindings, 'profile.rename').invoke({
       displayName: 'Renamed',
     });
@@ -137,7 +144,8 @@ describe('profile IPC handlers', () => {
       oldPassword: 'old',
       newPassword: 'new',
     });
-    expect(state.gateRun).toHaveBeenCalledTimes(2);
+    expect(state.gateRun).toHaveBeenCalledTimes(3);
+    expect(state.activity.touchActivity).toHaveBeenCalledTimes(4);
   });
 
   it('returns cancelled before removal and removes only after confirmation', async () => {

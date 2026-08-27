@@ -24,6 +24,7 @@ export interface ApplicationPaths {
   readonly deletingRoot: string;
   readonly catalog: string;
   readonly catalogBackup: string;
+  readonly preferences: string;
   readonly profile: (localProfileId: LocalProfileId) => ProfilePaths;
   readonly temporarySibling: (target: string, sessionName: string) => string;
 }
@@ -77,6 +78,7 @@ export async function createApplicationPaths(
       deletingRoot,
       catalog: join(canonicalRoot, 'profile-index.json'),
       catalogBackup: join(canonicalRoot, 'profile-index.json.bak'),
+      preferences: join(canonicalRoot, 'preferences.json'),
       profile: (localProfileId: LocalProfileId) =>
         profilePaths(profilesRoot, localProfileId),
       temporarySibling: (target: string, sessionName: string) =>

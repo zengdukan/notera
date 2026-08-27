@@ -77,6 +77,8 @@ describe('validated preload bridge', () => {
       'attachment',
       'export',
       'operation',
+      'settings',
+      'app',
       'events',
     ]);
     expect(api).not.toHaveProperty('ipcRenderer');

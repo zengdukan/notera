@@ -5,6 +5,7 @@ import {
   attachmentStartImport,
   attachmentStartSaveAs,
 } from './contracts/attachment';
+import { appCloseRequested, appCompleteClose } from './contracts/app';
 import {
   batchAddTags,
   batchCopy,
@@ -60,9 +61,16 @@ import {
   profileRemoveFromDevice,
   profileRename,
   profileSwitch,
+  profileTouchActivity,
   profileUnlock,
 } from './contracts/profile';
 import { searchQuery } from './contracts/search';
+import {
+  settingsGetDevice,
+  settingsGetProfile,
+  settingsUpdateDevice,
+  settingsUpdateProfile,
+} from './contracts/settings';
 import {
   tagAddToNote,
   tagCreate,
@@ -84,6 +92,7 @@ export const requestContracts = {
   'profile.create': profileCreate,
   'profile.unlock': profileUnlock,
   'profile.lock': profileLock,
+  'profile.touchActivity': profileTouchActivity,
   'profile.switch': profileSwitch,
   'profile.rename': profileRename,
   'profile.changePassword': profileChangePassword,
@@ -135,12 +144,18 @@ export const requestContracts = {
   'export.startNote': exportStartNote,
   'operation.getStatus': operationGetStatus,
   'operation.cancel': operationCancel,
+  'settings.getDevice': settingsGetDevice,
+  'settings.updateDevice': settingsUpdateDevice,
+  'settings.getProfile': settingsGetProfile,
+  'settings.updateProfile': settingsUpdateProfile,
+  'app.completeClose': appCompleteClose,
 } as const;
 
 export const eventContracts = {
   'profile.locked': profileLocked,
   'operation.progress': operationProgress,
   'operation.completed': operationCompleted,
+  'app.closeRequested': appCloseRequested,
 } as const;
 
 interface RegistryEntry {

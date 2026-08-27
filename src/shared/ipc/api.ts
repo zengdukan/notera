@@ -27,6 +27,7 @@ export interface NoteraApi {
     readonly create: InvokeMethod<Request<'profile.create'>>;
     readonly unlock: InvokeMethod<Request<'profile.unlock'>>;
     readonly lock: InvokeMethod<Request<'profile.lock'>>;
+    readonly touchActivity: InvokeMethod<Request<'profile.touchActivity'>>;
     readonly switch: InvokeMethod<Request<'profile.switch'>>;
     readonly rename: InvokeMethod<Request<'profile.rename'>>;
     readonly changePassword: InvokeMethod<Request<'profile.changePassword'>>;
@@ -103,11 +104,21 @@ export interface NoteraApi {
     readonly getStatus: InvokeMethod<Request<'operation.getStatus'>>;
     readonly cancel: InvokeMethod<Request<'operation.cancel'>>;
   };
+  readonly settings: {
+    readonly getDevice: InvokeMethod<Request<'settings.getDevice'>>;
+    readonly updateDevice: InvokeMethod<Request<'settings.updateDevice'>>;
+    readonly getProfile: InvokeMethod<Request<'settings.getProfile'>>;
+    readonly updateProfile: InvokeMethod<Request<'settings.updateProfile'>>;
+  };
+  readonly app: {
+    readonly completeClose: InvokeMethod<Request<'app.completeClose'>>;
+  };
   readonly events: {
     readonly onProfileLocked: SubscribeMethod<Event<'profile.locked'>>;
     readonly onOperationProgress: SubscribeMethod<Event<'operation.progress'>>;
     readonly onOperationCompleted: SubscribeMethod<
       Event<'operation.completed'>
     >;
+    readonly onAppCloseRequested: SubscribeMethod<Event<'app.closeRequested'>>;
   };
 }

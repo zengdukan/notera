@@ -42,6 +42,10 @@ import {
 import { createProfileCatalog, type ProfileCatalog } from './catalog';
 import { ApplicationError } from './errors';
 import { createApplicationPaths, type ApplicationPaths } from './paths';
+import {
+  createPreferencesStore,
+  type PreferencesStore,
+} from './preferences';
 import { createProfileSession, type ProfileSession } from './session';
 import type {
   Page,
@@ -180,6 +184,8 @@ class LocalProfileManager implements ProfileManager {
 
   readonly localAttachments: LocalAttachmentsService;
 
+  readonly preferences: PreferencesStore;
+
   private readonly paths: ApplicationPaths;
 
   private readonly catalog: ProfileCatalog;
@@ -192,9 +198,14 @@ class LocalProfileManager implements ProfileManager {
 
   private closePromise: Promise<void> | undefined;
 
-  constructor(paths: ApplicationPaths, catalog: ProfileCatalog) {
+  constructor(
+    paths: ApplicationPaths,
+    catalog: ProfileCatalog,
+    preferences: PreferencesStore,
+  ) {
     this.paths = paths;
     this.catalog = catalog;
+    this.preferences = preferences;
     this.localNotes = createLocalNotesService({
       getSession: () => this.session,
     });
@@ -629,6 +640,7 @@ class LocalProfileManager implements ProfileManager {
         this.catalog.hide(id);
         throw new ApplicationError('REMOVE_FAILED');
       }
+      await this.preferences.removeProfile(id);
       if (!(await verifiedDirectory(target, deletingRoot))) {
         throw new ApplicationError('REMOVE_FAILED');
       }
@@ -652,8 +664,13 @@ class LocalProfileManager implements ProfileManager {
 // eslint-disable-next-line import/prefer-default-export
 export async function createProfileManager(input: {
   readonly appDataRoot: string;
+  readonly systemLocale?: string;
 }): Promise<ProfileManager> {
   const paths = await createApplicationPaths(input?.appDataRoot);
   const { catalog } = await createProfileCatalog(paths);
-  return new LocalProfileManager(paths, catalog);
+  const preferences = await createPreferencesStore({
+    appDataRoot: paths.appDataRoot,
+    systemLocale: input.systemLocale,
+  });
+  return new LocalProfileManager(paths, catalog, preferences);
 }

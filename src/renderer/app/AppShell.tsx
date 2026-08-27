@@ -6,6 +6,9 @@ import { FormattedMessage } from 'react-intl';
 
 import type { NoteraClient } from '../platform/notera-client';
 import { NoteraClientError } from '../platform/notera-client';
+import { handleCloseRequest, type CloseFailureChoice } from '../profile/close-guard';
+import { ProfileGate } from '../profile/ProfileGate';
+import type { ProfileListItem } from '../profile/ProfileList';
 import { useSession } from './session';
 
 const shellStyles = xcss({
@@ -14,9 +17,24 @@ const shellStyles = xcss({
   padding: 'space.300',
 });
 
-export function AppShell({ client }: { readonly client: NoteraClient }) {
+export function AppShell({
+  client,
+  documentCloseGuard = {
+    isDirty: () => false,
+    flush: async () => undefined,
+    chooseAfterFailure: async () => 'stay' as const,
+  },
+}: {
+  readonly client: NoteraClient;
+  readonly documentCloseGuard?: {
+    readonly isDirty: () => boolean;
+    readonly flush: () => Promise<void>;
+    readonly chooseAfterFailure: () => Promise<CloseFailureChoice>;
+  };
+}) {
   const { state, dispatch } = useSession();
   const [loaded, setLoaded] = useState(false);
+  const [profiles, setProfiles] = useState<readonly ProfileListItem[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -24,8 +42,9 @@ export function AppShell({ client }: { readonly client: NoteraClient }) {
       client.request('profile.list', { limit: 50 }),
       client.request('profile.getSessionState', {}),
     ])
-      .then(([, session]) => {
+      .then(([profilePage, session]) => {
         if (!active) return;
+        setProfiles(profilePage.items);
         if (session.state === 'UNLOCKED') {
           dispatch({ type: 'unlocked', profile: session });
         } else {
@@ -49,6 +68,18 @@ export function AppShell({ client }: { readonly client: NoteraClient }) {
     };
   }, [client, dispatch]);
 
+  useEffect(
+    () =>
+      client.subscribe('app.closeRequested', ({ requestId }) => {
+        void handleCloseRequest({
+          requestId,
+          ...documentCloseGuard,
+          complete: (value) => client.request('app.completeClose', value),
+        }).catch(() => undefined);
+      }),
+    [client, documentCloseGuard],
+  );
+
   return (
     <Box as="main" xcss={shellStyles}>
       <Stack space="space.200">
@@ -65,15 +96,13 @@ export function AppShell({ client }: { readonly client: NoteraClient }) {
             </Stack>
           </Box>
         ) : null}
-        {state.status === 'locked' ? (
-          <Text as="p">
-            <FormattedMessage id="app.chooseProfile" />
-          </Text>
-        ) : null}
-        {state.status === 'unlocked' ? (
-          <Text as="p">
-            <FormattedMessage id="app.workspaceReady" />
-          </Text>
+        {loaded &&
+        (state.status === 'locked' || state.status === 'unlocked') ? (
+          <ProfileGate client={client} profiles={profiles}>
+            <Text as="p">
+              <FormattedMessage id="app.workspaceReady" />
+            </Text>
+          </ProfileGate>
         ) : null}
         {state.status === 'fatal' ? (
           <Box as="div" role="alert">

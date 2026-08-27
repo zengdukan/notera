@@ -1,4 +1,13 @@
 export { createProfileManager } from './manager';
+export {
+  createPreferencesStore,
+  type AutoLockMinutes,
+  type DeviceSettings,
+  type LanguagePreference,
+  type PreferencesStore,
+  type ProfileSettings,
+  type ThemePreference,
+} from './preferences';
 export { ApplicationError, type ApplicationErrorCode } from './errors';
 export type {
   ContentSort,

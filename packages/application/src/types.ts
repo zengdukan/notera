@@ -56,6 +56,7 @@ export type SessionState =
     }>;
 
 export interface ProfileManager {
+  readonly preferences: import('./preferences').PreferencesStore;
   readonly localNotes: LocalNotesService;
   readonly localAttachments: LocalAttachmentsService;
   listProfiles(input: PageRequest): Page<ProfileSummary>;

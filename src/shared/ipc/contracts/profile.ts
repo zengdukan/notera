@@ -93,6 +93,14 @@ export const profileLock = defineRequestContract({
   errors: ['IPC_OPERATION_FAILED'],
 });
 
+export const profileTouchActivity = defineRequestContract({
+  key: 'profile.touchActivity',
+  channel: 'notera:profile:touch-activity',
+  request: emptyObjectSchema,
+  data: emptyObjectSchema,
+  errors: ['PROFILE_LOCKED', 'IPC_OPERATION_FAILED'],
+});
+
 export const profileSwitch = defineRequestContract({
   key: 'profile.switch',
   channel: 'notera:profile:switch',
@@ -164,6 +172,7 @@ export const profileContracts = {
   create: profileCreate,
   unlock: profileUnlock,
   lock: profileLock,
+  touchActivity: profileTouchActivity,
   switch: profileSwitch,
   rename: profileRename,
   changePassword: profileChangePassword,

@@ -87,6 +87,7 @@ const noteraApi = {
     create: bindRequest(requestContracts['profile.create']),
     unlock: bindRequest(requestContracts['profile.unlock']),
     lock: bindRequest(requestContracts['profile.lock']),
+    touchActivity: bindRequest(requestContracts['profile.touchActivity']),
     switch: bindRequest(requestContracts['profile.switch']),
     rename: bindRequest(requestContracts['profile.rename']),
     changePassword: bindRequest(requestContracts['profile.changePassword']),
@@ -161,10 +162,20 @@ const noteraApi = {
     getStatus: bindRequest(requestContracts['operation.getStatus']),
     cancel: bindRequest(requestContracts['operation.cancel']),
   },
+  settings: {
+    getDevice: bindRequest(requestContracts['settings.getDevice']),
+    updateDevice: bindRequest(requestContracts['settings.updateDevice']),
+    getProfile: bindRequest(requestContracts['settings.getProfile']),
+    updateProfile: bindRequest(requestContracts['settings.updateProfile']),
+  },
+  app: {
+    completeClose: bindRequest(requestContracts['app.completeClose']),
+  },
   events: {
     onProfileLocked: bindEvent(eventContracts['profile.locked']),
     onOperationProgress: bindEvent(eventContracts['operation.progress']),
     onOperationCompleted: bindEvent(eventContracts['operation.completed']),
+    onAppCloseRequested: bindEvent(eventContracts['app.closeRequested']),
   },
 } satisfies NoteraApi;
 

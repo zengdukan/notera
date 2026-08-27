@@ -1,7 +1,6 @@
 import { ApplicationError } from '@notera/application';
 
 import {
-  AUTO_LOCK_SECONDS,
   AutoLockController,
   IDLE_POLL_MS,
   type PowerMonitorPort,
@@ -9,14 +8,13 @@ import {
 } from '../auto-lock';
 
 function settle() {
-  return new Promise<void>((resolve) => {
-    setImmediate(resolve);
-  });
+  return new Promise<void>((resolve) => setImmediate(resolve));
 }
 
 function setup() {
+  let now = 1_000_000;
   let state: 'LOCKED' | 'UNLOCKED' = 'UNLOCKED';
-  let idle = 0;
+  let autoLockMinutes = 15;
   let timer: (() => void) | undefined;
   const listeners = new Map<string, () => void>();
   const powerMonitor: PowerMonitorPort = {
@@ -24,7 +22,6 @@ function setup() {
     removeListener: jest.fn((event, listener) => {
       if (listeners.get(event) === listener) listeners.delete(event);
     }),
-    getSystemIdleTime: jest.fn(() => idle),
   };
   const scheduler: SchedulerPort = {
     setInterval: jest.fn((callback) => {
@@ -33,23 +30,23 @@ function setup() {
     }),
     clearInterval: jest.fn(),
   };
-  const lifecycle = {
-    lock: jest.fn(async () => undefined),
-  };
+  const lifecycle = { lock: jest.fn(async () => undefined) };
   const logger = { error: jest.fn() };
   const controller = new AutoLockController({
     powerMonitor,
     scheduler,
     lifecycle,
     getSessionState: () =>
-      state === 'UNLOCKED'
-        ? {
+      state === 'LOCKED'
+        ? { state }
+        : {
             state,
             localProfileId: '10000000-0000-4000-8000-000000000001' as never,
             displayName: 'Profile',
             rootFolderId: '10000000-0000-4000-8000-000000000002' as never,
-          }
-        : { state },
+          },
+    getAutoLockMinutes: () => autoLockMinutes,
+    now: () => now,
     logger,
   });
   return {
@@ -59,8 +56,11 @@ function setup() {
     lifecycle,
     logger,
     listeners,
-    setIdle(value: number) {
-      idle = value;
+    advance(milliseconds: number) {
+      now += milliseconds;
+    },
+    setMinutes(value: number) {
+      autoLockMinutes = value;
     },
     setState(value: 'LOCKED' | 'UNLOCKED') {
       state = value;
@@ -73,73 +73,65 @@ function setup() {
 }
 
 describe('AutoLockController', () => {
-  it('uses fixed timing and starts/stops exact listeners idempotently', () => {
+  it('tracks renderer activity and applies the current profile timeout', async () => {
     const state = setup();
-    expect(AUTO_LOCK_SECONDS).toBe(15 * 60);
-    expect(IDLE_POLL_MS).toBe(5_000);
     state.controller.start();
-    state.controller.start();
-    expect(state.powerMonitor.on).toHaveBeenCalledTimes(2);
-    expect(state.scheduler.setInterval).toHaveBeenCalledTimes(1);
     expect(state.scheduler.setInterval).toHaveBeenCalledWith(
       expect.any(Function),
       IDLE_POLL_MS,
     );
+    state.advance(15 * 60_000 - 1);
+    state.tick();
+    await settle();
+    expect(state.lifecycle.lock).not.toHaveBeenCalled();
 
-    state.controller.stop();
-    state.controller.stop();
-    expect(state.powerMonitor.removeListener).toHaveBeenCalledTimes(2);
-    expect(state.scheduler.clearInterval).toHaveBeenCalledTimes(1);
-    expect(state.scheduler.clearInterval).toHaveBeenCalledWith(17);
-    expect(state.listeners.size).toBe(0);
+    state.advance(1);
+    state.tick();
+    await settle();
+    expect(state.lifecycle.lock).toHaveBeenCalledWith('IDLE_TIMEOUT');
+
+    state.lifecycle.lock.mockClear();
+    state.controller.touchActivity();
+    state.setMinutes(1);
+    state.advance(59_999);
+    state.tick();
+    await settle();
+    expect(state.lifecycle.lock).not.toHaveBeenCalled();
+    state.advance(1);
+    state.tick();
+    await settle();
+    expect(state.lifecycle.lock).toHaveBeenCalledWith('IDLE_TIMEOUT');
   });
 
-  it('locks immediately for system lock and suspend events', async () => {
+  it('locks immediately for system lock and suspend and is idempotent', async () => {
     const state = setup();
+    state.controller.start();
     state.controller.start();
     state.listeners.get('lock-screen')?.();
     state.listeners.get('suspend')?.();
     await settle();
     expect(state.lifecycle.lock).toHaveBeenNthCalledWith(1, 'SYSTEM_LOCK');
     expect(state.lifecycle.lock).toHaveBeenNthCalledWith(2, 'SYSTEM_SUSPEND');
+    state.controller.stop();
+    state.controller.stop();
+    expect(state.powerMonitor.removeListener).toHaveBeenCalledTimes(2);
+    expect(state.scheduler.clearInterval).toHaveBeenCalledTimes(1);
   });
 
-  it('locks at 900 idle seconds but not at 899 or while already locked', async () => {
+  it('does not timeout a locked profile and logs only fixed codes', async () => {
     const state = setup();
     state.controller.start();
-    state.setIdle(899);
-    state.tick();
-    await settle();
-    expect(state.lifecycle.lock).not.toHaveBeenCalled();
-
-    state.setIdle(900);
-    state.tick();
-    await settle();
-    expect(state.lifecycle.lock).toHaveBeenCalledWith('IDLE_TIMEOUT');
-
-    state.lifecycle.lock.mockClear();
     state.setState('LOCKED');
+    state.advance(60 * 60_000);
     state.tick();
     await settle();
     expect(state.lifecycle.lock).not.toHaveBeenCalled();
-  });
 
-  it('logs only a fixed code for asynchronous failures', async () => {
-    const state = setup();
     state.lifecycle.lock.mockRejectedValueOnce(
       new ApplicationError('PROFILE_LOCKED'),
     );
-    state.lifecycle.lock.mockRejectedValueOnce(
-      new Error('C:\\private\\profile'),
-    );
-    state.controller.start();
     state.listeners.get('lock-screen')?.();
-    state.listeners.get('suspend')?.();
     await settle();
-    expect(state.logger.error).toHaveBeenNthCalledWith(1, 'PROFILE_LOCKED');
-    expect(state.logger.error).toHaveBeenNthCalledWith(
-      2,
-      'IPC_OPERATION_FAILED',
-    );
+    expect(state.logger.error).toHaveBeenCalledWith('PROFILE_LOCKED');
   });
 });

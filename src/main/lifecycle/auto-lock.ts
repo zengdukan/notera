@@ -3,7 +3,6 @@ import { ApplicationError, type SessionState } from '@notera/application';
 import { IPC_ERROR_CODES, type IpcErrorCode } from '../../shared';
 import type { SessionLifecycle } from './session-lock';
 
-export const AUTO_LOCK_SECONDS = 15 * 60;
 export const IDLE_POLL_MS = 5_000;
 
 type PowerEvent = 'lock-screen' | 'suspend';
@@ -11,7 +10,6 @@ type PowerEvent = 'lock-screen' | 'suspend';
 export interface PowerMonitorPort {
   on(event: PowerEvent, listener: () => void): void;
   removeListener(event: PowerEvent, listener: () => void): void;
-  getSystemIdleTime(): number;
 }
 
 export interface SchedulerPort {
@@ -38,6 +36,8 @@ export class AutoLockController {
     readonly scheduler: SchedulerPort;
     readonly lifecycle: Pick<SessionLifecycle, 'lock'>;
     readonly getSessionState: () => SessionState;
+    readonly getAutoLockMinutes: () => number;
+    readonly now: () => number;
     readonly logger: AutoLockLogger;
   };
 
@@ -47,10 +47,10 @@ export class AutoLockController {
 
   private readonly poll = () => {
     try {
-      if (
-        this.input.getSessionState().state === 'UNLOCKED' &&
-        this.input.powerMonitor.getSystemIdleTime() >= AUTO_LOCK_SECONDS
-      ) {
+      if (this.input.getSessionState().state !== 'UNLOCKED') return;
+      const timeout = this.input.getAutoLockMinutes() * 60_000;
+      if (this.input.now() - this.lastActivityAt >= timeout) {
+        this.lastActivityAt = this.input.now();
         this.trigger('IDLE_TIMEOUT');
       }
     } catch (error) {
@@ -62,8 +62,15 @@ export class AutoLockController {
 
   private started = false;
 
+  private lastActivityAt: number;
+
   constructor(input: AutoLockController['input']) {
     this.input = input;
+    this.lastActivityAt = input.now();
+  }
+
+  touchActivity(): void {
+    this.lastActivityAt = this.input.now();
   }
 
   start(): void {

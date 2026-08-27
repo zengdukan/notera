@@ -19,6 +19,7 @@ import {
 } from './export/pdf-host';
 import type { ExportDialogPort } from './export/types';
 import { createAttachmentBindings } from './ipc/attachment-handlers';
+import { createAppBindings } from './ipc/app-handlers';
 import { createExportBindings } from './ipc/export-handlers';
 import {
   createLocalNotesBindings,
@@ -28,6 +29,10 @@ import {
   createProfileBindings,
   type ProfileRemovalConfirmation,
 } from './ipc/profile-handlers';
+import {
+  createSettingsBindings,
+  getUnlockedProfileId,
+} from './ipc/settings-handlers';
 import {
   registerIpcBindings,
   type IpcBinding,
@@ -41,10 +46,17 @@ import {
   type SchedulerPort,
 } from './lifecycle/auto-lock';
 import { SessionLifecycle } from './lifecycle/session-lock';
+import { createWindowCloseController } from './lifecycle/window-close';
 import { OperationRegistry } from './operations/registry';
 
 export interface RuntimeWindow {
   isDestroyed(): boolean;
+  on(event: 'close', listener: (event: { preventDefault(): void }) => void): void;
+  removeListener(
+    event: 'close',
+    listener: (event: { preventDefault(): void }) => void,
+  ): void;
+  close(): void;
   readonly webContents: {
     readonly id: number;
     readonly mainFrame: { readonly routingId: number };
@@ -208,14 +220,27 @@ export async function createMainRuntime(input: {
     scheduler: input.electron.scheduler,
     lifecycle,
     getSessionState: () => manager.getSessionState(),
+    getAutoLockMinutes: () => {
+      const profileId = getUnlockedProfileId(() => manager.getSessionState());
+      return manager.preferences.getProfile(profileId).autoLockMinutes;
+    },
+    now: input.electron.now,
     logger: input.electron.logger,
   });
+  const windowClose = createWindowCloseController({
+    publish: (payload) => publisher.publish('app.closeRequested', payload),
+    close: () => input.window.close(),
+    randomUUID: input.electron.randomUUID,
+  });
+  const onWindowClose = (event: { preventDefault(): void }) =>
+    windowClose.request(event);
   const bindings = Object.freeze([
     ...createProfileBindings({
       manager,
       lifecycle,
       gate: lifecycle,
       confirmation: input.electron.confirmation,
+      activity: autoLock,
     }),
     ...createLocalNotesBindings({
       service: manager.localNotes,
@@ -233,6 +258,14 @@ export async function createMainRuntime(input: {
       coordinator: exportCoordinator,
       gate: lifecycle,
     }),
+    ...createSettingsBindings({
+      preferences: manager.preferences,
+      gate: lifecycle,
+      getLocalProfileId: () =>
+        getUnlockedProfileId(() => manager.getSessionState()),
+      activity: autoLock,
+    }),
+    ...createAppBindings({ closeController: windowClose }),
   ]);
   assertEnabledBindings(bindings);
 
@@ -253,6 +286,7 @@ export async function createMainRuntime(input: {
           bindings,
         });
         autoLock.start();
+        input.window.on('close', onWindowClose);
         started = true;
       } catch (error) {
         disposeIpc?.();
@@ -270,6 +304,11 @@ export async function createMainRuntime(input: {
         autoLock.stop();
       } catch (error) {
         firstError = error;
+      }
+      try {
+        input.window.removeListener('close', onWindowClose);
+      } catch (error) {
+        if (firstError === undefined) firstError = error;
       }
       let lifecycleClose: Promise<void>;
       try {

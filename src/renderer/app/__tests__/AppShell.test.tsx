@@ -37,7 +37,10 @@ describe('application shell', () => {
     const request = jest.fn((key: string) =>
       key === 'profile.list' ? profiles.promise : session.promise,
     );
-    const client = { request } as unknown as NoteraClient;
+    const client = {
+      request,
+      subscribe: jest.fn(() => () => undefined),
+    } as unknown as NoteraClient;
 
     render(providers(<AppShell client={client} />));
 

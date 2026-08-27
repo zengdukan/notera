@@ -67,7 +67,6 @@ function setup(initialState: SessionState = { state: 'LOCKED' }) {
         if (powerListeners.get(event) === listener)
           powerListeners.delete(event);
       }),
-      getSystemIdleTime: jest.fn(() => 0),
     },
     scheduler: {
       setInterval: jest.fn(() => 1),
@@ -102,7 +101,7 @@ function setup(initialState: SessionState = { state: 'LOCKED' }) {
 }
 
 describe('MainRuntime', () => {
-  it('registers exactly all 56 bindings including export.startNote', async () => {
+  it('registers exactly all 62 bindings including settings and close', async () => {
     const state = setup();
     const runtime = await state.create();
     await runtime.start();
@@ -111,10 +110,12 @@ describe('MainRuntime', () => {
       .map((contract) => contract.channel)
       .sort();
     expect([...state.handlers.keys()].sort()).toEqual(enabled);
-    expect(state.handlers.size).toBe(56);
+    expect(state.handlers.size).toBe(62);
     expect(
       state.handlers.has(requestContracts['export.startNote'].channel),
     ).toBe(true);
+    expect(state.handlers.has(requestContracts['settings.getDevice'].channel)).toBe(true);
+    expect(state.handlers.has(requestContracts['app.completeClose'].channel)).toBe(true);
     expect(state.calls[0]).toBe('protocol.handle');
     await runtime.close();
   });
@@ -158,7 +159,7 @@ describe('MainRuntime', () => {
     const second = runtime.close();
     expect(second).toBe(first);
     expect(state.handlers.size).toBe(0);
-    expect(state.electron.ipcMain.removeHandler).toHaveBeenCalledTimes(56);
+    expect(state.electron.ipcMain.removeHandler).toHaveBeenCalledTimes(62);
     pending.resolve();
     await first;
     expect(state.profile.manager.close).toHaveBeenCalledTimes(1);

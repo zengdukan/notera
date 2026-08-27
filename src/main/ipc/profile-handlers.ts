@@ -16,6 +16,7 @@ export interface ProfileHandlerDependencies {
   >;
   readonly gate: SessionCommandGate;
   readonly confirmation: ProfileRemovalConfirmation;
+  readonly activity: { touchActivity(): void };
 }
 
 export function createProfileBindings(
@@ -30,25 +31,37 @@ export function createProfileBindings(
     defineIpcBinding('profile.getSessionState', () =>
       input.manager.getSessionState(),
     ),
-    defineIpcBinding('profile.create', (value) =>
-      input.lifecycle.create(
+    defineIpcBinding('profile.create', async (value) => {
+      const result = await input.lifecycle.create(
         value as Parameters<ProfileManager['createProfile']>[0],
-      ),
-    ),
-    defineIpcBinding('profile.unlock', (value) =>
-      input.lifecycle.unlock(
+      );
+      input.activity.touchActivity();
+      return result;
+    }),
+    defineIpcBinding('profile.unlock', async (value) => {
+      const result = await input.lifecycle.unlock(
         value as Parameters<ProfileManager['unlockProfile']>[0],
-      ),
-    ),
+      );
+      input.activity.touchActivity();
+      return result;
+    }),
     defineIpcBinding('profile.lock', async () => {
       await input.lifecycle.lock('MANUAL');
       return {};
     }),
-    defineIpcBinding('profile.switch', (value) =>
-      input.lifecycle.switch(
-        value as Parameters<ProfileManager['switchProfile']>[0],
-      ),
+    defineIpcBinding('profile.touchActivity', () =>
+      input.gate.run(() => {
+        input.activity.touchActivity();
+        return {};
+      }),
     ),
+    defineIpcBinding('profile.switch', async (value) => {
+      const result = await input.lifecycle.switch(
+        value as Parameters<ProfileManager['switchProfile']>[0],
+      );
+      input.activity.touchActivity();
+      return result;
+    }),
     defineIpcBinding('profile.rename', (value) =>
       input.gate.run(() => input.manager.renameProfile(value.displayName)),
     ),
