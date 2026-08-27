@@ -28,6 +28,7 @@ function setup(initialState: SessionState = { state: 'LOCKED' }) {
   const runtimeWindow = createRuntimeWindowFake();
   const handlers = new Map<string, unknown>();
   const powerListeners = new Map<string, () => void>();
+  const sessionMedia = { revokeAll: jest.fn() };
   let random = 0;
   const electron: MainElectronPorts = {
     createProfileManager: jest.fn(async () => profile.manager),
@@ -91,17 +92,19 @@ function setup(initialState: SessionState = { state: 'LOCKED' }) {
         appDataRoot: 'D:\\notera-test',
         window: runtimeWindow.window,
         electron,
+        sessionMedia,
       }),
     electron,
     profile,
     runtimeWindow,
     handlers,
     calls,
+    sessionMedia,
   };
 }
 
 describe('MainRuntime', () => {
-  it('registers exactly all 62 bindings including settings and close', async () => {
+  it('registers exactly every binding including settings and close', async () => {
     const state = setup();
     const runtime = await state.create();
     await runtime.start();
@@ -110,12 +113,16 @@ describe('MainRuntime', () => {
       .map((contract) => contract.channel)
       .sort();
     expect([...state.handlers.keys()].sort()).toEqual(enabled);
-    expect(state.handlers.size).toBe(62);
+    expect(state.handlers.size).toBe(enabled.length);
     expect(
       state.handlers.has(requestContracts['export.startNote'].channel),
     ).toBe(true);
-    expect(state.handlers.has(requestContracts['settings.getDevice'].channel)).toBe(true);
-    expect(state.handlers.has(requestContracts['app.completeClose'].channel)).toBe(true);
+    expect(
+      state.handlers.has(requestContracts['settings.getDevice'].channel),
+    ).toBe(true);
+    expect(
+      state.handlers.has(requestContracts['app.completeClose'].channel),
+    ).toBe(true);
     expect(state.calls[0]).toBe('protocol.handle');
     await runtime.close();
   });
@@ -159,10 +166,13 @@ describe('MainRuntime', () => {
     const second = runtime.close();
     expect(second).toBe(first);
     expect(state.handlers.size).toBe(0);
-    expect(state.electron.ipcMain.removeHandler).toHaveBeenCalledTimes(62);
+    expect(state.electron.ipcMain.removeHandler).toHaveBeenCalledTimes(
+      Object.keys(requestContracts).length,
+    );
     pending.resolve();
     await first;
     expect(state.profile.manager.close).toHaveBeenCalledTimes(1);
+    expect(state.sessionMedia.revokeAll).toHaveBeenCalledTimes(1);
     expect(state.electron.protocol.unhandle).toHaveBeenCalledTimes(1);
     expect(state.electron.scheduler.clearInterval).toHaveBeenCalledTimes(1);
   });

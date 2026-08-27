@@ -13,7 +13,9 @@ interface SaveResult {
 export function createSaveCoordinator(input: {
   readonly getState: () => DocumentSessionState;
   readonly dispatch: (action: DocumentSessionAction) => void;
-  readonly save: (value: DocumentDraft & { readonly noteId: string }) => Promise<SaveResult>;
+  readonly save: (
+    value: DocumentDraft & { readonly noteId: string },
+  ) => Promise<SaveResult>;
   readonly debounceMs?: number;
 }) {
   const debounceMs = input.debounceMs ?? 1_000;
@@ -50,7 +52,7 @@ export function createSaveCoordinator(input: {
     const state = input.getState();
     if (state.savedRevision >= state.draftRevision) return Promise.resolve();
     const revision = state.draftRevision;
-    const draft = state.draft;
+    const { draft } = state;
     input.dispatch({ type: 'save-started', revision });
     const request = input.save({ noteId: state.noteId, ...draft });
     inFlight = request
@@ -62,6 +64,7 @@ export function createSaveCoordinator(input: {
           contentVersion: result.contentVersion,
           savedAt: result.savedAt,
         });
+        return undefined;
       })
       .catch((error: unknown) => {
         input.dispatch({ type: 'save-failed', revision });
@@ -69,7 +72,8 @@ export function createSaveCoordinator(input: {
       })
       .finally(() => {
         inFlight = undefined;
-        const needsAnotherSave = input.getState().savedRevision < input.getState().draftRevision;
+        const needsAnotherSave =
+          input.getState().savedRevision < input.getState().draftRevision;
         if (!stopped && !flushing && (queued || needsAnotherSave)) {
           queued = false;
           schedule();
@@ -104,7 +108,8 @@ export function createSaveCoordinator(input: {
       queued = false;
       clearTimer();
     },
-    isDirty: () => input.getState().savedRevision < input.getState().draftRevision,
+    isDirty: () =>
+      input.getState().savedRevision < input.getState().draftRevision,
   });
 }
 

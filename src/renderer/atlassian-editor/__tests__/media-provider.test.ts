@@ -1,6 +1,8 @@
 /** @jest-environment jsdom */
 
-import { createMediaProvider } from '../media-provider';
+import { createMediaProvider, mediaProviderForNote } from '../media-provider';
+
+const noteId = '20000000-0000-4000-8000-000000000001';
 
 describe('Atlassian Media provider', () => {
   beforeEach(() => {
@@ -32,7 +34,7 @@ describe('Atlassian Media provider', () => {
       configurable: true,
       value: fetchMock,
     });
-    const provider = await createMediaProvider();
+    const provider = await createMediaProvider(noteId);
     const { uploadMediaClientConfig } = provider;
 
     expect(uploadMediaClientConfig).toBeDefined();
@@ -52,12 +54,19 @@ describe('Atlassian Media provider', () => {
       provider.uploadMediaClientConfig,
     );
     expect(provider.uploadParams).toEqual({
-      collection: 'atlaskit-editor-example',
+      collection: `notera-note-${noteId}`,
     });
     expect(fetchMock).toHaveBeenCalledWith(
       'http://127.0.0.1:43125/api/media/auth',
-      expect.objectContaining({ method: 'POST' }),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          noteId,
+          context: { collectionName: `notera-note-${noteId}` },
+        }),
+      }),
     );
+    expect(mediaProviderForNote(noteId)).toBe(mediaProviderForNote(noteId));
   });
 
   it('rejects malformed auth responses', async () => {
@@ -71,7 +80,7 @@ describe('Atlassian Media provider', () => {
       configurable: true,
       value: fetchMock,
     });
-    const provider = await createMediaProvider();
+    const provider = await createMediaProvider(noteId);
     const { uploadMediaClientConfig } = provider;
 
     expect(uploadMediaClientConfig).toBeDefined();

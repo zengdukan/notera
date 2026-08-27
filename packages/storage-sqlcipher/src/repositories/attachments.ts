@@ -22,6 +22,7 @@ import {
   createCurrentNoteAttachmentReference,
   createNoteVersionAttachmentReference,
   createTrashAttachmentReference,
+  createUploadAttachmentReference,
 } from '@notera/domain';
 
 import type { SqlcipherConnection } from '../connection';
@@ -110,6 +111,26 @@ export class AttachmentRepository implements AttachmentWriter {
     return Object.freeze({ attachment, storedBlob });
   }
 
+  isAccessibleToNote(attachmentId: AttachmentId, noteId: NoteId): boolean {
+    this.guard();
+    return (
+      this.connection()
+        .prepare(
+          `SELECT 1
+           FROM attachment_references r
+           LEFT JOIN note_versions v
+             ON r.source_type = 'NOTE_VERSION'
+            AND v.id = r.note_version_id AND v.vault_id = r.vault_id
+           WHERE r.vault_id = ? AND r.attachment_id = ? AND (
+             (r.source_type IN ('NOTE', 'UPLOAD') AND r.note_id = ?)
+             OR (r.source_type = 'NOTE_VERSION' AND v.note_id = ?)
+           )
+           LIMIT 1`,
+        )
+        .get(this.vaultId, attachmentId, noteId, noteId) !== undefined
+    );
+  }
+
   findReadyBlobBySha256(value: Uint8Array): StoredAttachmentBlob | undefined {
     return this.blobs.findReadyBySha256(value);
   }
@@ -166,7 +187,7 @@ export class AttachmentRepository implements AttachmentWriter {
     const rows = this.connection()
       .prepare<Row>(
         `SELECT vault_id, attachment_id, source_type,
-                note_id, note_version_id, trash_entry_id
+                note_id, note_version_id, trash_entry_id, expires_at
          FROM attachment_references
          WHERE vault_id = ? AND ${column} IN (${placeholders(unique)})
          ORDER BY attachment_id, source_type, note_id, note_version_id,
@@ -198,6 +219,13 @@ export class AttachmentRepository implements AttachmentWriter {
               trashEntryId: asTrashEntryId(row.trash_entry_id),
             });
           }
+          if (row.source_type === 'UPLOAD') {
+            return createUploadAttachmentReference({
+              ...base,
+              noteId: asNoteId(row.note_id),
+              expiresAt: asTimestamp(row.expires_at),
+            });
+          }
           return corrupt();
         } catch (error) {
           if (error instanceof StorageError) throw error;
@@ -227,6 +255,39 @@ export class AttachmentRepository implements AttachmentWriter {
 
   listReferencesForAttachments(ids: readonly AttachmentId[]) {
     return this.listReferences('attachment_id', ids);
+  }
+
+  listUploadReferencesForNote(noteId: NoteId) {
+    return this.listReferences('note_id', [noteId]).filter(
+      (value) => value.source === 'UPLOAD',
+    );
+  }
+
+  listExpiredUploadReferences(now: Timestamp) {
+    this.guard();
+    const rows = this.connection()
+      .prepare<Row>(
+        `SELECT vault_id, attachment_id, source_type,
+                note_id, note_version_id, trash_entry_id, expires_at
+         FROM attachment_references
+         WHERE vault_id = ? AND source_type = 'UPLOAD' AND expires_at <= ?
+         ORDER BY expires_at, attachment_id`,
+      )
+      .all(this.vaultId, now);
+    return Object.freeze(
+      rows.map((row) => {
+        try {
+          return createUploadAttachmentReference({
+            vaultId: asVaultId(row.vault_id),
+            attachmentId: asAttachmentId(row.attachment_id),
+            noteId: asNoteId(row.note_id),
+            expiresAt: asTimestamp(row.expires_at),
+          });
+        } catch {
+          return corrupt();
+        }
+      }),
+    );
   }
 
   listAllBlobs() {
@@ -278,20 +339,20 @@ export class AttachmentRepository implements AttachmentWriter {
     this.blobs.replace(value);
   }
 
-  private owner(reference: AttachmentReference): [string, string, string] {
-    if (reference.source === 'NOTE') {
-      return ['note_id', 'notes', reference.noteId];
+  private owner(reference: AttachmentReference): [string, string] {
+    if (reference.source === 'NOTE' || reference.source === 'UPLOAD') {
+      return ['notes', reference.noteId];
     }
     if (reference.source === 'NOTE_VERSION') {
-      return ['note_version_id', 'note_versions', reference.noteVersionId];
+      return ['note_versions', reference.noteVersionId];
     }
-    return ['trash_entry_id', 'trash_entries', reference.trashEntryId];
+    return ['trash_entries', reference.trashEntryId];
   }
 
   addReferences(values: readonly AttachmentReference[]): void {
     this.guard();
     values.forEach((reference) => {
-      const [column, table, ownerId] = this.owner(reference);
+      const [table, ownerId] = this.owner(reference);
       if (
         reference.vaultId !== this.vaultId ||
         this.getAttachment(reference.attachmentId) === undefined ||
@@ -304,17 +365,35 @@ export class AttachmentRepository implements AttachmentWriter {
       this.connection()
         .prepare(
           `INSERT OR IGNORE INTO attachment_references(
-             vault_id, attachment_id, source_type, ${column}
-           ) VALUES (?, ?, ?, ?)`,
+             vault_id, attachment_id, source_type,
+             note_id, note_version_id, trash_entry_id, expires_at
+           ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         )
-        .run(this.vaultId, reference.attachmentId, reference.source, ownerId);
+        .run(
+          this.vaultId,
+          reference.attachmentId,
+          reference.source,
+          reference.source === 'NOTE' || reference.source === 'UPLOAD'
+            ? reference.noteId
+            : null,
+          reference.source === 'NOTE_VERSION' ? reference.noteVersionId : null,
+          reference.source === 'TRASH' ? reference.trashEntryId : null,
+          reference.source === 'UPLOAD' ? reference.expiresAt : null,
+        );
     });
   }
 
   removeReferences(values: readonly AttachmentReference[]): void {
     this.guard();
     values.forEach((reference) => {
-      const [column, , ownerId] = this.owner(reference);
+      const [, ownerId] = this.owner(reference);
+      let column: 'note_id' | 'note_version_id' | 'trash_entry_id' =
+        'trash_entry_id';
+      if (reference.source === 'NOTE' || reference.source === 'UPLOAD') {
+        column = 'note_id';
+      } else if (reference.source === 'NOTE_VERSION') {
+        column = 'note_version_id';
+      }
       this.connection()
         .prepare(
           `DELETE FROM attachment_references
@@ -345,6 +424,16 @@ export class AttachmentRepository implements AttachmentWriter {
       )
       .run(this.vaultId, noteId);
     this.addReferences(values);
+    if (values.length > 0) {
+      const ids = [...new Set(values.map(({ attachmentId }) => attachmentId))];
+      this.connection()
+        .prepare(
+          `DELETE FROM attachment_references
+           WHERE vault_id = ? AND source_type = 'UPLOAD' AND note_id = ?
+             AND attachment_id IN (${placeholders(ids)})`,
+        )
+        .run(this.vaultId, noteId, ...ids);
+    }
   }
 
   deleteUnreferencedAttachments(

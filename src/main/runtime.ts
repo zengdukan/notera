@@ -51,7 +51,10 @@ import { OperationRegistry } from './operations/registry';
 
 export interface RuntimeWindow {
   isDestroyed(): boolean;
-  on(event: 'close', listener: (event: { preventDefault(): void }) => void): void;
+  on(
+    event: 'close',
+    listener: (event: { preventDefault(): void }) => void,
+  ): void;
   removeListener(
     event: 'close',
     listener: (event: { preventDefault(): void }) => void,
@@ -147,10 +150,14 @@ export async function createMainRuntime(input: {
   readonly appDataRoot: string;
   readonly window: RuntimeWindow;
   readonly electron: MainElectronPorts;
+  readonly profileManager?: ProfileManager;
+  readonly sessionMedia?: { revokeAll(): void };
 }): Promise<MainRuntime> {
-  const manager = await input.electron.createProfileManager({
-    appDataRoot: input.appDataRoot,
-  });
+  const manager =
+    input.profileManager ??
+    (await input.electron.createProfileManager({
+      appDataRoot: input.appDataRoot,
+    }));
   const publisher = createEventPublisher(input.window);
   const operations = new OperationRegistry({
     sink: {
@@ -181,7 +188,22 @@ export async function createMainRuntime(input: {
   lifecycle = new SessionLifecycle({
     manager,
     operations,
-    media,
+    media: {
+      revokeAll() {
+        let failure: unknown;
+        try {
+          input.sessionMedia?.revokeAll();
+        } catch (error) {
+          failure = error;
+        }
+        try {
+          media.revokeAll();
+        } catch (error) {
+          if (failure === undefined) failure = error;
+        }
+        if (failure !== undefined) throw failure;
+      },
+    },
     sink: {
       locked: (reason) => publisher.publish('profile.locked', { reason }),
     },

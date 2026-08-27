@@ -5,6 +5,7 @@ type Listener = () => void;
 
 export class ExportOperationStore {
   private current?: ExportOperation;
+
   private readonly listeners = new Set<Listener>();
 
   getSnapshot = (): ExportOperation | undefined => this.current;
@@ -15,11 +16,21 @@ export class ExportOperationStore {
   };
 
   track(operationId: string): void {
-    this.set({ operationId, kind: 'NOTE_EXPORT', state: 'RUNNING', phase: 'PREPARING', progress: null });
+    this.set({
+      operationId,
+      kind: 'NOTE_EXPORT',
+      state: 'RUNNING',
+      phase: 'PREPARING',
+      progress: null,
+    });
   }
 
   applyStatus(status: ExportOperation): void {
-    if (status.kind !== 'NOTE_EXPORT' || status.operationId !== this.current?.operationId) return;
+    if (
+      status.kind !== 'NOTE_EXPORT' ||
+      status.operationId !== this.current?.operationId
+    )
+      return;
     if (this.current.state !== 'RUNNING') return;
     this.set(status);
   }
@@ -29,7 +40,8 @@ export class ExportOperationStore {
       payload.kind !== 'NOTE_EXPORT' ||
       payload.operationId !== this.current?.operationId ||
       this.current.state !== 'RUNNING'
-    ) return;
+    )
+      return;
     this.set({ ...payload, state: 'RUNNING' });
   }
 
@@ -38,7 +50,8 @@ export class ExportOperationStore {
       payload.kind !== 'NOTE_EXPORT' ||
       payload.operationId !== this.current?.operationId ||
       this.current.state !== 'RUNNING'
-    ) return;
+    )
+      return;
     this.set(payload);
   }
 

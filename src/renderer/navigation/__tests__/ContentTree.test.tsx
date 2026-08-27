@@ -62,16 +62,26 @@ describe('ContentTree', () => {
     onToggle.mockClear();
     await user.keyboard('{ArrowRight}');
     expect(onToggle).toHaveBeenCalledWith('folder-1', true);
-    await user.click(screen.getByRole('button', { name: 'Create in Projects' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Create in Projects' }),
+    );
     expect(screen.getByRole('menuitem', { name: 'New note' })).toBeVisible();
-    expect(screen.getByRole('menuitem', { name: 'New subfolder' })).toBeVisible();
-    expect(screen.queryByRole('menuitem', { name: 'Rename' })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('menuitem', { name: 'New subfolder' }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('menuitem', { name: 'Rename' }),
+    ).not.toBeInTheDocument();
     await user.click(screen.getByRole('menuitem', { name: 'New note' }));
     expect(onCreateNote).toHaveBeenCalledWith(folder.entry);
     expect(onOpen).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'More actions for Projects' })).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'More actions for Projects' }),
+    ).toBeVisible();
 
-    await user.click(screen.getByRole('button', { name: 'More actions for Projects' }));
+    await user.click(
+      screen.getByRole('button', { name: 'More actions for Projects' }),
+    );
     expect(screen.getByRole('menuitem', { name: 'Rename' })).toBeVisible();
     await user.click(screen.getByRole('menuitem', { name: 'Rename' }));
     expect(rename).toHaveBeenCalledWith(folder.entry);
@@ -79,7 +89,9 @@ describe('ContentTree', () => {
     const noteRow = screen.getByRole('treeitem', { name: /Roadmap/ });
     await user.click(noteRow);
     onOpen.mockClear();
-    expect(screen.queryByRole('button', { name: 'Create in Roadmap' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Create in Roadmap' }),
+    ).not.toBeInTheDocument();
     await user.keyboard('{Shift>}{F10}{/Shift}');
     expect(screen.getByRole('menuitem', { name: 'Rename' })).toBeVisible();
   });
@@ -96,11 +108,16 @@ describe('ContentTree', () => {
           onToggle={jest.fn()}
           onCreateNote={jest.fn()}
           onCreateFolder={jest.fn()}
-          getActions={(entry) => createContentActions(entry, { rename: action })}
+          getActions={(entry) =>
+            createContentActions(entry, { rename: action })
+          }
         />
       </AppProviders>,
     );
-    await user.pointer({ keys: '[MouseRight]', target: screen.getByRole('tree') });
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('tree'),
+    });
     expect(screen.queryByRole('menuitem')).not.toBeInTheDocument();
     expect(action).not.toHaveBeenCalled();
   });

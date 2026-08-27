@@ -52,18 +52,31 @@ export function createProfileManagerFake(
 export function createRuntimeWindowFake() {
   const send = jest.fn();
   let destroyed = false;
-  const listeners = new Map<string, (event: { preventDefault(): void }) => void>();
+  const listeners = new Map<
+    string,
+    (event: { preventDefault(): void }) => void
+  >();
   const close = jest.fn(() => {
     listeners.get('close')?.({ preventDefault: jest.fn() });
   });
   const window = {
     isDestroyed: () => destroyed,
-    on: jest.fn((event: string, listener: (event: { preventDefault(): void }) => void) => {
-      listeners.set(event, listener);
-    }),
-    removeListener: jest.fn((event: string, listener: (event: { preventDefault(): void }) => void) => {
-      if (listeners.get(event) === listener) listeners.delete(event);
-    }),
+    on: jest.fn(
+      (
+        event: string,
+        listener: (event: { preventDefault(): void }) => void,
+      ) => {
+        listeners.set(event, listener);
+      },
+    ),
+    removeListener: jest.fn(
+      (
+        event: string,
+        listener: (event: { preventDefault(): void }) => void,
+      ) => {
+        if (listeners.get(event) === listener) listeners.delete(event);
+      },
+    ),
     close,
     webContents: {
       id: 7,

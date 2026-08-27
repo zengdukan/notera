@@ -10,14 +10,33 @@ import { configureFeatureFlags } from '../../atlassian-editor/feature-flags';
 import { ActiveDocumentLifecycle } from '../document-lifecycle';
 import { NoteWriteCoordinator } from '../note-write-coordinator';
 
+import { NoteWorkspace } from '../NoteWorkspace';
+
 configureFeatureFlags();
 jest.mock('../../editor/EditorSurface', () => ({
-  EditorSurface: ({ document, onChange }: { document: unknown; onChange(value: unknown): void }) => (
+  EditorSurface: ({
+    document,
+    onChange,
+  }: {
+    document: unknown;
+    onChange(value: unknown): void;
+  }) => (
     <div aria-label="Editor surface">
       {JSON.stringify(document)}
       <button
         type="button"
-        onClick={() => onChange({ version: 1, type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Changed' }] }] })}
+        onClick={() =>
+          onChange({
+            version: 1,
+            type: 'doc',
+            content: [
+              {
+                type: 'paragraph',
+                content: [{ type: 'text', text: 'Changed' }],
+              },
+            ],
+          })
+        }
       >
         Change document
       </button>
@@ -30,10 +49,10 @@ jest.mock('../../editor/RendererSurface', () => ({
   ),
 }));
 jest.mock('../../editor/ResponsiveEditorToolbar', () => ({
-  ResponsiveEditorToolbar: () => <div role="toolbar" aria-label="Editor formatting" />,
+  ResponsiveEditorToolbar: () => (
+    <div role="toolbar" aria-label="Editor formatting" />
+  ),
 }));
-
-import { NoteWorkspace } from '../NoteWorkspace';
 
 const noteEntry = {
   kind: 'note' as const,
@@ -46,13 +65,23 @@ const noteEntry = {
 const document = {
   version: 1 as const,
   type: 'doc' as const,
-  content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Preview' }] }],
+  content: [
+    { type: 'paragraph', content: [{ type: 'text', text: 'Preview' }] },
+  ],
 };
 
-function setup(options: { saveRejects?: boolean; initiallyEditing?: boolean } = {}) {
+function setup(
+  options: { saveRejects?: boolean; initiallyEditing?: boolean } = {},
+) {
   const request = jest.fn(async (key: string) => {
     if (key === 'note.get') {
-      return { ...noteEntry, document, createdAt: 50, isFavorite: false, tags: [] };
+      return {
+        ...noteEntry,
+        document,
+        createdAt: 50,
+        isFavorite: false,
+        tags: [],
+      };
     }
     if (key === 'contentTree.getFolderPath') {
       return { items: [{ id: noteEntry.folderId, name: 'Projects' }] };
@@ -65,7 +94,9 @@ function setup(options: { saveRejects?: boolean; initiallyEditing?: boolean } = 
     throw new Error(`Unexpected ${key}`);
   });
   const client = { request, subscribe: jest.fn() } as unknown as NoteraClient;
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   const lifecycle = new ActiveDocumentLifecycle();
   const props = {
     client,
@@ -89,12 +120,18 @@ describe('NoteWorkspace', () => {
     const user = userEvent.setup();
     setup();
 
-    expect(await screen.findByLabelText('Renderer surface')).toHaveTextContent('Preview');
-    expect(screen.queryByRole('toolbar', { name: 'Editor formatting' })).not.toBeInTheDocument();
+    expect(await screen.findByLabelText('Renderer surface')).toHaveTextContent(
+      'Preview',
+    );
+    expect(
+      screen.queryByRole('toolbar', { name: 'Editor formatting' }),
+    ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Edit' }));
     expect(screen.getByLabelText('Editor surface')).toBeVisible();
-    expect(screen.getByRole('toolbar', { name: 'Editor formatting' })).toBeVisible();
+    expect(
+      screen.getByRole('toolbar', { name: 'Editor formatting' }),
+    ).toBeVisible();
   });
 
   it('flushes the latest title and ADF before previewing', async () => {
@@ -106,7 +143,11 @@ describe('NoteWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Change document' }));
     await user.click(screen.getByRole('button', { name: 'Preview' }));
 
-    await waitFor(() => expect(screen.getByLabelText('Renderer surface')).toHaveTextContent('Changed'));
+    await waitFor(() =>
+      expect(screen.getByLabelText('Renderer surface')).toHaveTextContent(
+        'Changed',
+      ),
+    );
     expect(request).toHaveBeenCalledWith(
       'note.saveDraft',
       expect.objectContaining({
@@ -125,7 +166,9 @@ describe('NoteWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Change document' }));
     await user.click(screen.getByRole('button', { name: 'Preview' }));
 
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Not saved'));
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Not saved'),
+    );
     expect(screen.getByLabelText('Editor surface')).toBeVisible();
   });
 
@@ -136,24 +179,42 @@ describe('NoteWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Change document' }));
 
     await user.keyboard('{Control>}s{/Control}');
-    await waitFor(() => expect(request).toHaveBeenCalledWith('note.saveDraft', expect.any(Object)));
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith(
+        'note.saveDraft',
+        expect.any(Object),
+      ),
+    );
 
     await user.click(screen.getByRole('button', { name: 'Add to favorites' }));
-    await waitFor(() => expect(request).toHaveBeenCalledWith('favorite.add', { noteId: noteEntry.id }));
-    expect(screen.getByRole('button', { name: 'Remove from favorites' })).toBeVisible();
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith('favorite.add', {
+        noteId: noteEntry.id,
+      }),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Remove from favorites' }),
+    ).toBeVisible();
   });
 
   it('reflects favorite facts changed by another product surface', async () => {
     const { queryClient } = setup();
-    expect(await screen.findByRole('button', { name: 'Add to favorites' })).toBeVisible();
+    expect(
+      await screen.findByRole('button', { name: 'Add to favorites' }),
+    ).toBeVisible();
 
     act(() => {
-      queryClient.setQueryData(noteKey('profile', noteEntry.id), (current: unknown) => ({
-        ...(current as Record<string, unknown>),
-        isFavorite: true,
-      }));
+      queryClient.setQueryData(
+        noteKey('profile', noteEntry.id),
+        (current: unknown) => ({
+          ...(current as Record<string, unknown>),
+          isFavorite: true,
+        }),
+      );
     });
 
-    expect(await screen.findByRole('button', { name: 'Remove from favorites' })).toBeVisible();
+    expect(
+      await screen.findByRole('button', { name: 'Remove from favorites' }),
+    ).toBeVisible();
   });
 });

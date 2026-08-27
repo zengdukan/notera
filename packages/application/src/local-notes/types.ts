@@ -144,7 +144,9 @@ export interface ListChildrenInput {
 
 export interface LocalNotesService {
   listChildren(input: ListChildrenInput): Promise<Page<TreeEntrySummary>>;
-  getFolderPath(folderId: FolderId): Promise<{ readonly items: readonly FolderPathItem[] }>;
+  getFolderPath(
+    folderId: FolderId,
+  ): Promise<{ readonly items: readonly FolderPathItem[] }>;
   createFolder(input: {
     readonly parentFolderId: FolderId;
     readonly name: string;

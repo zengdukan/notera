@@ -30,7 +30,9 @@ export function ProfileList({
         {profiles.map((profile) => (
           <Button
             key={profile.localProfileId}
-            appearance={selectedId === profile.localProfileId ? 'primary' : 'subtle'}
+            appearance={
+              selectedId === profile.localProfileId ? 'primary' : 'subtle'
+            }
             shouldFitContainer
             onClick={() => onSelect(profile)}
           >

@@ -41,7 +41,9 @@ export function GeneralSettings({
         inputId="settings-language"
         aria-label="Language"
         options={languageOptions}
-        value={languageOptions.find((option) => option.value === value.language)}
+        value={languageOptions.find(
+          (option) => option.value === value.language,
+        )}
         onChange={(option) => {
           if (option) void onUpdate({ language: option.value });
         }}

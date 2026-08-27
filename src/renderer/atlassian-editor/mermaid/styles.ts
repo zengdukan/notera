@@ -58,7 +58,7 @@ export const mermaidErrorStyles = css({
     borderRadius: token('radius.small', '4px'),
     backgroundColor: token('color.background.neutral.subtle', '#f7f8f9'),
     color: token('color.text', '#172b4d'),
-    fontFamily: 'ui-monospace, "SFMono-Regular", Consolas, monospace',
+    fontFamily: token('font.family.code'),
     fontSize: '12px',
     whiteSpace: 'pre-wrap',
   },
@@ -73,7 +73,7 @@ export const dialogFieldStyles = css({
 export const dialogLabelStyles = css({
   color: token('color.text', '#172b4d'),
   font: token('font.body.small'),
-  fontWeight: 600,
+  fontWeight: token('font.weight.semibold'),
 });
 
 export const dialogHelpStyles = css({

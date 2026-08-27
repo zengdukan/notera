@@ -42,25 +42,28 @@ export function ProfileAccessPage({
         <Text as="p">
           <FormattedMessage id="app.chooseProfile" />
         </Text>
-        <Grid templateColumns="minmax(240px, 1fr) minmax(320px, 2fr)" gap="space.300">
-        <Box xcss={panelStyles}>
-          <ProfileList
-            profiles={profiles}
-            selectedId={creating ? undefined : selected?.localProfileId}
-            onCreate={() => setCreating(true)}
-            onSelect={(profile) => {
-              setSelected(profile);
-              setCreating(false);
-            }}
-          />
-        </Box>
-        <Box xcss={panelStyles}>
-          {creating || selected === undefined ? (
-            <CreateProfileForm onCreate={onCreate} />
-          ) : (
-            <UnlockProfileForm profile={selected} onUnlock={onUnlock} />
-          )}
-        </Box>
+        <Grid
+          templateColumns="minmax(240px, 1fr) minmax(320px, 2fr)"
+          gap="space.300"
+        >
+          <Box xcss={panelStyles}>
+            <ProfileList
+              profiles={profiles}
+              selectedId={creating ? undefined : selected?.localProfileId}
+              onCreate={() => setCreating(true)}
+              onSelect={(profile) => {
+                setSelected(profile);
+                setCreating(false);
+              }}
+            />
+          </Box>
+          <Box xcss={panelStyles}>
+            {creating || selected === undefined ? (
+              <CreateProfileForm onCreate={onCreate} />
+            ) : (
+              <UnlockProfileForm profile={selected} onUnlock={onUnlock} />
+            )}
+          </Box>
         </Grid>
       </Stack>
     </Box>

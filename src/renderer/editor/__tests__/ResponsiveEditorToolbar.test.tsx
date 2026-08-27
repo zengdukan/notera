@@ -16,12 +16,18 @@ describe('ResponsiveEditorToolbar', () => {
       </AppProviders>,
     );
 
-    expect(screen.getByRole('toolbar', { name: 'Editor formatting' })).toBeVisible();
+    expect(
+      screen.getByRole('toolbar', { name: 'Editor formatting' }),
+    ).toBeVisible();
     expect(screen.getByRole('button', { name: 'Undo' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Redo' })).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'Bold' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Bold' }),
+    ).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'More formatting' }));
-    const bold = within(screen.getByRole('menu')).getByRole('button', { name: 'Bold' });
+    const bold = within(screen.getByRole('menu')).getByRole('button', {
+      name: 'Bold',
+    });
     expect(bold).toBeVisible();
     expect(screen.getAllByText('Bold')).toHaveLength(1);
     await user.click(bold);
@@ -35,11 +41,25 @@ describe('ResponsiveEditorToolbar', () => {
         <ResponsiveEditorToolbar width={1200} execute={jest.fn()} />
       </AppProviders>,
     );
-    const labels = screen.getAllByRole('button').map((button) => button.getAttribute('aria-label') ?? button.textContent);
-    expect(labels).toEqual(expect.arrayContaining(['Undo', 'Redo', 'Bold', 'Table', 'Media', 'Emoji', 'Insert']));
+    const labels = screen
+      .getAllByRole('button')
+      .map((button) => button.getAttribute('aria-label') ?? button.textContent);
+    expect(labels).toEqual(
+      expect.arrayContaining([
+        'Undo',
+        'Redo',
+        'Bold',
+        'Table',
+        'Media',
+        'Emoji',
+        'Insert',
+      ]),
+    );
     await user.click(screen.getByRole('button', { name: 'Insert' }));
     const menu = within(screen.getByRole('menu'));
-    expect(menu.queryByRole('button', { name: 'Table' })).not.toBeInTheDocument();
+    expect(
+      menu.queryByRole('button', { name: 'Table' }),
+    ).not.toBeInTheDocument();
     expect(menu.getByRole('button', { name: 'Math formula' })).toBeVisible();
     expect(screen.queryByText(/Mention|Rovo|Pin/i)).not.toBeInTheDocument();
   });

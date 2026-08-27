@@ -12,7 +12,10 @@ import {
 import type { NoteraClient } from '../platform/notera-client';
 import type { NoteMutationGuard } from '../notes/note-mutation-guard';
 import type { NoteWriteCoordinator } from '../notes/note-write-coordinator';
-import { resolveCreationFolderId, type NavigationSelection } from './navigation-reducer';
+import {
+  resolveCreationFolderId,
+  type NavigationSelection,
+} from './navigation-reducer';
 
 export type ContentEntry =
   | {
@@ -32,7 +35,9 @@ export type ContentEntry =
       readonly updatedAt: number;
     };
 
-function noteSummary(value: Extract<ContentEntry, { kind: 'note' }> & Record<string, unknown>) {
+function noteSummary(
+  value: Extract<ContentEntry, { kind: 'note' }> & Record<string, unknown>,
+) {
   return {
     kind: 'note' as const,
     id: value.id,
@@ -55,10 +60,16 @@ export function createContentController(input: {
   readonly beginEditing: (noteId: string) => void;
 }) {
   const invalidateTree = (folderId: string) =>
-    input.queryClient.invalidateQueries({ queryKey: treeKey(input.profileId, folderId) });
+    input.queryClient.invalidateQueries({
+      queryKey: treeKey(input.profileId, folderId),
+    });
   const guardsCurrentNote = (entry: ContentEntry) => {
     const selection = input.getSelection();
-    return entry.kind === 'note' && selection?.kind === 'note' && selection.id === entry.id;
+    return (
+      entry.kind === 'note' &&
+      selection?.kind === 'note' &&
+      selection.id === entry.id
+    );
   };
   const isSelected = (entry: ContentEntry) => {
     const selection = input.getSelection();
@@ -67,33 +78,58 @@ export function createContentController(input: {
   const syncSelection = (previous: ContentEntry, next: ContentEntry) => {
     if (isSelected(previous)) input.select(next);
   };
-  const invalidatePathsAndSearch = () => Promise.all([
-    input.queryClient.invalidateQueries({ queryKey: folderPathsKey(input.profileId) }),
-    input.queryClient.invalidateQueries({ queryKey: searchesKey(input.profileId) }),
-  ]);
-  const invalidateNoteViews = (noteId: string) => Promise.all([
-    input.queryClient.invalidateQueries({ queryKey: noteKey(input.profileId, noteId) }),
-    input.queryClient.invalidateQueries({ queryKey: recentKey(input.profileId) }),
-    input.queryClient.invalidateQueries({ queryKey: favoritesKey(input.profileId) }),
-    input.queryClient.invalidateQueries({ queryKey: searchesKey(input.profileId) }),
-  ]);
-  const ready = async (entry: ContentEntry, operation: 'move' | 'copy' | 'trash') =>
+  const invalidatePathsAndSearch = () =>
+    Promise.all([
+      input.queryClient.invalidateQueries({
+        queryKey: folderPathsKey(input.profileId),
+      }),
+      input.queryClient.invalidateQueries({
+        queryKey: searchesKey(input.profileId),
+      }),
+    ]);
+  const invalidateNoteViews = (noteId: string) =>
+    Promise.all([
+      input.queryClient.invalidateQueries({
+        queryKey: noteKey(input.profileId, noteId),
+      }),
+      input.queryClient.invalidateQueries({
+        queryKey: recentKey(input.profileId),
+      }),
+      input.queryClient.invalidateQueries({
+        queryKey: favoritesKey(input.profileId),
+      }),
+      input.queryClient.invalidateQueries({
+        queryKey: searchesKey(input.profileId),
+      }),
+    ]);
+  const ready = async (
+    entry: ContentEntry,
+    operation: 'move' | 'copy' | 'trash',
+  ) =>
     guardsCurrentNote(entry) ? input.guard.flushBefore(operation) : 'ready';
 
   return Object.freeze({
     async createNote(parentFolderId?: string): Promise<void> {
-      const folderId = parentFolderId ?? resolveCreationFolderId(
-        input.rootFolderId,
-        input.getSelection() as NavigationSelection | undefined,
-      );
-      const created = await input.client.request('note.create', { folderId, title: '' });
+      const folderId =
+        parentFolderId ??
+        resolveCreationFolderId(
+          input.rootFolderId,
+          input.getSelection() as NavigationSelection | undefined,
+        );
+      const created = await input.client.request('note.create', {
+        folderId,
+        title: '',
+      });
       await invalidateTree(folderId);
       const summary = noteSummary(created);
       input.select(summary);
       input.beginEditing(summary.id);
     },
     async createFolder(parentFolderId: string, name: string): Promise<void> {
-      await input.client.request('contentTree.createFolder', { parentFolderId, name });
+      await input.client.request('contentTree.createFolder', {
+        parentFolderId,
+        name,
+      });
       await invalidateTree(parentFolderId);
     },
     async rename(entry: ContentEntry, name: string): Promise<void> {
@@ -108,10 +144,11 @@ export function createContentController(input: {
           invalidatePathsAndSearch(),
         ]);
       } else {
-        const rename = () => input.client.request('note.rename', {
-          noteId: entry.id,
-          title: name,
-        });
+        const rename = () =>
+          input.client.request('note.rename', {
+            noteId: entry.id,
+            title: name,
+          });
         const renamed = input.writeCoordinator
           ? await input.writeCoordinator.run(entry.id, rename)
           : await rename();
@@ -122,7 +159,10 @@ export function createContentController(input: {
         ]);
       }
     },
-    async move(entry: ContentEntry, targetFolderId: string): Promise<'ready' | 'blocked'> {
+    async move(
+      entry: ContentEntry,
+      targetFolderId: string,
+    ): Promise<'ready' | 'blocked'> {
       if ((await ready(entry, 'move')) === 'blocked') return 'blocked';
       if (entry.kind === 'folder') {
         const moved = await input.client.request('contentTree.moveFolder', {
@@ -136,7 +176,10 @@ export function createContentController(input: {
           invalidatePathsAndSearch(),
         ]);
       } else {
-        const moved = await input.client.request('note.move', { noteId: entry.id, targetFolderId });
+        const moved = await input.client.request('note.move', {
+          noteId: entry.id,
+          targetFolderId,
+        });
         syncSelection(entry, moved);
         await Promise.all([
           invalidateTree(entry.folderId),
@@ -147,35 +190,58 @@ export function createContentController(input: {
       }
       return 'ready';
     },
-    async copy(entry: ContentEntry, targetFolderId: string): Promise<'ready' | 'blocked'> {
+    async copy(
+      entry: ContentEntry,
+      targetFolderId: string,
+    ): Promise<'ready' | 'blocked'> {
       if ((await ready(entry, 'copy')) === 'blocked') return 'blocked';
       if (entry.kind === 'note') {
-        await input.client.request('note.copy', { noteId: entry.id, targetFolderId });
+        await input.client.request('note.copy', {
+          noteId: entry.id,
+          targetFolderId,
+        });
       }
       await Promise.all([
         invalidateTree(targetFolderId),
-        input.queryClient.invalidateQueries({ queryKey: searchesKey(input.profileId) }),
+        input.queryClient.invalidateQueries({
+          queryKey: searchesKey(input.profileId),
+        }),
       ]);
       return 'ready';
     },
     async trash(entry: ContentEntry): Promise<'ready' | 'blocked'> {
       if ((await ready(entry, 'trash')) === 'blocked') return 'blocked';
       if (entry.kind === 'folder') {
-        await input.client.request('contentTree.trashFolder', { folderId: entry.id });
-        await Promise.all([invalidateTree(entry.parentId), invalidatePathsAndSearch()]);
+        await input.client.request('contentTree.trashFolder', {
+          folderId: entry.id,
+        });
+        await Promise.all([
+          invalidateTree(entry.parentId),
+          invalidatePathsAndSearch(),
+        ]);
       } else {
         await input.client.request('note.trash', { noteId: entry.id });
         await Promise.all([
           invalidateTree(entry.folderId),
-          input.queryClient.invalidateQueries({ queryKey: searchesKey(input.profileId) }),
+          input.queryClient.invalidateQueries({
+            queryKey: searchesKey(input.profileId),
+          }),
         ]);
         if (guardsCurrentNote(entry)) input.select(undefined);
       }
       await Promise.all([
-        input.queryClient.invalidateQueries({ queryKey: trashKey(input.profileId) }),
-        input.queryClient.invalidateQueries({ queryKey: recentKey(input.profileId) }),
-        input.queryClient.invalidateQueries({ queryKey: favoritesKey(input.profileId) }),
-        input.queryClient.removeQueries({ queryKey: noteKey(input.profileId, entry.id) }),
+        input.queryClient.invalidateQueries({
+          queryKey: trashKey(input.profileId),
+        }),
+        input.queryClient.invalidateQueries({
+          queryKey: recentKey(input.profileId),
+        }),
+        input.queryClient.invalidateQueries({
+          queryKey: favoritesKey(input.profileId),
+        }),
+        input.queryClient.removeQueries({
+          queryKey: noteKey(input.profileId, entry.id),
+        }),
       ]);
       return 'ready';
     },

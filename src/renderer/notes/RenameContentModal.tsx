@@ -22,7 +22,8 @@ export function RenameContentModal({
             label="Name"
             defaultValue={initialName}
             validate={(value) =>
-              !allowBlank && (typeof value !== 'string' || value.trim().length === 0)
+              !allowBlank &&
+              (typeof value !== 'string' || value.trim().length === 0)
                 ? 'Name is required'
                 : undefined
             }

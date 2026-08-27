@@ -1,6 +1,7 @@
 import {
   createMediaApiArgument,
   parseMediaApiArgument,
+  mediaCollectionForNote,
   validateMediaApiBaseUrl,
 } from '../media-runtime';
 
@@ -39,5 +40,14 @@ describe('Atlassian Editor Media runtime configuration', () => {
     expect(() =>
       parseMediaApiArgument(['electron', argument, argument]),
     ).toThrow('Duplicate Atlassian Editor Media API address.');
+  });
+
+  it('derives one fixed collection from a validated note UUID', () => {
+    expect(mediaCollectionForNote('20000000-0000-4000-8000-000000000001')).toBe(
+      'notera-note-20000000-0000-4000-8000-000000000001',
+    );
+    expect(() => mediaCollectionForNote('../other-note')).toThrow(
+      'Invalid Media note ID.',
+    );
   });
 });

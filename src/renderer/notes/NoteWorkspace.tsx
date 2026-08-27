@@ -5,7 +5,13 @@ import Spinner from '@atlaskit/spinner';
 import { useQueryClient } from '@tanstack/react-query';
 
 import type { RequestData, NoteraClient } from '../platform/notera-client';
-import { favoritesKey, folderPathKey, noteKey, recentKey, treeKey } from '../app/query-keys';
+import {
+  favoritesKey,
+  folderPathKey,
+  noteKey,
+  recentKey,
+  treeKey,
+} from '../app/query-keys';
 import { EditorSurface } from '../editor/EditorSurface';
 import { RendererSurface } from '../editor/RendererSurface';
 import { ResponsiveEditorToolbar } from '../editor/ResponsiveEditorToolbar';
@@ -20,7 +26,10 @@ import {
 } from './document-session';
 import { LatestNoteRequest } from './note-queries';
 import { NoteWriteCoordinator } from './note-write-coordinator';
-import { createSaveCoordinator, type SaveCoordinator } from './save-coordinator';
+import {
+  createSaveCoordinator,
+  type SaveCoordinator,
+} from './save-coordinator';
 import { StickyNoteHeader, type NoteMoreAction } from './StickyNoteHeader';
 
 type NoteEntry = Extract<ContentEntry, { kind: 'note' }>;
@@ -82,12 +91,14 @@ export function NoteWorkspace({
   const [session, setSession] = useState<DocumentSessionState>();
   const [loadError, setLoadError] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [executeToolbar, setExecuteToolbar] = useState<ToolbarExecutor>(() => noopToolbar);
+  const [executeToolbar, setExecuteToolbar] = useState<ToolbarExecutor>(
+    () => noopToolbar,
+  );
   const sessionRef = useRef<DocumentSessionState>();
   const coordinatorRef = useRef<SaveCoordinator>();
 
   const dispatchSession = useCallback((action: DocumentSessionAction) => {
-    const current = sessionRef.current;
+    const { current } = sessionRef;
     if (!current) return;
     const next = documentSessionReducer(current, action);
     sessionRef.current = next;
@@ -95,34 +106,38 @@ export function NoteWorkspace({
   }, []);
 
   const loader = useMemo(
-    () => new LatestNoteRequest<LoadedNote>(
-      async (noteId) => {
-        const detail = await queryClient.fetchQuery({
-          queryKey: noteKey(profileId, noteId),
-          queryFn: () => client.request('note.get', { noteId }),
-        });
-        const path = await queryClient.fetchQuery({
-          queryKey: folderPathKey(profileId, detail.folderId),
-          queryFn: () => client.request('contentTree.getFolderPath', { folderId: detail.folderId }),
-        });
-        return { detail, path: path.items };
-      },
-      (_noteId, value) => {
-        const next = createDocumentSession({
-          noteId: value.detail.id,
-          title: value.detail.title,
-          document: value.detail.document,
-          contentVersion: value.detail.contentVersion,
-          savedAt: value.detail.updatedAt,
-          mode: initiallyEditing ? 'edit' : 'preview',
-        });
-        sessionRef.current = next;
-        setLoaded(value);
-        setSession(next);
-        setIsFavorite(value.detail.isFavorite);
-        setLoadError(false);
-      },
-    ),
+    () =>
+      new LatestNoteRequest<LoadedNote>(
+        async (noteId) => {
+          const detail = await queryClient.fetchQuery({
+            queryKey: noteKey(profileId, noteId),
+            queryFn: () => client.request('note.get', { noteId }),
+          });
+          const path = await queryClient.fetchQuery({
+            queryKey: folderPathKey(profileId, detail.folderId),
+            queryFn: () =>
+              client.request('contentTree.getFolderPath', {
+                folderId: detail.folderId,
+              }),
+          });
+          return { detail, path: path.items };
+        },
+        (_noteId, value) => {
+          const next = createDocumentSession({
+            noteId: value.detail.id,
+            title: value.detail.title,
+            document: value.detail.document,
+            contentVersion: value.detail.contentVersion,
+            savedAt: value.detail.updatedAt,
+            mode: initiallyEditing ? 'edit' : 'preview',
+          });
+          sessionRef.current = next;
+          setLoaded(value);
+          setSession(next);
+          setIsFavorite(value.detail.isFavorite);
+          setLoadError(false);
+        },
+      ),
     [client, initiallyEditing, profileId, queryClient],
   );
 
@@ -149,7 +164,7 @@ export function NoteWorkspace({
   }, [note, profileId, queryClient]);
 
   useEffect(() => {
-    if (!session || !loaded) return undefined;
+    if (!sessionRef.current || !loaded) return undefined;
     const coordinator = createSaveCoordinator({
       getState: () => sessionRef.current as DocumentSessionState,
       dispatch: dispatchSession,
@@ -159,18 +174,21 @@ export function NoteWorkspace({
         );
         queryClient.setQueryData<RequestData<'note.get'>>(
           noteKey(profileId, draft.noteId),
-          (current) => current
-            ? {
-                ...current,
-                title: draft.title,
-                document: draft.document,
-                contentVersion: result.contentVersion,
-                updatedAt: result.savedAt,
-              }
-            : current,
+          (current) =>
+            current
+              ? {
+                  ...current,
+                  title: draft.title,
+                  document: draft.document,
+                  contentVersion: result.contentVersion,
+                  updatedAt: result.savedAt,
+                }
+              : current,
         );
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: treeKey(profileId, loaded.detail.folderId) }),
+          queryClient.invalidateQueries({
+            queryKey: treeKey(profileId, loaded.detail.folderId),
+          }),
           queryClient.invalidateQueries({ queryKey: recentKey(profileId) }),
         ]);
         return result;
@@ -180,9 +198,19 @@ export function NoteWorkspace({
     const detach = lifecycle.attach(coordinator);
     return () => {
       detach();
-      if (coordinatorRef.current === coordinator) coordinatorRef.current = undefined;
+      if (coordinatorRef.current === coordinator)
+        coordinatorRef.current = undefined;
     };
-  }, [client, dispatchSession, lifecycle, loaded, profileId, queryClient, session?.noteId, writeCoordinator]);
+  }, [
+    client,
+    dispatchSession,
+    lifecycle,
+    loaded,
+    profileId,
+    queryClient,
+    session?.noteId,
+    writeCoordinator,
+  ]);
 
   useEffect(() => {
     if (session?.mode !== 'edit') return undefined;
@@ -213,11 +241,13 @@ export function NoteWorkspace({
   const toggleFavorite = async () => {
     if (!note) return;
     const next = !isFavorite;
-    await client.request(next ? 'favorite.add' : 'favorite.remove', { noteId: note.id });
+    await client.request(next ? 'favorite.add' : 'favorite.remove', {
+      noteId: note.id,
+    });
     setIsFavorite(next);
     queryClient.setQueryData<RequestData<'note.get'>>(
       noteKey(profileId, note.id),
-      (current) => current ? { ...current, isFavorite: next } : current,
+      (current) => (current ? { ...current, isFavorite: next } : current),
     );
     await queryClient.invalidateQueries({ queryKey: favoritesKey(profileId) });
   };
@@ -237,7 +267,10 @@ export function NoteWorkspace({
   if (!note) {
     return (
       <Box xcss={[workspaceStyles, centeredStyles]}>
-        <EmptyState header="Select a note" description="Choose a note from the content tree to preview it." />
+        <EmptyState
+          header="Select a note"
+          description="Choose a note from the content tree to preview it."
+        />
       </Box>
     );
   }
@@ -274,20 +307,28 @@ export function NoteWorkspace({
         onToggleFavorite={() => void toggleFavorite()}
         onEdit={() => dispatchSession({ type: 'begin-edit' })}
         onPreview={() => void showPreview()}
-        onRetry={() => void coordinatorRef.current?.retry().catch(() => undefined)}
+        onRetry={() =>
+          void coordinatorRef.current?.retry().catch(() => undefined)
+        }
         onMore={(action) => void runMore(action)}
       />
       <Box xcss={bodyStyles}>
         {session.mode === 'edit' ? (
           <EditorSurface
             key={session.noteId}
+            noteId={session.noteId}
             document={session.draft.document}
-            onChange={(document) => change({ type: 'change-document', document })}
+            onChange={(document) =>
+              change({ type: 'change-document', document })
+            }
             onToolbarReady={(execute) => setExecuteToolbar(() => execute)}
             shouldFocus={initiallyEditing}
           />
         ) : (
-          <RendererSurface document={session.draft.document} />
+          <RendererSurface
+            noteId={session.noteId}
+            document={session.draft.document}
+          />
         )}
       </Box>
     </Box>

@@ -186,6 +186,7 @@ class LocalPreferencesStore implements PreferencesStore {
         if (error instanceof ApplicationError) throw error;
         throw new ApplicationError('SAVE_FAILED');
       }
+      return undefined;
     });
     this.queue = operation.catch(() => undefined);
     return operation;

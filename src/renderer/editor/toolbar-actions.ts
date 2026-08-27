@@ -50,4 +50,5 @@ const LABELS: Readonly<Record<EditorToolbarActionId, string>> = Object.freeze({
   'heading-3': 'Heading 3',
 });
 
-export const toolbarActionLabel = (action: EditorToolbarActionId): string => LABELS[action];
+export const toolbarActionLabel = (action: EditorToolbarActionId): string =>
+  LABELS[action];

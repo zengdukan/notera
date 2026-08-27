@@ -12,10 +12,11 @@ export function useRecentNotes(input: {
   return useInfiniteQuery({
     queryKey: recentKey(input.profileId),
     initialPageParam: undefined as string | undefined,
-    queryFn: ({ pageParam }) => input.client.request('note.listRecent', {
-      limit: 30,
-      ...(pageParam === undefined ? {} : { cursor: pageParam }),
-    }),
+    queryFn: ({ pageParam }) =>
+      input.client.request('note.listRecent', {
+        limit: 30,
+        ...(pageParam === undefined ? {} : { cursor: pageParam }),
+      }),
     getNextPageParam: (page) => page.nextCursor ?? undefined,
   });
 }
@@ -24,6 +25,8 @@ export function uniqueRecentNotes(
   pages: readonly { readonly items: readonly RecentNote[] }[] | undefined,
 ): readonly RecentNote[] {
   const values = new Map<string, RecentNote>();
-  pages?.forEach((page) => page.items.forEach((item) => values.set(item.id, item)));
+  pages?.forEach((page) =>
+    page.items.forEach((item) => values.set(item.id, item)),
+  );
   return [...values.values()];
 }

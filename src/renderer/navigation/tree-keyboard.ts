@@ -5,9 +5,10 @@ export function focusAdjacentTreeItem(
   direction: 1 | -1,
 ): void {
   const tree = current.closest('[role="tree"]');
-  const items = tree === null
-    ? []
-    : Array.from(tree.querySelectorAll<HTMLElement>('[role="treeitem"]'));
+  const items =
+    tree === null
+      ? []
+      : Array.from(tree.querySelectorAll<HTMLElement>('[role="treeitem"]'));
   const index = items.indexOf(current);
   items[index + direction]?.focus();
 }
@@ -23,7 +24,10 @@ export function handleTreeKeyDown(input: {
   const { event } = input;
   if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
     event.preventDefault();
-    focusAdjacentTreeItem(event.currentTarget, event.key === 'ArrowDown' ? 1 : -1);
+    focusAdjacentTreeItem(
+      event.currentTarget,
+      event.key === 'ArrowDown' ? 1 : -1,
+    );
   } else if (event.key === 'ArrowRight' && input.kind === 'folder') {
     event.preventDefault();
     if (!input.expanded) input.onToggle(true);
@@ -33,7 +37,10 @@ export function handleTreeKeyDown(input: {
   } else if (event.key === 'Enter') {
     event.preventDefault();
     input.onOpen();
-  } else if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+  } else if (
+    event.key === 'ContextMenu' ||
+    (event.shiftKey && event.key === 'F10')
+  ) {
     event.preventDefault();
     input.onMenu();
   }

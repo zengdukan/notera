@@ -71,8 +71,15 @@ export const contentTreeGetFolderPath = defineRequestContract({
   key: 'contentTree.getFolderPath',
   channel: 'notera:content-tree:get-folder-path',
   request: z.strictObject({ folderId: uuidSchema }),
-  data: z.strictObject({ items: z.array(folderPathItemSchema).min(1).max(1000) }),
-  errors: ['PROFILE_LOCKED', 'ENTITY_NOT_FOUND', 'DB_CORRUPT', 'IPC_OPERATION_FAILED'],
+  data: z.strictObject({
+    items: z.array(folderPathItemSchema).min(1).max(1000),
+  }),
+  errors: [
+    'PROFILE_LOCKED',
+    'ENTITY_NOT_FOUND',
+    'DB_CORRUPT',
+    'IPC_OPERATION_FAILED',
+  ],
 });
 
 export const contentTreeCreateFolder = defineRequestContract({

@@ -35,7 +35,9 @@ describe('organization contract catalog', () => {
       noteContracts.rename.request.parse({ noteId: uuid(3), title: 'Renamed' }),
     ).toEqual({ noteId: uuid(3), title: 'Renamed' });
     expect(noteContracts.rename.data.parse(renamed)).toEqual(renamed);
-    expect(noteContracts.rename.data.safeParse({ ...renamed, document: {} }).success).toBe(false);
+    expect(
+      noteContracts.rename.data.safeParse({ ...renamed, document: {} }).success,
+    ).toBe(false);
   });
 
   it('defines all fixed organization, history, trash and search channels', () => {
@@ -262,6 +264,10 @@ describe('search contract', () => {
     noteId: uuid(1),
     title: 'A😀B',
     excerpt: '中文内容',
+    folderPath: [
+      { id: uuid(2), name: '' },
+      { id: uuid(3), name: 'Projects' },
+    ],
     updatedAt: 1,
     highlights: [
       { field: 'title' as const, start: 1, end: 2 },

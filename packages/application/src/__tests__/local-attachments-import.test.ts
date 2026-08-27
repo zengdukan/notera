@@ -1,5 +1,6 @@
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
+import { asAttachmentId, asTimestamp } from '@notera/domain';
 
 import { createProfileManager } from '../manager';
 import { cleanupTempRoots, tempRoot } from './helpers';
@@ -117,6 +118,54 @@ describe('LocalAttachmentsService import', () => {
         join(appDataRoot, 'profiles', profile.localProfileId),
       ),
     ).toBe(2);
+    await manager.close();
+  });
+
+  it('keeps an Atlaskit fileId as a temporary upload until saved ADF promotes it', async () => {
+    const manager = await createProfileManager({ appDataRoot: tempRoot() });
+    const profile = await manager.createProfile({
+      displayName: 'Media upload',
+      password: 'correct horse battery staple',
+    });
+    const note = await manager.localNotes.createNote({
+      folderId: profile.rootFolderId,
+      title: 'Upload target',
+    });
+    const fileId = asAttachmentId('91000000-0000-4000-8000-000000000001');
+
+    const uploaded = await manager.localAttachments.importAttachment({
+      attachmentId: fileId,
+      noteId: note.id,
+      reference: {
+        kind: 'UPLOAD',
+        expiresAt: asTimestamp(Date.now() + 60_000),
+      },
+      fileName: 'atlaskit.png',
+      mimeType: 'image/png',
+      source: source(new Uint8Array([1, 2, 3, 4])),
+    });
+
+    expect(uploaded.id).toBe(fileId);
+    await expect(
+      manager.localAttachments.listForNote({ noteId: note.id, limit: 10 }),
+    ).resolves.toMatchObject({ items: [] });
+    const reader = await manager.localAttachments.openReader(fileId);
+    await reader.close();
+
+    await manager.localNotes.saveDraft({
+      noteId: note.id,
+      title: note.title,
+      document: {
+        type: 'doc',
+        version: 1,
+        content: [{ type: 'media', attrs: { id: fileId } }],
+      },
+    });
+    await expect(
+      manager.localAttachments.listForNote({ noteId: note.id, limit: 10 }),
+    ).resolves.toMatchObject({
+      items: [expect.objectContaining({ id: fileId })],
+    });
     await manager.close();
   });
 });

@@ -1,7 +1,4 @@
-import {
-  ApplicationError,
-  type PreferencesStore,
-} from '@notera/application';
+import { ApplicationError, type PreferencesStore } from '@notera/application';
 
 import type { SessionCommandGate } from './local-notes-handlers';
 import { defineIpcBinding, type IpcBinding } from './router';

@@ -48,8 +48,12 @@ function QueryLevel({
   readonly selected?: { readonly kind: 'folder' | 'note'; readonly id: string };
   readonly onOpen: (entry: ContentEntry) => void;
   readonly onToggle: (folderId: string, expanded: boolean) => void;
-  readonly onCreateNote: (entry: Extract<ContentEntry, { kind: 'folder' }>) => void;
-  readonly onCreateFolder: (entry: Extract<ContentEntry, { kind: 'folder' }>) => void;
+  readonly onCreateNote: (
+    entry: Extract<ContentEntry, { kind: 'folder' }>,
+  ) => void;
+  readonly onCreateFolder: (
+    entry: Extract<ContentEntry, { kind: 'folder' }>,
+  ) => void;
   readonly getActions: (entry: ContentEntry) => readonly ContentAction[];
 }) {
   const query = useTreeChildren({ client, profileId, parentFolderId });
@@ -64,8 +68,15 @@ function QueryLevel({
               entry={entry}
               level={level}
               expanded={expanded}
-              selected={selected?.kind === entry.kind && selected.id === entry.id}
-              tabIndex={selected?.id === entry.id || (selected === undefined && level === 1 && index === 0) ? 0 : -1}
+              selected={
+                selected?.kind === entry.kind && selected.id === entry.id
+              }
+              tabIndex={
+                selected?.id === entry.id ||
+                (selected === undefined && level === 1 && index === 0)
+                  ? 0
+                  : -1
+              }
               onOpen={() => onOpen(entry)}
               onToggle={(next) => {
                 if (entry.kind === 'folder') onToggle(entry.id, next);
@@ -107,12 +118,15 @@ function QueryLevel({
   );
 }
 
-export function QueryContentTree(props: Omit<Parameters<typeof QueryLevel>[0], 'level' | 'parentFolderId'> & {
-  readonly rootFolderId: string;
-}) {
+export function QueryContentTree(
+  props: Omit<Parameters<typeof QueryLevel>[0], 'level' | 'parentFolderId'> & {
+    readonly rootFolderId: string;
+  },
+) {
+  const { rootFolderId, ...queryProps } = props;
   return (
     <div role="tree" aria-label="Content">
-      <QueryLevel {...props} parentFolderId={props.rootFolderId} level={1} />
+      <QueryLevel {...queryProps} parentFolderId={rootFolderId} level={1} />
     </div>
   );
 }

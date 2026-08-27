@@ -44,7 +44,12 @@ export function CreateVersionModal({
           Your name is preserved. Try again when the note can be saved.
         </SectionMessage>
       ) : null}
-      <Button appearance="primary" isLoading={submitting} isDisabled={name.trim().length === 0} onClick={() => void create()}>
+      <Button
+        appearance="primary"
+        isLoading={submitting}
+        isDisabled={name.trim().length === 0}
+        onClick={() => void create()}
+      >
         Create version
       </Button>
     </Stack>

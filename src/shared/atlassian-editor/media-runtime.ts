@@ -2,9 +2,16 @@ export const MEDIA_API_ARGUMENT_PREFIX =
   '--atlassian-editor-media-api-base-url=';
 
 const INVALID_ADDRESS = 'Invalid Atlassian Editor Media API address.';
+const NOTE_UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 
 export interface AtlassianEditorRuntime {
   readonly mediaApiBaseUrl: string;
+}
+
+export function mediaCollectionForNote(noteId: string): string {
+  if (!NOTE_UUID.test(noteId)) throw new Error('Invalid Media note ID.');
+  return `notera-note-${noteId}`;
 }
 
 export function validateMediaApiBaseUrl(value: string): string {

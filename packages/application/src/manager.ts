@@ -42,10 +42,7 @@ import {
 import { createProfileCatalog, type ProfileCatalog } from './catalog';
 import { ApplicationError } from './errors';
 import { createApplicationPaths, type ApplicationPaths } from './paths';
-import {
-  createPreferencesStore,
-  type PreferencesStore,
-} from './preferences';
+import { createPreferencesStore, type PreferencesStore } from './preferences';
 import { createProfileSession, type ProfileSession } from './session';
 import type {
   Page,

@@ -30,7 +30,11 @@ describe('content operation modal bodies', () => {
     const onConfirm = jest.fn();
     render(
       <AppProviders locale="en">
-        <TrashContentModal name="Roadmap" onConfirm={onConfirm} onCancel={jest.fn()} />
+        <TrashContentModal
+          name="Roadmap"
+          onConfirm={onConfirm}
+          onCancel={jest.fn()}
+        />
       </AppProviders>,
     );
     expect(screen.getByText(/Roadmap/)).toBeVisible();

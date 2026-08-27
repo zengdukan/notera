@@ -23,10 +23,15 @@ export function SearchModal({
   readonly client: NoteraClient;
   readonly profileId: string;
   readonly rootFolderId: string;
-  readonly onOpen: (result: SearchResult) => Promise<boolean | void> | boolean | void;
+  readonly onOpen: (
+    result: SearchResult,
+  ) => Promise<boolean | void> | boolean | void;
 }) {
   const [query, setQuery] = useState('');
-  const [scope, setScope] = useState<{ readonly id: string; readonly name: string }>();
+  const [scope, setScope] = useState<{
+    readonly id: string;
+    readonly name: string;
+  }>();
   const [openFailed, setOpenFailed] = useState(false);
   const results = useSearchResults({
     client,
@@ -65,20 +70,33 @@ export function SearchModal({
         }}
       />
       {openFailed ? (
-        <SectionMessage appearance="error" title="This note is no longer available">
+        <SectionMessage
+          appearance="error"
+          title="This note is no longer available"
+        >
           Refresh the results and try again.
         </SectionMessage>
       ) : null}
-      {query.trim().length === 0 ? <Text>Enter text to search all notes.</Text> : null}
-      {results.isPending && query.trim().length > 0 ? <Spinner label="Searching" /> : null}
+      {query.trim().length === 0 ? (
+        <Text>Enter text to search all notes.</Text>
+      ) : null}
+      {results.isPending && query.trim().length > 0 ? (
+        <Spinner label="Searching" />
+      ) : null}
       {results.isError ? (
         <SectionMessage appearance="error" title="Search failed">
           Check the search text and try again.
         </SectionMessage>
       ) : null}
-      {results.isSuccess ? <SearchResults results={items} onOpen={(result) => void open(result)} /> : null}
+      {results.isSuccess ? (
+        <SearchResults results={items} onOpen={(result) => void open(result)} />
+      ) : null}
       {results.hasNextPage ? (
-        <Button appearance="subtle" isLoading={results.isFetchingNextPage} onClick={() => void results.fetchNextPage()}>
+        <Button
+          appearance="subtle"
+          isLoading={results.isFetchingNextPage}
+          onClick={() => void results.fetchNextPage()}
+        >
           Load more
         </Button>
       ) : null}

@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import type { ReactNode } from 'react';
 
 export interface HighlightRange {
   readonly start: number;
@@ -13,23 +13,21 @@ export function HighlightedText({
   readonly ranges: readonly HighlightRange[];
 }) {
   const points = Array.from(text);
-  const nodes = [];
+  const nodes: ReactNode[] = [];
   let offset = 0;
-  ranges.forEach((range, index) => {
+  ranges.forEach((range) => {
     if (range.start > offset) {
-      nodes.push(
-        <Fragment key={`text-${offset}`}>{points.slice(offset, range.start).join('')}</Fragment>,
-      );
+      nodes.push(points.slice(offset, range.start).join(''));
     }
     nodes.push(
-      <mark key={`highlight-${range.start}-${index}`}>
+      <mark key={`highlight-${range.start}-${range.end}`}>
         {points.slice(range.start, range.end).join('')}
       </mark>,
     );
     offset = range.end;
   });
   if (offset < points.length) {
-    nodes.push(<Fragment key={`text-${offset}`}>{points.slice(offset).join('')}</Fragment>);
+    nodes.push(points.slice(offset).join(''));
   }
-  return <>{nodes}</>;
+  return nodes;
 }

@@ -1,6 +1,9 @@
-import { useState, type FocusEvent } from 'react';
+import { useState, type FocusEvent, type ReactNode } from 'react';
 import { IconButton } from '@atlaskit/button/new';
-import DropdownMenu, { DropdownItem, DropdownItemGroup } from '@atlaskit/dropdown-menu';
+import DropdownMenu, {
+  DropdownItem,
+  DropdownItemGroup,
+} from '@atlaskit/dropdown-menu';
 import AddIcon from '@atlaskit/icon/core/add';
 import ChevronDownIcon from '@atlaskit/icon/core/chevron-down';
 import ChevronRightIcon from '@atlaskit/icon/core/chevron-right';
@@ -16,7 +19,11 @@ const rowStyles = xcss({
   paddingInline: 'space.050',
   borderRadius: 'radius.small',
   ':hover': { backgroundColor: 'color.background.neutral.subtle.hovered' },
-  ':focus': { outlineColor: 'color.border.focused', outlineStyle: 'solid', outlineWidth: 'border.width.focused' },
+  ':focus': {
+    outlineColor: 'color.border.focused',
+    outlineStyle: 'solid',
+    outlineWidth: 'border.width.focused',
+  },
 });
 
 export function ContentTreeRow({
@@ -54,6 +61,14 @@ export function ContentTreeRow({
     if (!event.currentTarget.contains(event.relatedTarget)) setActive(false);
   };
   const showButtons = active || createMenuOpen || actionMenuOpen;
+  let folderIcon: ReactNode = null;
+  if (entry.kind === 'folder') {
+    folderIcon = expanded ? (
+      <ChevronDownIcon label="" />
+    ) : (
+      <ChevronRightIcon label="" />
+    );
+  }
 
   return (
     <Box
@@ -90,9 +105,7 @@ export function ContentTreeRow({
     >
       <Inline alignBlock="center" spread="space-between" space="space.050">
         <Inline alignBlock="center" space="space.050">
-          {entry.kind === 'folder' ? (
-            expanded ? <ChevronDownIcon label="" /> : <ChevronRightIcon label="" />
-          ) : null}
+          {folderIcon}
           <Text maxLines={1}>{name}</Text>
         </Inline>
         {showButtons ? (
@@ -118,14 +131,22 @@ export function ContentTreeRow({
                 )}
               >
                 <DropdownItemGroup>
-                  <DropdownItem onClick={(event) => {
-                    event.stopPropagation();
-                    onCreateNote();
-                  }}>New note</DropdownItem>
-                  <DropdownItem onClick={(event) => {
-                    event.stopPropagation();
-                    onCreateFolder();
-                  }}>New subfolder</DropdownItem>
+                  <DropdownItem
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onCreateNote();
+                    }}
+                  >
+                    New note
+                  </DropdownItem>
+                  <DropdownItem
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onCreateFolder();
+                    }}
+                  >
+                    New subfolder
+                  </DropdownItem>
                 </DropdownItemGroup>
               </DropdownMenu>
             ) : null}

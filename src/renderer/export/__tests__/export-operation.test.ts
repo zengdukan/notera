@@ -7,12 +7,37 @@ describe('ExportOperationStore', () => {
   it('accepts only matching progress and one terminal status, then clears on lock', () => {
     const store = new ExportOperationStore();
     store.track(first);
-    store.applyProgress({ operationId: other, kind: 'NOTE_EXPORT', phase: 'WRITING', progress: 0.5 });
-    expect(store.getSnapshot()).toMatchObject({ operationId: first, phase: 'PREPARING' });
-    store.applyProgress({ operationId: first, kind: 'NOTE_EXPORT', phase: 'WRITING', progress: 0.5 });
-    expect(store.getSnapshot()).toMatchObject({ phase: 'WRITING', progress: 0.5 });
-    store.applyCompleted({ operationId: first, kind: 'NOTE_EXPORT', state: 'CANCELLED' });
-    store.applyProgress({ operationId: first, kind: 'NOTE_EXPORT', phase: 'FINALIZING', progress: 1 });
+    store.applyProgress({
+      operationId: other,
+      kind: 'NOTE_EXPORT',
+      phase: 'WRITING',
+      progress: 0.5,
+    });
+    expect(store.getSnapshot()).toMatchObject({
+      operationId: first,
+      phase: 'PREPARING',
+    });
+    store.applyProgress({
+      operationId: first,
+      kind: 'NOTE_EXPORT',
+      phase: 'WRITING',
+      progress: 0.5,
+    });
+    expect(store.getSnapshot()).toMatchObject({
+      phase: 'WRITING',
+      progress: 0.5,
+    });
+    store.applyCompleted({
+      operationId: first,
+      kind: 'NOTE_EXPORT',
+      state: 'CANCELLED',
+    });
+    store.applyProgress({
+      operationId: first,
+      kind: 'NOTE_EXPORT',
+      phase: 'FINALIZING',
+      progress: 1,
+    });
     expect(store.getSnapshot()).toMatchObject({ state: 'CANCELLED' });
     store.clear();
     expect(store.getSnapshot()).toBeUndefined();

@@ -48,7 +48,7 @@ export const blockMathStyles = css({
 
 export const invalidMathStyles = css({
   color: token('color.text.danger', '#ae2e24'),
-  fontFamily: 'ui-monospace, "SFMono-Regular", Consolas, monospace',
+  fontFamily: token('font.family.code'),
   whiteSpace: 'pre-wrap',
 });
 
@@ -61,7 +61,7 @@ export const dialogFieldStyles = css({
 export const dialogLabelStyles = css({
   color: token('color.text', '#172b4d'),
   font: token('font.body.small'),
-  fontWeight: 600,
+  fontWeight: token('font.weight.semibold'),
 });
 
 export const dialogHelpStyles = css({

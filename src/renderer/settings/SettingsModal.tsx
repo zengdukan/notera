@@ -23,9 +23,13 @@ export function SettingsModal({
   readonly device: { theme: ThemePreference; language: LanguagePreference };
   readonly profile: { autoLockMinutes: AutoLockMinutes };
   readonly onUpdateDevice: Parameters<typeof GeneralSettings>[0]['onUpdate'];
-  readonly onUpdateProfile: (value: { autoLockMinutes: AutoLockMinutes }) => Promise<unknown> | unknown;
+  readonly onUpdateProfile: (value: {
+    autoLockMinutes: AutoLockMinutes;
+  }) => Promise<unknown> | unknown;
   readonly onRenameProfile: (displayName: string) => Promise<void> | void;
-  readonly onChangePassword: Parameters<typeof ProfileSecuritySettings>[0]['onChangePassword'];
+  readonly onChangePassword: Parameters<
+    typeof ProfileSecuritySettings
+  >[0]['onChangePassword'];
   readonly onLock: () => Promise<unknown> | unknown;
   readonly onRemove: () => Promise<unknown> | unknown;
 }) {

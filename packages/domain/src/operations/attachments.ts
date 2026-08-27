@@ -22,6 +22,8 @@ function referenceOwner(reference: AttachmentReference): string {
       return reference.noteVersionId;
     case 'TRASH':
       return reference.trashEntryId;
+    case 'UPLOAD':
+      return `${reference.noteId}:${reference.expiresAt}`;
     default: {
       const exhaustive: never = reference;
       return exhaustive;

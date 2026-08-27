@@ -13,7 +13,7 @@ import type { VaultDatabase } from '@notera/storage-sqlcipher';
 import { ApplicationError } from '../errors';
 import type { AttachmentContentReader } from './types';
 import { mapReadError } from './errors';
-import { normalizeAttachmentId } from './validation';
+import { normalizeAttachmentId, normalizeNoteId } from './validation';
 
 function wipeStored(
   value: ReturnType<VaultDatabase['attachments']['getContent']>,
@@ -132,11 +132,21 @@ export default async function openAttachmentReader(input: {
   readonly attachments: AttachmentStore;
   readonly signal: AbortSignal;
   readonly attachmentId: unknown;
+  readonly noteId?: unknown;
   readonly now: () => Timestamp;
 }): Promise<AttachmentContentReader> {
   const attachmentId = normalizeAttachmentId(input.attachmentId);
+  const noteId =
+    input.noteId === undefined ? undefined : normalizeNoteId(input.noteId);
   const content = input.database.attachments.getContent(attachmentId);
   if (content === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
+  if (
+    noteId !== undefined &&
+    !input.database.attachments.isAccessibleToNote(attachmentId, noteId)
+  ) {
+    wipeStored(content);
+    throw new ApplicationError('ENTITY_NOT_FOUND');
+  }
   const references = input.database.attachments.listReferencesForAttachments([
     attachmentId,
   ]);

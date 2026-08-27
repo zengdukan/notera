@@ -1,11 +1,6 @@
 /** @jest-environment jsdom */
 
-jest.mock('react-scrolllock', () => ({
-  __esModule: true,
-  default: ({ children }: { children: React.ReactNode }) => children,
-  TouchScrollable: ({ children }: { children: React.ReactNode }) => children,
-}));
-
+import type { ReactNode } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient } from '@tanstack/react-query';
@@ -13,6 +8,12 @@ import { QueryClient } from '@tanstack/react-query';
 import { AppProviders } from '../../app/AppProviders';
 import type { NoteraClient } from '../../platform/notera-client';
 import { SearchModal } from '../SearchModal';
+
+jest.mock('react-scrolllock', () => ({
+  __esModule: true,
+  default: ({ children }: { children: ReactNode }) => children,
+  TouchScrollable: ({ children }: { children: ReactNode }) => children,
+}));
 
 const ids = {
   profile: '10000000-0000-4000-8000-000000000001',
@@ -40,10 +41,16 @@ describe('SearchModal', () => {
     const request = jest.fn(async (key: string) => {
       if (key === 'contentTree.listChildren') {
         return {
-          items: [{
-            kind: 'folder', id: ids.folder, name: 'Scoped', parentId: ids.root,
-            updatedAt: 1, hasChildren: false,
-          }],
+          items: [
+            {
+              kind: 'folder',
+              id: ids.folder,
+              name: 'Scoped',
+              parentId: ids.root,
+              updatedAt: 1,
+              hasChildren: false,
+            },
+          ],
         };
       }
       return { items: [result] };
@@ -64,19 +71,35 @@ describe('SearchModal', () => {
     const input = screen.getByRole('searchbox', { name: 'Search notes' });
     expect(input).toHaveFocus();
     await user.type(input, 'needle');
-    expect(await screen.findByRole('button', { name: 'Open 😀 Needle' })).toBeVisible();
+    expect(
+      await screen.findByRole('button', { name: 'Open 😀 Needle' }),
+    ).toBeVisible();
     expect(screen.getByText('Needle', { selector: 'mark' })).toBeVisible();
     expect(screen.getByText('Root / Scoped')).toBeVisible();
-    expect(request).toHaveBeenCalledWith('search.query', expect.objectContaining({
-      query: 'needle', limit: 30,
-    }));
-
-    await user.click(screen.getByRole('button', { name: 'Search scope: All notes' }));
-    await user.click(await screen.findByRole('button', { name: 'Choose Scoped' }));
-    await waitFor(() => expect(request).toHaveBeenCalledWith(
+    expect(request).toHaveBeenCalledWith(
       'search.query',
-      expect.objectContaining({ query: 'needle', folderId: ids.folder, limit: 30 }),
-    ));
+      expect.objectContaining({
+        query: 'needle',
+        limit: 30,
+      }),
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'Search scope: All notes' }),
+    );
+    await user.click(
+      await screen.findByRole('button', { name: 'Choose Scoped' }),
+    );
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith(
+        'search.query',
+        expect.objectContaining({
+          query: 'needle',
+          folderId: ids.folder,
+          limit: 30,
+        }),
+      ),
+    );
 
     await user.click(screen.getByRole('button', { name: 'Open 😀 Needle' }));
     expect(onOpen).toHaveBeenCalledWith(result);

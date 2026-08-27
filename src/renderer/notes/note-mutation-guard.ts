@@ -1,5 +1,7 @@
 export interface NoteMutationGuard {
-  flushBefore(operation: 'move' | 'copy' | 'trash'): Promise<'ready' | 'blocked'>;
+  flushBefore(
+    operation: 'move' | 'copy' | 'trash',
+  ): Promise<'ready' | 'blocked'>;
 }
 
 export const readyNoteMutationGuard: NoteMutationGuard = Object.freeze({

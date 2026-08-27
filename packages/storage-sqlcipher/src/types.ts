@@ -24,6 +24,7 @@ import type {
   CurrentNoteAttachmentReference,
   NoteVersionAttachmentReference,
   TrashAttachmentReference,
+  UploadAttachmentReference,
   VaultId,
   VaultIdentity,
   VersionName,
@@ -279,6 +280,7 @@ export interface AttachmentReader {
   getAttachment(id: AttachmentId): Attachment | undefined;
   getBlob(id: BlobId): StoredAttachmentBlob | undefined;
   getContent(id: AttachmentId): StoredAttachmentContent | undefined;
+  isAccessibleToNote(attachmentId: AttachmentId, noteId: NoteId): boolean;
   findReadyBlobBySha256(value: Uint8Array): StoredAttachmentBlob | undefined;
   listForNote(noteId: NoteId, page: PageRequest): Page<AttachmentListItem>;
   listReferencesForNotes(
@@ -293,6 +295,12 @@ export interface AttachmentReader {
   listReferencesForAttachments(
     ids: readonly AttachmentId[],
   ): readonly AttachmentReference[];
+  listUploadReferencesForNote(
+    noteId: NoteId,
+  ): readonly UploadAttachmentReference[];
+  listExpiredUploadReferences(
+    now: Timestamp,
+  ): readonly UploadAttachmentReference[];
   listAllBlobs(): readonly AttachmentBlob[];
   listGcPendingBlobs(): readonly AttachmentBlob[];
 }

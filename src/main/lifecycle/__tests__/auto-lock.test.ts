@@ -8,7 +8,9 @@ import {
 } from '../auto-lock';
 
 function settle() {
-  return new Promise<void>((resolve) => setImmediate(resolve));
+  return new Promise<void>((resolve) => {
+    setImmediate(resolve);
+  });
 }
 
 function setup() {

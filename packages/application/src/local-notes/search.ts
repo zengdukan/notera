@@ -8,7 +8,10 @@ import type { FolderPathItem, SearchResult } from './types';
 function folderPathFor(
   database: VaultDatabase,
   noteId: SearchResult['noteId'],
-  folders: ReadonlyMap<string, ReturnType<VaultDatabase['folders']['listAll']>[number]>,
+  folders: ReadonlyMap<
+    string,
+    ReturnType<VaultDatabase['folders']['listAll']>[number]
+  >,
 ): readonly FolderPathItem[] {
   const note = database.notes.get(noteId);
   if (note === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
@@ -19,10 +22,12 @@ function folderPathFor(
   for (;;) {
     if (visited.has(current.id)) throw new ApplicationError('DB_CORRUPT');
     visited.add(current.id);
-    reversed.push(Object.freeze({
-      id: current.id,
-      name: current.kind === 'ROOT' ? '' : current.name,
-    }));
+    reversed.push(
+      Object.freeze({
+        id: current.id,
+        name: current.kind === 'ROOT' ? '' : current.name,
+      }),
+    );
     if (current.kind === 'ROOT') break;
     const parent = folders.get(current.parentId);
     if (parent === undefined) throw new ApplicationError('DB_CORRUPT');

@@ -224,7 +224,9 @@ describe('offline entities', () => {
 
     expect(error).toBeInstanceOf(DomainError);
     expect((error as DomainError).code).toBe('ATTACHMENT_TOO_LARGE');
-    expect((error as Error).message).toBe('The attachment exceeds the size limit.');
+    expect((error as Error).message).toBe(
+      'The attachment exceeds the size limit.',
+    );
   });
 
   it('rejects entity timestamps that move backwards', () => {

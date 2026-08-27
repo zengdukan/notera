@@ -4,7 +4,10 @@ import {
   asAttachmentByteLength,
   asAttachmentId,
   asBlobId,
+  asNoteId,
+  asNoteVersionId,
   asTimestamp,
+  asTrashEntryId,
   asVaultId,
   createAttachment,
   createAttachmentBlob,
@@ -407,6 +410,39 @@ class IntegrityScanner {
       }
     });
     this.rows<AttachmentRow>(
+      `SELECT attachment_id AS id, attachment_id, source_type,
+              note_id, note_version_id, trash_entry_id, expires_at
+       FROM attachment_references ORDER BY row_id`,
+    ).forEach((row) => {
+      try {
+        asAttachmentId(row.attachment_id);
+        if (row.source_type === 'NOTE') {
+          asNoteId(row.note_id);
+          if (row.expires_at !== null)
+            throw new Error('invalid note reference');
+        } else if (row.source_type === 'UPLOAD') {
+          asNoteId(row.note_id);
+          asTimestamp(row.expires_at);
+        } else if (row.source_type === 'NOTE_VERSION') {
+          asNoteVersionId(row.note_version_id);
+          if (row.expires_at !== null)
+            throw new Error('invalid version reference');
+        } else if (row.source_type === 'TRASH') {
+          asTrashEntryId(row.trash_entry_id);
+          if (row.expires_at !== null)
+            throw new Error('invalid trash reference');
+        } else {
+          throw new Error('invalid attachment reference source');
+        }
+      } catch {
+        this.add(
+          'ATTACHMENT_METADATA_INVALID',
+          'attachment_references',
+          row.id,
+        );
+      }
+    });
+    this.rows<AttachmentRow>(
       `SELECT blob_id AS id, blob_id, vault_id, content_sha256, byte_length,
               local_state, file_key, manifest_version, manifest,
               created_at, updated_at
@@ -458,7 +494,7 @@ class IntegrityScanner {
        LEFT JOIN attachments a
          ON a.id = r.attachment_id AND a.vault_id = r.vault_id
        LEFT JOIN notes n
-         ON r.source_type = 'NOTE' AND n.id = r.note_id
+         ON r.source_type IN ('NOTE', 'UPLOAD') AND n.id = r.note_id
         AND n.vault_id = r.vault_id
        LEFT JOIN note_versions v
          ON r.source_type = 'NOTE_VERSION' AND v.id = r.note_version_id
@@ -468,7 +504,7 @@ class IntegrityScanner {
         AND t.vault_id = r.vault_id
        WHERE r.vault_id = ? AND (
          a.id IS NULL OR
-         (r.source_type = 'NOTE' AND n.id IS NULL) OR
+         (r.source_type IN ('NOTE', 'UPLOAD') AND n.id IS NULL) OR
          (r.source_type = 'NOTE_VERSION' AND v.id IS NULL) OR
          (r.source_type = 'TRASH' AND t.id IS NULL)
        )`,

@@ -26,8 +26,9 @@ export class ActiveDocumentLifecycle implements NoteMutationGuard {
   };
 
   async flushBefore(
-    _operation: 'move' | 'copy' | 'trash',
+    operation: 'move' | 'copy' | 'trash',
   ): Promise<'ready' | 'blocked'> {
+    void operation;
     try {
       await this.flush();
       return 'ready';

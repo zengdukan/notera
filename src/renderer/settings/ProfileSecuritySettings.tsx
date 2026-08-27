@@ -22,7 +22,9 @@ export function ProfileSecuritySettings({
   onRemove,
 }: {
   readonly autoLockMinutes: AutoLockMinutes;
-  readonly onUpdateAutoLock: (value: AutoLockMinutes) => Promise<unknown> | unknown;
+  readonly onUpdateAutoLock: (
+    value: AutoLockMinutes,
+  ) => Promise<unknown> | unknown;
   readonly onRenameProfile: (displayName: string) => Promise<void> | void;
   readonly onChangePassword: (value: {
     readonly oldPassword: string;
@@ -71,10 +73,14 @@ export function ProfileSecuritySettings({
           {({ formProps, submitting }) => (
             <form {...formProps}>
               <Field name="oldPassword" label="Current password" isRequired>
-                {({ fieldProps }) => <Textfield {...fieldProps} type="password" />}
+                {({ fieldProps }) => (
+                  <Textfield {...fieldProps} type="password" />
+                )}
               </Field>
               <Field name="newPassword" label="New password" isRequired>
-                {({ fieldProps }) => <Textfield {...fieldProps} type="password" />}
+                {({ fieldProps }) => (
+                  <Textfield {...fieldProps} type="password" />
+                )}
               </Field>
               <FormFooter>
                 <Button type="submit" isLoading={submitting}>

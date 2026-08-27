@@ -48,11 +48,14 @@ export default async function recoverAttachments(input: {
   });
 
   const controller = new AbortController();
-  const gc = await collectGarbage({
-    database: input.database,
-    attachments: input.attachments,
-    signal: controller.signal,
-  });
+  const gc = await collectGarbage(
+    {
+      database: input.database,
+      attachments: input.attachments,
+      signal: controller.signal,
+    },
+    input.now,
+  );
   let collectedOrphanCount = 0;
   let { retryCount } = gc;
   for (const blobId of inventory.orphanBlobIds) {

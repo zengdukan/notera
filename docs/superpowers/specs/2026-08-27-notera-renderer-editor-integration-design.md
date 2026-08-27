@@ -622,6 +622,6 @@ Media 测试覆盖 loopback、Origin、令牌范围与撤销、大小限制、�
 - [x] 历史版本：完成创建版本、只读预览、比较、复制、恢复、系统保护版本和不可变版本名称规则。
 - [x] 回收站：完成分页列表、单项恢复、目标目录选择、永久删除和相关树缓存更新。
 - [x] 单笔记导出与长任务 UI：完成 Markdown/PDF 选择、明文提示、保存失败回退、进度、取消、完成报告和有损节点警告。
-- [ ] Atlaskit Media 生产适配：完成 note-scoped Media Provider、loopback Media Adapter、加密上传与 Range 读取、附件引用事务、锁定撤销、GC 衔接及 demo media 生产移除。
+- [x] Atlaskit Media 生产适配：完成 note-scoped Media Provider、loopback Media Adapter、加密上传与 Range 读取、附件引用事务、锁定撤销、GC 衔接及 demo media 生产移除。
 
 所有 TODO 完成后，按照本规格第 23 节和 `AGENTS.md` 只执行一次必要的最终统一验证；最终验证不是独立功能模块，不拆成额外实施任务。

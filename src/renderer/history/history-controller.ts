@@ -10,10 +10,23 @@ import {
 } from '../platform/notera-client';
 
 export interface HistoryController {
-  create(input: { readonly noteId: string; readonly versionName: string }): Promise<void>;
-  compare(input: { readonly noteId: string; readonly versionId: string }): Promise<RequestData<'history.compare'>>;
-  copy(input: { readonly noteId: string; readonly versionId: string; readonly targetFolderId: string }): Promise<void>;
-  restore(input: { readonly noteId: string; readonly versionId: string }): Promise<void>;
+  create(input: {
+    readonly noteId: string;
+    readonly versionName: string;
+  }): Promise<void>;
+  compare(input: {
+    readonly noteId: string;
+    readonly versionId: string;
+  }): Promise<RequestData<'history.compare'>>;
+  copy(input: {
+    readonly noteId: string;
+    readonly versionId: string;
+    readonly targetFolderId: string;
+  }): Promise<void>;
+  restore(input: {
+    readonly noteId: string;
+    readonly versionId: string;
+  }): Promise<void>;
 }
 
 export function createHistoryController(input: {
@@ -29,7 +42,8 @@ export function createHistoryController(input: {
     async create(value) {
       await input.lifecycle.flush();
       await input.writeCoordinator.run(value.noteId, () =>
-        input.client.request('history.createPermanent', value));
+        input.client.request('history.createPermanent', value),
+      );
       await input.queryClient.invalidateQueries({
         queryKey: historyKey(input.profileId, value.noteId),
       });
@@ -50,23 +64,40 @@ export function createHistoryController(input: {
     async restore(value) {
       try {
         await input.lifecycle.flush();
-        const restored = await input.writeCoordinator.run(value.noteId, async () => {
-          const current = await input.client.request('note.get', { noteId: value.noteId });
-          await input.client.request('history.restore', {
-            ...value,
-            expectedContentVersion: current.contentVersion,
-          });
-          return input.client.request('note.get', { noteId: value.noteId });
-        });
-        input.queryClient.setQueryData(noteKey(input.profileId, value.noteId), restored);
+        const restored = await input.writeCoordinator.run(
+          value.noteId,
+          async () => {
+            const current = await input.client.request('note.get', {
+              noteId: value.noteId,
+            });
+            await input.client.request('history.restore', {
+              ...value,
+              expectedContentVersion: current.contentVersion,
+            });
+            return input.client.request('note.get', { noteId: value.noteId });
+          },
+        );
+        input.queryClient.setQueryData(
+          noteKey(input.profileId, value.noteId),
+          restored,
+        );
         await Promise.all([
-          input.queryClient.invalidateQueries({ queryKey: historyKey(input.profileId, value.noteId) }),
-          input.queryClient.invalidateQueries({ queryKey: treeKey(input.profileId, restored.folderId) }),
-          input.queryClient.invalidateQueries({ queryKey: recentKey(input.profileId) }),
+          input.queryClient.invalidateQueries({
+            queryKey: historyKey(input.profileId, value.noteId),
+          }),
+          input.queryClient.invalidateQueries({
+            queryKey: treeKey(input.profileId, restored.folderId),
+          }),
+          input.queryClient.invalidateQueries({
+            queryKey: recentKey(input.profileId),
+          }),
         ]);
         input.onRestored(restored);
       } catch (error) {
-        if (error instanceof NoteraClientError && error.code === 'ENTITY_NOT_FOUND') {
+        if (
+          error instanceof NoteraClientError &&
+          error.code === 'ENTITY_NOT_FOUND'
+        ) {
           await input.queryClient.invalidateQueries({
             queryKey: historyKey(input.profileId, value.noteId),
           });

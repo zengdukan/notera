@@ -64,11 +64,13 @@ describe('LocalNotesService note use cases', () => {
       contentVersion: 3,
       savedAt: expect.any(Number),
     });
-    await expect(localNotes.saveDraft({
-      noteId: created.id,
-      title: 'Saved again',
-      document,
-    })).resolves.toMatchObject({ contentVersion: 4 });
+    await expect(
+      localNotes.saveDraft({
+        noteId: created.id,
+        title: 'Saved again',
+        document,
+      }),
+    ).resolves.toMatchObject({ contentVersion: 4 });
 
     await localNotes.addFavorite(created.id);
     await expect(localNotes.getNote(created.id)).resolves.toMatchObject({

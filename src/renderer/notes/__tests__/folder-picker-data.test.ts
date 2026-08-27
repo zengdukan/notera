@@ -6,31 +6,64 @@ import {
 
 describe('folder picker data', () => {
   it('loads paginated folders recursively in tree order and ignores notes', async () => {
-    const request = jest.fn(async (_key: string, input: { parentFolderId: string; cursor?: string }) => {
-      if (input.parentFolderId === 'root' && input.cursor === undefined) {
+    const request = jest.fn(
+      async (
+        _key: string,
+        input: { parentFolderId: string; cursor?: string },
+      ) => {
+        if (input.parentFolderId === 'root' && input.cursor === undefined) {
+          return {
+            items: [
+              {
+                kind: 'folder',
+                id: 'a',
+                name: 'A',
+                parentId: 'root',
+                updatedAt: 1,
+                hasChildren: true,
+              },
+              {
+                kind: 'note',
+                id: 'note',
+                title: 'Note',
+                folderId: 'root',
+                contentVersion: 1,
+                updatedAt: 1,
+              },
+            ],
+            nextCursor: 'page-2',
+          };
+        }
+        if (input.parentFolderId === 'root') {
+          return {
+            items: [
+              {
+                kind: 'folder',
+                id: 'b',
+                name: 'B',
+                parentId: 'root',
+                updatedAt: 1,
+                hasChildren: false,
+              },
+            ],
+            nextCursor: null,
+          };
+        }
         return {
           items: [
-            { kind: 'folder', id: 'a', name: 'A', parentId: 'root', updatedAt: 1, hasChildren: true },
-            { kind: 'note', id: 'note', title: 'Note', folderId: 'root', contentVersion: 1, updatedAt: 1 },
-          ],
-          nextCursor: 'page-2',
-        };
-      }
-      if (input.parentFolderId === 'root') {
-        return {
-          items: [
-            { kind: 'folder', id: 'b', name: 'B', parentId: 'root', updatedAt: 1, hasChildren: false },
+            {
+              kind: 'folder',
+              id: 'a-child',
+              name: 'A child',
+              parentId: 'a',
+              updatedAt: 1,
+              hasChildren: false,
+            },
           ],
           nextCursor: null,
         };
-      }
-      return {
-        items: [
-          { kind: 'folder', id: 'a-child', name: 'A child', parentId: 'a', updatedAt: 1, hasChildren: false },
-        ],
-        nextCursor: null,
-      };
-    });
+      },
+    );
 
     const folders = await loadFolderPickerItems(
       { request } as unknown as NoteraClient,

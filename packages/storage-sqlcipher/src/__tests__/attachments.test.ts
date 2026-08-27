@@ -17,6 +17,7 @@ import {
   createAttachmentBlob,
   createCurrentNoteAttachmentReference,
   createNote,
+  createUploadAttachmentReference,
 } from '@notera/domain';
 
 import type { StorageError } from '../errors';
@@ -47,6 +48,12 @@ interface AttachmentApi {
   listReferencesForAttachments(
     ids: readonly Attachment['id'][],
   ): readonly AttachmentReference[];
+  listUploadReferencesForNote(
+    noteId: Note['id'],
+  ): readonly AttachmentReference[];
+  listExpiredUploadReferences(
+    now: ReturnType<typeof asTimestamp>,
+  ): readonly AttachmentReference[];
   listAllBlobs(): readonly AttachmentBlob[];
 }
 
@@ -60,6 +67,12 @@ interface VaultApi {
         insertAttachment(value: Attachment): void;
         addReferences(values: readonly AttachmentReference[]): void;
         removeReferences(values: readonly AttachmentReference[]): void;
+        replaceNoteReferences(
+          noteId: Note['id'],
+          values: readonly ReturnType<
+            typeof createCurrentNoteAttachmentReference
+          >[],
+        ): void;
         deleteUnreferencedAttachments(
           ids: readonly Attachment['id'][],
           now: ReturnType<typeof asTimestamp>,
@@ -273,5 +286,50 @@ describe('normalized attachment repository', () => {
 
     database.transaction((tx) => tx.attachments.finalizeGc(blob().id));
     expect(database.attachments.listAllBlobs()).toEqual([]);
+  });
+
+  it('queries expiring uploads and promotes only saved ADF media atomically', () => {
+    const database = setup();
+    const storedNote = note();
+    const first = attachment(1);
+    const second = attachment(2);
+    const uploads = [first, second].map((value, index) =>
+      createUploadAttachmentReference({
+        vaultId: TEST_VAULT_ID,
+        attachmentId: value.id,
+        noteId: storedNote.id,
+        expiresAt: asTimestamp(100 + index),
+      }),
+    );
+    database.transaction((tx) => {
+      tx.notes.insert(storedNote);
+      tx.attachments.insertBlob(storedBlob());
+      tx.attachments.insertAttachment(first);
+      tx.attachments.insertAttachment(second);
+      tx.attachments.addReferences(uploads);
+    });
+
+    expect(
+      database.attachments.listExpiredUploadReferences(asTimestamp(100)),
+    ).toEqual([uploads[0]]);
+    expect(
+      database.attachments.listUploadReferencesForNote(storedNote.id),
+    ).toEqual(uploads);
+
+    const saved = createCurrentNoteAttachmentReference({
+      vaultId: TEST_VAULT_ID,
+      attachmentId: first.id,
+      noteId: storedNote.id,
+    });
+    database.transaction((tx) =>
+      tx.attachments.replaceNoteReferences(storedNote.id, [saved]),
+    );
+
+    expect(
+      database.attachments.listReferencesForAttachments([first.id]),
+    ).toEqual([saved]);
+    expect(
+      database.attachments.listReferencesForAttachments([second.id]),
+    ).toEqual([uploads[1]]);
   });
 });

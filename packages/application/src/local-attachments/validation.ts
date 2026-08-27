@@ -1,6 +1,7 @@
 import {
   asAttachmentId,
   asNoteId,
+  asTimestamp,
   type AttachmentId,
   type NoteId,
 } from '@notera/domain';
@@ -42,6 +43,38 @@ export function validateImportInput(value: ImportAttachmentInput) {
     throw new ApplicationError('ATTACHMENT_IMPORT_FAILED');
   }
   const noteId = normalizeNoteId(value.noteId);
+  let attachmentId: AttachmentId | undefined;
+  try {
+    attachmentId =
+      value.attachmentId === undefined
+        ? undefined
+        : asAttachmentId(value.attachmentId);
+  } catch {
+    throw new ApplicationError('ATTACHMENT_IMPORT_FAILED');
+  }
+  let reference:
+    | { readonly kind: 'CURRENT_NOTE' }
+    | {
+        readonly kind: 'UPLOAD';
+        readonly expiresAt: ReturnType<typeof asTimestamp>;
+      };
+  if (
+    value.reference === undefined ||
+    value.reference.kind === 'CURRENT_NOTE'
+  ) {
+    reference = Object.freeze({ kind: 'CURRENT_NOTE' as const });
+  } else if (value.reference.kind === 'UPLOAD') {
+    try {
+      reference = Object.freeze({
+        kind: 'UPLOAD' as const,
+        expiresAt: asTimestamp(value.reference.expiresAt),
+      });
+    } catch {
+      throw new ApplicationError('ATTACHMENT_IMPORT_FAILED');
+    }
+  } else {
+    throw new ApplicationError('ATTACHMENT_IMPORT_FAILED');
+  }
   const fileName = normalizeText(value.fileName);
   const mimeType = normalizeText(value.mimeType);
   if (
@@ -54,6 +87,8 @@ export function validateImportInput(value: ImportAttachmentInput) {
   }
   return Object.freeze({
     noteId,
+    ...(attachmentId === undefined ? {} : { attachmentId }),
+    reference,
     fileName,
     mimeType,
     source: value.source,

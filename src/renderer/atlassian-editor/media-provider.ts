@@ -4,8 +4,7 @@ import type {
   AuthContext,
   MediaClientConfig,
 } from '@atlaskit/media-core';
-
-const MEDIA_COLLECTION = 'atlaskit-editor-example';
+import { mediaCollectionForNote } from '../../shared/atlassian-editor/media-runtime';
 
 type MediaAuthResponse = Auth;
 
@@ -24,7 +23,11 @@ function isMediaAuth(value: unknown): value is MediaAuthResponse {
   );
 }
 
-async function getMediaAuth(context?: AuthContext): Promise<Auth> {
+async function getMediaAuth(
+  noteId: string,
+  collection: string,
+  context?: AuthContext,
+): Promise<Auth> {
   const response = await fetch(
     `${window.atlassianEditor.mediaApiBaseUrl}/auth`,
     {
@@ -33,7 +36,10 @@ async function getMediaAuth(context?: AuthContext): Promise<Auth> {
         'content-type': 'application/json',
       },
       credentials: 'same-origin',
-      body: JSON.stringify({ context }),
+      body: JSON.stringify({
+        noteId,
+        context: { ...(context ?? {}), collectionName: collection },
+      }),
     },
   );
 
@@ -52,9 +58,12 @@ async function getMediaAuth(context?: AuthContext): Promise<Auth> {
   return auth;
 }
 
-export async function createMediaProvider(): Promise<MediaProvider> {
+export async function createMediaProvider(
+  noteId: string,
+): Promise<MediaProvider> {
+  const collection = mediaCollectionForNote(noteId);
   const mediaClientConfig: MediaClientConfig = {
-    authProvider: getMediaAuth,
+    authProvider: (context) => getMediaAuth(noteId, collection, context),
   };
 
   return {
@@ -62,13 +71,18 @@ export async function createMediaProvider(): Promise<MediaProvider> {
     viewMediaClientConfig: mediaClientConfig,
     uploadMediaClientConfig: mediaClientConfig,
     uploadParams: {
-      collection: MEDIA_COLLECTION,
+      collection,
     },
   };
 }
 
-/**
- * Image, video, and generic file uploads all use the same Atlaskit Media
- * provider. This example uses the persistent local service in server/.
- */
-export const mediaProvider: Promise<MediaProvider> = createMediaProvider();
+const providers = new Map<string, Promise<MediaProvider>>();
+
+export function mediaProviderForNote(noteId: string): Promise<MediaProvider> {
+  let provider = providers.get(noteId);
+  if (provider === undefined) {
+    provider = createMediaProvider(noteId);
+    providers.set(noteId, provider);
+  }
+  return provider;
+}

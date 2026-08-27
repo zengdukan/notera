@@ -14,11 +14,12 @@ export function useHistoryList(input: {
   return useInfiniteQuery({
     queryKey: historyKey(input.profileId, input.noteId),
     initialPageParam: undefined as string | undefined,
-    queryFn: ({ pageParam }) => input.client.request('history.list', {
-      noteId: input.noteId,
-      limit: 30,
-      ...(pageParam === undefined ? {} : { cursor: pageParam }),
-    }),
+    queryFn: ({ pageParam }) =>
+      input.client.request('history.list', {
+        noteId: input.noteId,
+        limit: 30,
+        ...(pageParam === undefined ? {} : { cursor: pageParam }),
+      }),
     getNextPageParam: (page) => page.nextCursor ?? undefined,
   });
 }
@@ -30,12 +31,17 @@ export function useHistorySnapshot(input: {
   readonly versionId?: string;
 }) {
   return useQuery({
-    queryKey: historySnapshotKey(input.profileId, input.noteId, input.versionId ?? 'none'),
+    queryKey: historySnapshotKey(
+      input.profileId,
+      input.noteId,
+      input.versionId ?? 'none',
+    ),
     enabled: input.versionId !== undefined,
-    queryFn: () => input.client.request('history.get', {
-      noteId: input.noteId,
-      versionId: input.versionId as string,
-    }),
+    queryFn: () =>
+      input.client.request('history.get', {
+        noteId: input.noteId,
+        versionId: input.versionId as string,
+      }),
   });
 }
 
@@ -43,6 +49,8 @@ export function uniqueHistoryItems(
   pages: readonly { readonly items: readonly HistoryItem[] }[] | undefined,
 ): readonly HistoryItem[] {
   const items = new Map<string, HistoryItem>();
-  pages?.forEach((page) => page.items.forEach((item) => items.set(item.versionId, item)));
+  pages?.forEach((page) =>
+    page.items.forEach((item) => items.set(item.versionId, item)),
+  );
   return [...items.values()];
 }

@@ -61,11 +61,15 @@ export function sessionReducer(
 }
 
 const SessionContext = createContext<
-  { readonly state: SessionState; readonly dispatch: Dispatch<SessionAction> }
+  | { readonly state: SessionState; readonly dispatch: Dispatch<SessionAction> }
   | undefined
 >(undefined);
 
-export function SessionProvider({ children }: { readonly children: ReactNode }) {
+export function SessionProvider({
+  children,
+}: {
+  readonly children: ReactNode;
+}) {
   const [state, dispatch] = useReducer(sessionReducer, initialSessionState);
   const value = useMemo(() => ({ state, dispatch }), [state]);
   return (

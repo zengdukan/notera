@@ -66,6 +66,10 @@ interface SchemaV4Module {
   readonly V4_NORMALIZED_ATTACHMENT_BLOBS: Migration;
 }
 
+interface SchemaV5Module {
+  readonly V5_UPLOAD_ATTACHMENT_REFERENCES: Migration;
+}
+
 interface SnapshotDatabaseModule {
   createVaultDatabase(options: {
     filePath: string;
@@ -110,6 +114,11 @@ function schemaV3Module(): SchemaV3Module {
 function schemaV4Module(): SchemaV4Module {
   // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
   return require('../schema/v4') as SchemaV4Module;
+}
+
+function schemaV5Module(): SchemaV5Module {
+  // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
+  return require('../schema/v5') as SchemaV5Module;
 }
 
 function databaseModuleWithProductionMigrations(
@@ -203,20 +212,26 @@ afterEach(() => {
 describe('schema migrations', () => {
   it('derives the current version and selects only the continuous suffix', () => {
     const registry = registryModule();
-    expect(registry.CURRENT_SCHEMA_VERSION).toBe(4);
+    expect(registry.CURRENT_SCHEMA_VERSION).toBe(5);
     expect(registry.selectProductionMigrations(1)).toEqual([
       schemaV2Module().V2_PENDING_VAULT_META_DIGEST,
       schemaV3Module().V3_NOTE_VERSION_NAME,
       schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
+      schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
     ]);
     expect(registry.selectProductionMigrations(2)).toEqual([
       schemaV3Module().V3_NOTE_VERSION_NAME,
       schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
+      schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
     ]);
     expect(registry.selectProductionMigrations(3)).toEqual([
       schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
+      schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
     ]);
-    expect(registry.selectProductionMigrations(4)).toEqual([]);
+    expect(registry.selectProductionMigrations(4)).toEqual([
+      schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
+    ]);
+    expect(registry.selectProductionMigrations(5)).toEqual([]);
 
     const v2 = migration(2);
     const v3 = migration(3);
@@ -508,7 +523,7 @@ describe('schema migrations', () => {
       );
       INSERT INTO schema_metadata VALUES (1, 0);
     `);
-    runnerModule().runMigrations(migrated, 0, 4, [
+    runnerModule().runMigrations(migrated, 0, 5, [
       migration(1, (database) => {
         database.exec('DROP TABLE schema_metadata');
         baselineV1Module().createBaselineV1(database, {
@@ -521,6 +536,7 @@ describe('schema migrations', () => {
       schemaV2Module().V2_PENDING_VAULT_META_DIGEST,
       schemaV3Module().V3_NOTE_VERSION_NAME,
       schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
+      schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
     ]);
 
     const fresh = openTestConnection(freshPath);

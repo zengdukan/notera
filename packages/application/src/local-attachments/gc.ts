@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-syntax, no-await-in-loop, no-continue */
 import { wipeBytes } from '@notera/crypto';
-import type { BlobId } from '@notera/domain';
+import type { BlobId, Timestamp } from '@notera/domain';
 
 import type { SessionResources } from '../session';
 import type { AttachmentGcReport } from './types';
@@ -49,7 +49,18 @@ export async function collectBlobIds(
 
 export function collectGarbage(
   resources: SessionResources,
+  now?: Timestamp,
 ): Promise<AttachmentGcReport> {
+  if (now !== undefined) {
+    resources.database.transaction((transaction) => {
+      const expired = transaction.attachments.listExpiredUploadReferences(now);
+      transaction.attachments.removeReferences(expired);
+      transaction.attachments.deleteUnreferencedAttachments(
+        expired.map(({ attachmentId }) => attachmentId),
+        now,
+      );
+    });
+  }
   return collectBlobIds(
     resources,
     resources.database.attachments.listGcPendingBlobs().map(({ id }) => id),

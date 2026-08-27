@@ -111,7 +111,14 @@ describe('current vault schema', () => {
 
     expect(
       connection.prepare('SELECT schema_version FROM schema_metadata').get(),
-    ).toEqual({ schema_version: 4 });
+    ).toEqual({ schema_version: 5 });
+    expect(
+      connection
+        .prepare("PRAGMA table_info('attachment_references')")
+        .all()
+        .map((column) => (column as { name: string }).name),
+    ).toContain('expires_at');
+    expect(schemaSql).toMatch(/source_type\s+IN\s*\([^)]*'UPLOAD'/i);
     expect(
       connection
         .prepare("PRAGMA table_info('note_versions')")
@@ -256,7 +263,7 @@ describe('current vault schema', () => {
       `DROP TABLE schema_metadata;
        CREATE TABLE schema_metadata(schema_version TEXT);
        INSERT INTO schema_metadata VALUES ('invalid')`,
-      'UPDATE schema_metadata SET schema_version = 5',
+      'UPDATE schema_metadata SET schema_version = 6',
     ] as const;
 
     scenarios.forEach((mutation, index) => {
@@ -312,7 +319,7 @@ describe('current vault schema', () => {
     const publicApi = require('../index') as Record<string, unknown>;
     expect(publicApi.createVaultDatabase).toBeInstanceOf(Function);
     expect(publicApi.openVaultDatabase).toBeInstanceOf(Function);
-    expect(publicApi.CURRENT_SCHEMA_VERSION).toBe(4);
+    expect(publicApi.CURRENT_SCHEMA_VERSION).toBe(5);
     expect(publicApi.openNativeConnection).toBeUndefined();
     expect(publicApi.CURRENT_SCHEMA_SQL).toBeUndefined();
     expect(publicApi.runMigrations).toBeUndefined();

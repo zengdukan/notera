@@ -6,7 +6,10 @@ import { FormattedMessage } from 'react-intl';
 
 import type { NoteraClient } from '../platform/notera-client';
 import { NoteraClientError } from '../platform/notera-client';
-import { handleCloseRequest, type CloseFailureChoice } from '../profile/close-guard';
+import {
+  handleCloseRequest,
+  type CloseFailureChoice,
+} from '../profile/close-guard';
 import { ProfileGate } from '../profile/ProfileGate';
 import type { ProfileListItem } from '../profile/ProfileList';
 import { NavigationWorkspace } from '../navigation/NavigationWorkspace';
@@ -35,11 +38,12 @@ export function AppShell({
   const lifecycle = useMemo(() => new ActiveDocumentLifecycle(), []);
   const writeCoordinator = useMemo(() => new NoteWriteCoordinator(), []);
   const activeCloseGuard = useMemo(
-    () => documentCloseGuard ?? {
-      isDirty: lifecycle.isDirty,
-      flush: lifecycle.flush,
-      chooseAfterFailure: async () => 'stay' as const,
-    },
+    () =>
+      documentCloseGuard ?? {
+        isDirty: lifecycle.isDirty,
+        flush: lifecycle.flush,
+        chooseAfterFailure: async () => 'stay' as const,
+      },
     [documentCloseGuard, lifecycle],
   );
   const [loaded, setLoaded] = useState(false);
@@ -52,7 +56,7 @@ export function AppShell({
       client.request('profile.getSessionState', {}),
     ])
       .then(([profilePage, session]) => {
-        if (!active) return;
+        if (!active) return undefined;
         setProfiles(profilePage.items);
         if (session.state === 'UNLOCKED') {
           dispatch({ type: 'unlocked', profile: session });
@@ -60,9 +64,10 @@ export function AppShell({
           dispatch({ type: 'locked' });
         }
         setLoaded(true);
+        return undefined;
       })
       .catch((error: unknown) => {
-        if (!active) return;
+        if (!active) return undefined;
         dispatch({
           type: 'fatal',
           code:
@@ -71,6 +76,7 @@ export function AppShell({
               : 'IPC_OPERATION_FAILED',
         });
         setLoaded(true);
+        return undefined;
       });
     return () => {
       active = false;
@@ -97,28 +103,30 @@ export function AppShell({
             <Heading size="xlarge">
               <FormattedMessage id="app.name" />
             </Heading>
-        {!loaded || state.status === 'booting' || state.status === 'unlocking' ? (
-          <Box as="div" role="status">
-            <Stack alignInline="center" space="space.100">
-              <Spinner size="large" />
-              <Text>
-                <FormattedMessage id="app.starting" />
-              </Text>
-            </Stack>
-          </Box>
-        ) : null}
+            {!loaded ||
+            state.status === 'booting' ||
+            state.status === 'unlocking' ? (
+              <Box as="div" role="status">
+                <Stack alignInline="center" space="space.100">
+                  <Spinner size="large" />
+                  <Text>
+                    <FormattedMessage id="app.starting" />
+                  </Text>
+                </Stack>
+              </Box>
+            ) : null}
             {loaded && state.status === 'locked' ? (
               <ProfileGate client={client} profiles={profiles}>
                 {null}
               </ProfileGate>
             ) : null}
-        {state.status === 'fatal' ? (
-          <Box as="div" role="alert">
-            <Text as="p">
-              <FormattedMessage id="app.fatal" />
-            </Text>
-          </Box>
-        ) : null}
+            {state.status === 'fatal' ? (
+              <Box as="div" role="alert">
+                <Text as="p">
+                  <FormattedMessage id="app.fatal" />
+                </Text>
+              </Box>
+            ) : null}
           </Stack>
         </Box>
       ) : null}

@@ -13,7 +13,9 @@ export async function insertMathFromToolbar(
   const latex = await openMathEditor({ kind: 'block', latex: '' });
   if (latex === undefined) return false;
 
-  const inserted = editorActions.replaceSelection(createMathAdf('block', latex));
+  const inserted = editorActions.replaceSelection(
+    createMathAdf('block', latex),
+  );
   if (inserted) editorActions.focus();
   return inserted;
 }

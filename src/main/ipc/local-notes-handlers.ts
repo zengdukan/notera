@@ -36,7 +36,9 @@ export function createLocalNotesBindings(input: {
       gate.run(() => service.listChildren(asInput<'listChildren'>(value))),
     ),
     defineIpcBinding('contentTree.getFolderPath', (value) =>
-      gate.run(() => service.getFolderPath(asInput<'getFolderPath'>(value.folderId))),
+      gate.run(() =>
+        service.getFolderPath(asInput<'getFolderPath'>(value.folderId)),
+      ),
     ),
     defineIpcBinding('contentTree.createFolder', (value) =>
       gate.run(() => service.createFolder(asInput<'createFolder'>(value))),

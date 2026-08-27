@@ -29,7 +29,9 @@ describe('ProfileAccessPage', () => {
     expect(screen.getByLabelText(/Password/)).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Create profile' }));
     expect(screen.getByLabelText(/Profile name/)).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Cancel' }),
+    ).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Personal' }));
     expect(screen.getByRole('button', { name: 'Unlock' })).toBeVisible();
   });
@@ -37,7 +39,11 @@ describe('ProfileAccessPage', () => {
   it('shows the create form by default when no profiles exist', () => {
     render(
       <AppProviders locale="en">
-        <ProfileAccessPage profiles={[]} onCreate={jest.fn()} onUnlock={jest.fn()} />
+        <ProfileAccessPage
+          profiles={[]}
+          onCreate={jest.fn()}
+          onUnlock={jest.fn()}
+        />
       </AppProviders>,
     );
     expect(screen.getByLabelText(/Profile name/)).toBeVisible();

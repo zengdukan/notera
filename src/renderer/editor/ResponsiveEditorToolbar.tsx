@@ -6,10 +6,7 @@ import {
 import { Box, xcss } from '@atlaskit/primitives';
 
 import type { ToolbarExecutor } from './toolbar-actions';
-import {
-  ToolbarActionButton,
-  ToolbarActionMenu,
-} from './toolbar-groups';
+import { ToolbarActionButton, ToolbarActionMenu } from './toolbar-groups';
 import { toolbarLayoutForWidth } from './toolbar-layout';
 
 const containerStyles = xcss({ width: '100%' });
@@ -21,7 +18,12 @@ const toolbarStyles = xcss({
   overflow: 'hidden',
 });
 
-const TEXT_STYLES = ['paragraph', 'heading-1', 'heading-2', 'heading-3'] as const;
+const TEXT_STYLES = [
+  'paragraph',
+  'heading-1',
+  'heading-2',
+  'heading-3',
+] as const;
 
 export function ResponsiveEditorToolbar({
   execute,
@@ -33,8 +35,15 @@ export function ResponsiveEditorToolbar({
   const containerRef = useRef<HTMLDivElement>(null);
   const [measuredWidth, setMeasuredWidth] = useState(Number.POSITIVE_INFINITY);
   useEffect(() => {
-    if (width !== undefined || containerRef.current === null || typeof ResizeObserver === 'undefined') return undefined;
-    const observer = new ResizeObserver(([entry]) => setMeasuredWidth(entry.contentRect.width));
+    if (
+      width !== undefined ||
+      containerRef.current === null ||
+      typeof ResizeObserver === 'undefined'
+    )
+      return undefined;
+    const observer = new ResizeObserver(([entry]) =>
+      setMeasuredWidth(entry.contentRect.width),
+    );
     observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, [width]);
@@ -43,22 +52,61 @@ export function ResponsiveEditorToolbar({
   return (
     <Box ref={containerRef} xcss={containerStyles}>
       <ResponsiveContainer breakpointPreset="fullpage">
-        <Box as="div" role="toolbar" aria-label="Editor formatting" xcss={toolbarStyles}>
+        <Box
+          as="div"
+          role="toolbar"
+          aria-label="Editor formatting"
+          xcss={toolbarStyles}
+        >
           <ToolbarButtonGroup>
             {layout.visible.map((action) => {
               if (action === 'text-style') {
-                return <ToolbarActionMenu key={action} trigger={action} actions={TEXT_STYLES} execute={execute} />;
+                return (
+                  <ToolbarActionMenu
+                    key={action}
+                    trigger={action}
+                    actions={TEXT_STYLES}
+                    execute={execute}
+                  />
+                );
               }
               if (action === 'more-formatting') {
-                return <ToolbarActionMenu key={action} trigger={action} actions={layout.moreFormatting} execute={execute} />;
+                return (
+                  <ToolbarActionMenu
+                    key={action}
+                    trigger={action}
+                    actions={layout.moreFormatting}
+                    execute={execute}
+                  />
+                );
               }
               if (action === 'list') {
-                return <ToolbarActionMenu key={action} trigger={action} actions={layout.list} execute={execute} />;
+                return (
+                  <ToolbarActionMenu
+                    key={action}
+                    trigger={action}
+                    actions={layout.list}
+                    execute={execute}
+                  />
+                );
               }
               if (action === 'insert') {
-                return <ToolbarActionMenu key={action} trigger={action} actions={layout.insert} execute={execute} />;
+                return (
+                  <ToolbarActionMenu
+                    key={action}
+                    trigger={action}
+                    actions={layout.insert}
+                    execute={execute}
+                  />
+                );
               }
-              return <ToolbarActionButton key={action} action={action} execute={execute} />;
+              return (
+                <ToolbarActionButton
+                  key={action}
+                  action={action}
+                  execute={execute}
+                />
+              );
             })}
           </ToolbarButtonGroup>
         </Box>

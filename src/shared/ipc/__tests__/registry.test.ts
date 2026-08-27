@@ -52,6 +52,14 @@ describe('IPC contract registry', () => {
         title: '',
         document: { type: 'doc', version: 1 },
       }).success,
+    ).toBe(true);
+    expect(
+      requestContracts['note.saveDraft'].request.safeParse({
+        noteId: '10000000-0000-4000-8000-000000000001',
+        expectedContentVersion: 1,
+        title: '',
+        document: { type: 'doc', version: 1 },
+      }).success,
     ).toBe(false);
     expect(
       requestContracts['history.restore'].request.safeParse({

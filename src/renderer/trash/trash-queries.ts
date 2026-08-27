@@ -12,10 +12,11 @@ export function useTrashItems(input: {
   return useInfiniteQuery({
     queryKey: trashKey(input.profileId),
     initialPageParam: undefined as string | undefined,
-    queryFn: ({ pageParam }) => input.client.request('trash.list', {
-      limit: 30,
-      ...(pageParam === undefined ? {} : { cursor: pageParam }),
-    }),
+    queryFn: ({ pageParam }) =>
+      input.client.request('trash.list', {
+        limit: 30,
+        ...(pageParam === undefined ? {} : { cursor: pageParam }),
+      }),
     getNextPageParam: (page) => page.nextCursor ?? undefined,
   });
 }
@@ -24,6 +25,8 @@ export function uniqueTrashItems(
   pages: readonly { readonly items: readonly TrashItem[] }[] | undefined,
 ): readonly TrashItem[] {
   const items = new Map<string, TrashItem>();
-  pages?.forEach((page) => page.items.forEach((item) => items.set(item.trashEntryId, item)));
+  pages?.forEach((page) =>
+    page.items.forEach((item) => items.set(item.trashEntryId, item)),
+  );
   return [...items.values()];
 }

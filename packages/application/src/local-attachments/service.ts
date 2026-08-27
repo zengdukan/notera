@@ -84,6 +84,7 @@ class SessionLocalAttachmentsService implements LocalAttachmentsService {
 
   openReader(
     attachmentId: Parameters<LocalAttachmentsService['openReader']>[0],
+    noteId?: Parameters<LocalAttachmentsService['openReader']>[1],
   ) {
     const session = this.dependencies.getSession();
     if (session === undefined) {
@@ -95,6 +96,7 @@ class SessionLocalAttachmentsService implements LocalAttachmentsService {
         attachments: resources.attachments,
         signal: resources.signal,
         attachmentId,
+        noteId,
         now: this.now,
       }),
     );
@@ -133,7 +135,7 @@ class SessionLocalAttachmentsService implements LocalAttachmentsService {
     if (session === undefined) {
       return Promise.reject(new ApplicationError('PROFILE_LOCKED'));
     }
-    return session.run(collectGarbage);
+    return session.run((resources) => collectGarbage(resources, this.now()));
   }
 }
 

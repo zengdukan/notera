@@ -4,9 +4,12 @@ import { join, resolve } from 'node:path';
 import { asLocalProfileId, type LocalProfileId } from '@notera/domain';
 
 import { ApplicationError } from './errors';
-import type { InternalSessionName } from './types';
 
 const INTERNAL_SESSION = /^[0-9a-f]{32}$/u;
+
+type InternalSessionName = string & {
+  readonly __internalSessionName: unique symbol;
+};
 
 export interface ProfilePaths {
   readonly root: string;

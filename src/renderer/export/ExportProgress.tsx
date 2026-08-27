@@ -13,7 +13,10 @@ const labels = {
   FINALIZING: 'Completing',
 } as const;
 
-export function ExportProgress({ operation, onCancel }: {
+export function ExportProgress({
+  operation,
+  onCancel,
+}: {
   readonly operation: Extract<ExportOperation, { state: 'RUNNING' }>;
   readonly onCancel: () => void;
 }) {

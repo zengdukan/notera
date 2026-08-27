@@ -33,9 +33,13 @@ export function HistoryModal({
   readonly folders?: readonly FolderPickerItem[];
 }) {
   const history = useHistoryList({ client, profileId, noteId });
-  const items = useMemo(() => uniqueHistoryItems(history.data?.pages), [history.data?.pages]);
+  const items = useMemo(
+    () => uniqueHistoryItems(history.data?.pages),
+    [history.data?.pages],
+  );
   const [selected, setSelected] = useState<HistoryItem>();
-  const [comparison, setComparison] = useState<RequestData<'history.compare'>>();
+  const [comparison, setComparison] =
+    useState<RequestData<'history.compare'>>();
   const [targetFolderId, setTargetFolderId] = useState(rootFolderId);
   const [operationFailed, setOperationFailed] = useState(false);
   const [working, setWorking] = useState(false);
@@ -77,22 +81,34 @@ export function HistoryModal({
         </SectionMessage>
       ) : null}
       {comparison ? (
-        <HistoryCompare comparison={comparison} />
+        <HistoryCompare noteId={noteId} comparison={comparison} />
       ) : (
         <Inline space="space.300" alignBlock="start" shouldWrap={false}>
           <Stack space="space.100">
-            <HistoryList items={items} selectedId={selected?.versionId} onSelect={(item) => {
-              setSelected(item);
-              setComparison(undefined);
-            }} />
+            <HistoryList
+              items={items}
+              selectedId={selected?.versionId}
+              onSelect={(item) => {
+                setSelected(item);
+                setComparison(undefined);
+              }}
+            />
             {history.hasNextPage ? (
-              <Button appearance="subtle" isLoading={history.isFetchingNextPage} onClick={() => void history.fetchNextPage()}>
+              <Button
+                appearance="subtle"
+                isLoading={history.isFetchingNextPage}
+                onClick={() => void history.fetchNextPage()}
+              >
                 Load more
               </Button>
             ) : null}
           </Stack>
           <Stack space="space.150" grow="fill">
-            <HistoryPreview snapshot={snapshot.data} loading={snapshot.isPending && selected !== undefined} />
+            <HistoryPreview
+              noteId={noteId}
+              snapshot={snapshot.data}
+              loading={snapshot.isPending && selected !== undefined}
+            />
             {rootFolderId !== undefined && targetFolderId !== undefined ? (
               <FolderPicker
                 rootFolderId={rootFolderId}
@@ -108,27 +124,54 @@ export function HistoryModal({
       {selected ? (
         <Inline space="space.100">
           {comparison ? (
-            <Button onClick={() => setComparison(undefined)}>Back to preview</Button>
+            <Button onClick={() => setComparison(undefined)}>
+              Back to preview
+            </Button>
           ) : (
-            <Button isDisabled={working} onClick={() => void run(async () => {
-              setComparison(await controller.compare({ noteId, versionId: selected.versionId }));
-            })}>
+            <Button
+              isDisabled={working}
+              onClick={() =>
+                void run(async () => {
+                  setComparison(
+                    await controller.compare({
+                      noteId,
+                      versionId: selected.versionId,
+                    }),
+                  );
+                })
+              }
+            >
               Compare
             </Button>
           )}
           {targetFolderId !== undefined ? (
-            <Button isDisabled={working} onClick={() => void run(() => controller.copy({
-              noteId,
-              versionId: selected.versionId,
-              targetFolderId,
-            }))}>
+            <Button
+              isDisabled={working}
+              onClick={() =>
+                void run(() =>
+                  controller.copy({
+                    noteId,
+                    versionId: selected.versionId,
+                    targetFolderId,
+                  }),
+                )
+              }
+            >
               Copy as note
             </Button>
           ) : null}
-          <Button appearance="danger" isDisabled={working} onClick={() => void run(() => controller.restore({
-            noteId,
-            versionId: selected.versionId,
-          }))}>
+          <Button
+            appearance="danger"
+            isDisabled={working}
+            onClick={() =>
+              void run(() =>
+                controller.restore({
+                  noteId,
+                  versionId: selected.versionId,
+                }),
+              )
+            }
+          >
             Restore version
           </Button>
         </Inline>

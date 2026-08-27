@@ -35,6 +35,7 @@ export class AttachmentReferenceCoordinator {
     noteId: NoteId,
     vaultId: VaultId,
     values: readonly unknown[],
+    now?: number,
   ): readonly CurrentNoteAttachmentReference[] {
     return immutable(
       [...new Set(values)].map((value) => {
@@ -43,6 +44,16 @@ export class AttachmentReferenceCoordinator {
         if (attachment === undefined || attachment.vaultId !== vaultId) {
           throw new ApplicationError('ENTITY_NOT_FOUND');
         }
+        const authorized = this.attachments
+          .listReferencesForAttachments([attachmentId])
+          .some(
+            (reference) =>
+              (reference.source === 'NOTE' && reference.noteId === noteId) ||
+              (reference.source === 'UPLOAD' &&
+                reference.noteId === noteId &&
+                (now === undefined || reference.expiresAt > now)),
+          );
+        if (!authorized) throw new ApplicationError('ENTITY_NOT_FOUND');
         return createCurrentNoteAttachmentReference({
           vaultId,
           attachmentId,

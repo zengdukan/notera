@@ -73,7 +73,9 @@ export function getFolderPath(
   value: unknown,
 ): { readonly items: readonly FolderPathItem[] } {
   const folderId = asFolderId(value);
-  const folders = new Map(database.folders.listAll().map((folder) => [folder.id, folder]));
+  const folders = new Map(
+    database.folders.listAll().map((folder) => [folder.id, folder]),
+  );
   const target = folders.get(folderId);
   if (target === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
   const reversed: FolderPathItem[] = [];
@@ -82,10 +84,12 @@ export function getFolderPath(
   for (;;) {
     if (visited.has(current.id)) throw new ApplicationError('DB_CORRUPT');
     visited.add(current.id);
-    reversed.push(Object.freeze({
-      id: current.id,
-      name: current.kind === 'ROOT' ? '' : current.name,
-    }));
+    reversed.push(
+      Object.freeze({
+        id: current.id,
+        name: current.kind === 'ROOT' ? '' : current.name,
+      }),
+    );
     if (current.kind === 'ROOT') break;
     const parent = folders.get(current.parentId);
     if (parent === undefined) throw new ApplicationError('DB_CORRUPT');

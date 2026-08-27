@@ -18,7 +18,9 @@ export function RecentModal({
 }: {
   readonly client: NoteraClient;
   readonly profileId: string;
-  readonly onOpen: (note: RecentNote) => Promise<boolean | void> | boolean | void;
+  readonly onOpen: (
+    note: RecentNote,
+  ) => Promise<boolean | void> | boolean | void;
 }) {
   const recent = useRecentNotes({ client, profileId });
   const items = uniqueRecentNotes(recent.data?.pages);
@@ -30,16 +32,32 @@ export function RecentModal({
       </SectionMessage>
     );
   }
-  if (items.length === 0) return <EmptyState header="No recent notes" description="Notes you open will appear here." />;
+  if (items.length === 0)
+    return (
+      <EmptyState
+        header="No recent notes"
+        description="Notes you open will appear here."
+      />
+    );
   return (
     <Stack space="space.100">
       {items.map((note) => (
-        <Button key={note.id} appearance="subtle" shouldFitContainer onClick={() => void onOpen(note)} aria-label={`Open ${note.title || 'Untitled'}`}>
+        <Button
+          key={note.id}
+          appearance="subtle"
+          shouldFitContainer
+          onClick={() => void onOpen(note)}
+          aria-label={`Open ${note.title || 'Untitled'}`}
+        >
           {note.title || 'Untitled'}
         </Button>
       ))}
       {recent.hasNextPage ? (
-        <Button appearance="subtle" isLoading={recent.isFetchingNextPage} onClick={() => void recent.fetchNextPage()}>
+        <Button
+          appearance="subtle"
+          isLoading={recent.isFetchingNextPage}
+          onClick={() => void recent.fetchNextPage()}
+        >
           Load more
         </Button>
       ) : null}

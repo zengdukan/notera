@@ -147,9 +147,21 @@ export function saveDraft(
     });
     const references = new AttachmentReferenceCoordinator(
       transaction.attachments,
-    ).currentNoteReferences(current.id, current.vaultId, attachmentIds);
+    ).currentNoteReferences(current.id, current.vaultId, attachmentIds, now);
+    const previousReferences = transaction.attachments.listReferencesForNotes([
+      current.id,
+    ]);
     transaction.notes.replaceContent(next, current.contentVersion);
     transaction.attachments.replaceNoteReferences(current.id, references);
+    const retained = new Set(
+      references.map(({ attachmentId }) => attachmentId),
+    );
+    transaction.attachments.deleteUnreferencedAttachments(
+      previousReferences
+        .filter(({ attachmentId }) => !retained.has(attachmentId))
+        .map(({ attachmentId }) => attachmentId),
+      now,
+    );
     return next;
   });
   return Object.freeze({

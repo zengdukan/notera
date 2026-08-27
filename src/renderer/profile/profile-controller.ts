@@ -26,9 +26,14 @@ export function createProfileController(input: {
 
   return Object.freeze({
     create(value: { readonly displayName: string; readonly password: string }) {
-      return unlockWith('new', () => input.client.request('profile.create', value));
+      return unlockWith('new', () =>
+        input.client.request('profile.create', value),
+      );
     },
-    unlock(value: { readonly localProfileId: string; readonly password: string }) {
+    unlock(value: {
+      readonly localProfileId: string;
+      readonly password: string;
+    }) {
       return unlockWith(value.localProfileId, () =>
         input.client.request('profile.unlock', value),
       );

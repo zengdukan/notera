@@ -25,7 +25,7 @@ describe('Unicode search highlighting', () => {
   it('renders disjoint ranges as React text nodes without HTML injection', () => {
     const { container } = render(
       <HighlightedText
-        text={'<img src=x> alpha beta'}
+        text="<img src=x> alpha beta"
         ranges={[
           { start: 12, end: 17 },
           { start: 18, end: 22 },

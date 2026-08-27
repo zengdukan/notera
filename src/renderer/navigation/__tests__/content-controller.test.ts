@@ -15,7 +15,12 @@ const note = {
 
 describe('content controller', () => {
   it('creates an empty-title note in context and selects it for editing', async () => {
-    const request = jest.fn(async () => ({ ...note, document: { type: 'doc', version: 1 }, createdAt: 1, tags: [] }));
+    const request = jest.fn(async () => ({
+      ...note,
+      document: { type: 'doc', version: 1 },
+      createdAt: 1,
+      tags: [],
+    }));
     const select = jest.fn();
     const beginEditing = jest.fn();
     const controller = createContentController({
@@ -29,7 +34,10 @@ describe('content controller', () => {
       beginEditing,
     });
     await controller.createNote();
-    expect(request).toHaveBeenCalledWith('note.create', { folderId: 'parent', title: '' });
+    expect(request).toHaveBeenCalledWith('note.create', {
+      folderId: 'parent',
+      title: '',
+    });
     expect(select).toHaveBeenCalledWith(note);
     expect(beginEditing).toHaveBeenCalledWith('note');
   });
@@ -54,11 +62,25 @@ describe('content controller', () => {
   });
 
   it('updates the current selection and invalidates only related caches after note mutations', async () => {
-    const renamed = { ...note, title: 'Renamed', contentVersion: 2, updatedAt: 2 };
-    const moved = { ...renamed, folderId: 'target', contentVersion: 3, updatedAt: 3 };
-    const request = jest.fn(async (key: string) => key === 'note.rename' ? renamed : moved);
+    const renamed = {
+      ...note,
+      title: 'Renamed',
+      contentVersion: 2,
+      updatedAt: 2,
+    };
+    const moved = {
+      ...renamed,
+      folderId: 'target',
+      contentVersion: 3,
+      updatedAt: 3,
+    };
+    const request = jest.fn(async (key: string) =>
+      key === 'note.rename' ? renamed : moved,
+    );
     const queryClient = new QueryClient();
-    const invalidate = jest.spyOn(queryClient, 'invalidateQueries').mockResolvedValue(undefined);
+    const invalidate = jest
+      .spyOn(queryClient, 'invalidateQueries')
+      .mockResolvedValue(undefined);
     const select = jest.fn();
     let selection = note;
     const controller = createContentController({
@@ -77,22 +99,43 @@ describe('content controller', () => {
 
     await controller.rename(note, 'Renamed');
     expect(select).toHaveBeenLastCalledWith(renamed);
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['profile', 'profile', 'tree', 'root'] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['profile', 'profile', 'note', 'note'] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['profile', 'profile', 'recent'] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['profile', 'profile', 'favorites'] });
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ['profile', 'profile', 'tree', 'root'],
+    });
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ['profile', 'profile', 'note', 'note'],
+    });
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ['profile', 'profile', 'recent'],
+    });
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ['profile', 'profile', 'favorites'],
+    });
 
     invalidate.mockClear();
     await controller.move(renamed, 'target');
     expect(select).toHaveBeenLastCalledWith(moved);
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['profile', 'profile', 'tree', 'root'] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['profile', 'profile', 'tree', 'target'] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['profile', 'profile', 'path'] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['profile', 'profile', 'search'] });
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ['profile', 'profile', 'tree', 'root'],
+    });
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ['profile', 'profile', 'tree', 'target'],
+    });
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ['profile', 'profile', 'path'],
+    });
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ['profile', 'profile', 'search'],
+    });
   });
 
   it('serializes note renames through the shared note writer', async () => {
-    const renamed = { ...note, title: 'Renamed', contentVersion: 2, updatedAt: 2 };
+    const renamed = {
+      ...note,
+      title: 'Renamed',
+      contentVersion: 2,
+      updatedAt: 2,
+    };
     const request = jest.fn(async () => renamed);
     const writer = new NoteWriteCoordinator();
     const run = jest.spyOn(writer, 'run');
@@ -111,6 +154,9 @@ describe('content controller', () => {
     await controller.rename(note, 'Renamed');
 
     expect(run).toHaveBeenCalledWith('note', expect.any(Function));
-    expect(request).toHaveBeenCalledWith('note.rename', { noteId: 'note', title: 'Renamed' });
+    expect(request).toHaveBeenCalledWith('note.rename', {
+      noteId: 'note',
+      title: 'Renamed',
+    });
   });
 });

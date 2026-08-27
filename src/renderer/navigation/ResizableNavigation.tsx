@@ -32,19 +32,37 @@ export function ResizableNavigation({
 }) {
   return (
     <Root defaultSideNavCollapsed={false} isSideNavShortcutEnabled>
-      <SideNav label="Notera navigation" defaultWidth={NAVIGATION_DEFAULT_WIDTH}>
+      <SideNav
+        label="Notera navigation"
+        defaultWidth={NAVIGATION_DEFAULT_WIDTH}
+      >
         <SideNavHeader>
           <Stack space="space.100">
-            <SideNavToggleButton collapseLabel="Collapse navigation" expandLabel="Expand navigation" />
+            <SideNavToggleButton
+              collapseLabel="Collapse navigation"
+              expandLabel="Expand navigation"
+            />
             {header}
           </Stack>
         </SideNavHeader>
         <SideNavBody>
           <Stack space="space.050">
-            <Button appearance="subtle" shouldFitContainer onClick={onFavorites}>Favorites</Button>
-            <Button appearance="subtle" shouldFitContainer onClick={onRecent}>Recent</Button>
-            <Button appearance="subtle" shouldFitContainer onClick={onTrash}>Trash</Button>
-            <Button appearance="subtle" shouldFitContainer onClick={onSettings}>Settings</Button>
+            <Button
+              appearance="subtle"
+              shouldFitContainer
+              onClick={onFavorites}
+            >
+              Favorites
+            </Button>
+            <Button appearance="subtle" shouldFitContainer onClick={onRecent}>
+              Recent
+            </Button>
+            <Button appearance="subtle" shouldFitContainer onClick={onTrash}>
+              Trash
+            </Button>
+            <Button appearance="subtle" shouldFitContainer onClick={onSettings}>
+              Settings
+            </Button>
             {tree}
           </Stack>
         </SideNavBody>

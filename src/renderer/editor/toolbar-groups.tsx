@@ -30,22 +30,38 @@ import {
 
 function icon(action: EditorToolbarActionId) {
   switch (action) {
-    case 'undo': return <UndoIcon label="" />;
-    case 'redo': return <RedoIcon label="" />;
-    case 'bold': return <BoldIcon label="" />;
-    case 'italic': return <ItalicIcon label="" />;
-    case 'underline': return <UnderlineIcon label="" />;
-    case 'text-color': return <TextColorIcon label="" />;
-    case 'link': return <LinkIcon label="" />;
-    case 'bullet-list': return <ListBulletedIcon label="" />;
-    case 'number-list': return <ListNumberedIcon label="" />;
-    case 'task-list': return <TaskIcon label="" />;
-    case 'table': return <TableIcon label="" />;
-    case 'media': return <ImageIcon label="" />;
-    case 'emoji': return <EmojiIcon label="" />;
-    case 'insert': return <PlusIcon label="" />;
-    case 'text-style': return <TextIcon label="" />;
-    default: return <MoreItemsIcon label="" />;
+    case 'undo':
+      return <UndoIcon label="" />;
+    case 'redo':
+      return <RedoIcon label="" />;
+    case 'bold':
+      return <BoldIcon label="" />;
+    case 'italic':
+      return <ItalicIcon label="" />;
+    case 'underline':
+      return <UnderlineIcon label="" />;
+    case 'text-color':
+      return <TextColorIcon label="" />;
+    case 'link':
+      return <LinkIcon label="" />;
+    case 'bullet-list':
+      return <ListBulletedIcon label="" />;
+    case 'number-list':
+      return <ListNumberedIcon label="" />;
+    case 'task-list':
+      return <TaskIcon label="" />;
+    case 'table':
+      return <TableIcon label="" />;
+    case 'media':
+      return <ImageIcon label="" />;
+    case 'emoji':
+      return <EmojiIcon label="" />;
+    case 'insert':
+      return <PlusIcon label="" />;
+    case 'text-style':
+      return <TextIcon label="" />;
+    default:
+      return <MoreItemsIcon label="" />;
   }
 }
 

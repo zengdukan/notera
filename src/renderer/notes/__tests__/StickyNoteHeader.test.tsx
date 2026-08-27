@@ -30,10 +30,14 @@ describe('StickyNoteHeader', () => {
       />,
     );
 
-    expect(screen.getByRole('navigation', { name: 'Note path' })).toHaveTextContent('Notes');
+    expect(
+      screen.getByRole('navigation', { name: 'Note path' }),
+    ).toHaveTextContent('Notes');
     expect(screen.getByRole('heading', { name: 'Architecture' })).toBeVisible();
     expect(screen.getByRole('status')).toHaveTextContent('Saved');
-    expect(screen.getByRole('button', { name: 'Add to favorites' })).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Add to favorites' }),
+    ).toBeVisible();
     expect(screen.getByRole('button', { name: 'Edit' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'More' })).toBeVisible();
   });
@@ -59,17 +63,31 @@ describe('StickyNoteHeader', () => {
       />,
     );
 
-    await user.type(screen.getByRole('textbox', { name: 'Note title' }), ' updated');
+    await user.type(
+      screen.getByRole('textbox', { name: 'Note title' }),
+      ' updated',
+    );
     expect(onTitleChange).toHaveBeenCalled();
     expect(screen.getByRole('status')).toHaveTextContent('Not saved');
     await user.click(screen.getByRole('button', { name: 'Retry save' }));
     expect(onRetry).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('button', { name: 'Remove from favorites' })).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Remove from favorites' }),
+    ).toBeVisible();
     expect(screen.getByRole('button', { name: 'Preview' })).toBeVisible();
 
     await user.click(screen.getByRole('button', { name: 'More' }));
-    for (const label of ['Create version', 'History', 'Export', 'Move', 'Copy', 'Move to trash']) {
-      expect(await screen.findByRole('menuitem', { name: label })).toBeVisible();
+    for (const label of [
+      'Create version',
+      'History',
+      'Export',
+      'Move',
+      'Copy',
+      'Move to trash',
+    ]) {
+      expect(
+        await screen.findByRole('menuitem', { name: label }),
+      ).toBeVisible();
     }
     await user.click(screen.getByRole('menuitem', { name: 'History' }));
     expect(onMore).toHaveBeenCalledWith('history');

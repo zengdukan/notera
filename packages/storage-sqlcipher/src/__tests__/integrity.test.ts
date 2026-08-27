@@ -31,6 +31,7 @@ import {
   createNoteTag,
   createRegularFolder,
   createTag,
+  createUploadAttachmentReference,
   createUserVersion,
 } from '@notera/domain';
 
@@ -450,5 +451,39 @@ describe('vault integrity scan', () => {
     expect(JSON.stringify(report)).not.toContain(
       attachment.attachment.fileName,
     );
+  });
+
+  it('reports malformed temporary upload references without exposing metadata', () => {
+    const { database, filePath } = createVault();
+    const note = storedNote();
+    const attachment = storedAttachment();
+    const upload = createUploadAttachmentReference({
+      vaultId: TEST_VAULT_ID,
+      attachmentId: attachment.attachment.id,
+      noteId: note.id,
+      expiresAt: asTimestamp(100),
+    });
+    database.transaction((transaction) => {
+      transaction.notes.insert(note);
+      transaction.attachments.insertBlob(attachment.storedBlob);
+      transaction.attachments.insertAttachment(attachment.attachment);
+      transaction.attachments.addReferences([upload]);
+    });
+
+    const raw = openTestConnection(filePath);
+    raw.pragma('ignore_check_constraints = ON');
+    raw
+      .prepare(
+        `UPDATE attachment_references SET expires_at = -1
+         WHERE source_type = 'UPLOAD' AND attachment_id = ?`,
+      )
+      .run(attachment.attachment.id);
+    raw.close();
+
+    expect(database.checkIntegrity().issues).toContainEqual({
+      code: 'ATTACHMENT_METADATA_INVALID',
+      table: 'attachment_references',
+      entityId: attachment.attachment.id,
+    });
   });
 });

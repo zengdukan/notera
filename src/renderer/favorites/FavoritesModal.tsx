@@ -18,7 +18,10 @@ import {
   type FavoriteNote,
 } from './favorite-queries';
 
-type FavoritePages = InfiniteData<RequestData<'favorite.list'>, string | undefined>;
+type FavoritePages = InfiniteData<
+  RequestData<'favorite.list'>,
+  string | undefined
+>;
 
 function withoutFavorite(data: FavoritePages | undefined, noteId: string) {
   if (data === undefined) return data;
@@ -38,22 +41,27 @@ export function FavoritesModal({
 }: {
   readonly client: NoteraClient;
   readonly profileId: string;
-  readonly onOpen: (note: FavoriteNote) => Promise<boolean | void> | boolean | void;
+  readonly onOpen: (
+    note: FavoriteNote,
+  ) => Promise<boolean | void> | boolean | void;
 }) {
   const queryClient = useQueryClient();
   const favorites = useFavorites({ client, profileId });
   const mutation = useMutation({
-    mutationFn: (note: FavoriteNote) => client.request('favorite.remove', { noteId: note.id }),
+    mutationFn: (note: FavoriteNote) =>
+      client.request('favorite.remove', { noteId: note.id }),
     onMutate: async (note) => {
       const listKey = favoritesKey(profileId);
       const detailKey = noteKey(profileId, note.id);
       await queryClient.cancelQueries({ queryKey: listKey });
       const previousList = queryClient.getQueryData<FavoritePages>(listKey);
       const previousDetail = queryClient.getQueryData(detailKey);
-      queryClient.setQueryData<FavoritePages>(listKey, (current) => withoutFavorite(current, note.id));
-      queryClient.setQueryData<Record<string, unknown>>(detailKey, (current) => (
-        current === undefined ? current : { ...current, isFavorite: false }
-      ));
+      queryClient.setQueryData<FavoritePages>(listKey, (current) =>
+        withoutFavorite(current, note.id),
+      );
+      queryClient.setQueryData<Record<string, unknown>>(detailKey, (current) =>
+        current === undefined ? current : { ...current, isFavorite: false },
+      );
       return { previousList, previousDetail, detailKey, listKey };
     },
     onError: (_error, _note, context) => {
@@ -65,8 +73,12 @@ export function FavoritesModal({
       }
     },
     onSettled: async (_data, _error, note) => {
-      await queryClient.invalidateQueries({ queryKey: favoritesKey(profileId) });
-      await queryClient.invalidateQueries({ queryKey: noteKey(profileId, note.id) });
+      await queryClient.invalidateQueries({
+        queryKey: favoritesKey(profileId),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: noteKey(profileId, note.id),
+      });
     },
   });
   const items = uniqueFavorites(favorites.data?.pages);
@@ -79,7 +91,13 @@ export function FavoritesModal({
       </SectionMessage>
     );
   }
-  if (items.length === 0) return <EmptyState header="No favorites yet" description="Favorite a note to find it here." />;
+  if (items.length === 0)
+    return (
+      <EmptyState
+        header="No favorites yet"
+        description="Favorite a note to find it here."
+      />
+    );
   return (
     <Stack space="space.100">
       {mutation.isError ? (
@@ -89,7 +107,11 @@ export function FavoritesModal({
       ) : null}
       {items.map((note) => (
         <Inline key={note.id} alignBlock="center" spread="space-between">
-          <Button appearance="subtle" onClick={() => void onOpen(note)} aria-label={`Open ${note.title || 'Untitled'}`}>
+          <Button
+            appearance="subtle"
+            onClick={() => void onOpen(note)}
+            aria-label={`Open ${note.title || 'Untitled'}`}
+          >
             {note.title || 'Untitled'}
           </Button>
           <IconButton
@@ -101,7 +123,11 @@ export function FavoritesModal({
         </Inline>
       ))}
       {favorites.hasNextPage ? (
-        <Button appearance="subtle" isLoading={favorites.isFetchingNextPage} onClick={() => void favorites.fetchNextPage()}>
+        <Button
+          appearance="subtle"
+          isLoading={favorites.isFetchingNextPage}
+          onClick={() => void favorites.fetchNextPage()}
+        >
           Load more
         </Button>
       ) : null}

@@ -33,27 +33,57 @@ interface ActionController {
 export function createContentActions(
   entry: ContentEntry,
   controller: ActionController,
-  _anchor: 'context' | 'overflow' = 'overflow',
+  anchor: 'context' | 'overflow' = 'overflow',
 ): readonly ContentAction[] {
+  void anchor;
   const action = (
     id: ContentActionId,
     label: string,
     run: (() => unknown) | undefined,
-  ): ContentAction => Object.freeze({
-    id,
-    label,
-    run: () => run?.(),
-    isDisabled: run === undefined,
-  });
-  const open = action('open', 'Open', controller.open ? () => controller.open?.(entry) : undefined);
-  const rename = action('rename', 'Rename', controller.rename ? () => controller.rename?.(entry) : undefined);
-  const move = action('move', 'Move', controller.openMove ? () => controller.openMove?.(entry) : undefined);
-  const trash = action('trash', 'Move to trash', controller.openTrash ? () => controller.openTrash?.(entry) : undefined);
+  ): ContentAction =>
+    Object.freeze({
+      id,
+      label,
+      run: () => run?.(),
+      isDisabled: run === undefined,
+    });
+  const open = action(
+    'open',
+    'Open',
+    controller.open ? () => controller.open?.(entry) : undefined,
+  );
+  const rename = action(
+    'rename',
+    'Rename',
+    controller.rename ? () => controller.rename?.(entry) : undefined,
+  );
+  const move = action(
+    'move',
+    'Move',
+    controller.openMove ? () => controller.openMove?.(entry) : undefined,
+  );
+  const trash = action(
+    'trash',
+    'Move to trash',
+    controller.openTrash ? () => controller.openTrash?.(entry) : undefined,
+  );
   if (entry.kind === 'folder') {
     return Object.freeze([
       open,
-      action('create-note', 'Create note', controller.createNote ? () => controller.createNote?.(entry.id) : undefined),
-      action('create-folder', 'Create subfolder', controller.openCreateFolder ? () => controller.openCreateFolder?.(entry) : undefined),
+      action(
+        'create-note',
+        'Create note',
+        controller.createNote
+          ? () => controller.createNote?.(entry.id)
+          : undefined,
+      ),
+      action(
+        'create-folder',
+        'Create subfolder',
+        controller.openCreateFolder
+          ? () => controller.openCreateFolder?.(entry)
+          : undefined,
+      ),
       rename,
       move,
       trash,
@@ -63,9 +93,23 @@ export function createContentActions(
     open,
     rename,
     move,
-    action('copy', 'Copy', controller.openCopy ? () => controller.openCopy?.(entry) : undefined),
-    action('toggle-favorite', 'Add to favorites', controller.toggleFavorite ? () => controller.toggleFavorite?.(entry) : undefined),
-    action('export', 'Export', controller.export ? () => controller.export?.(entry) : undefined),
+    action(
+      'copy',
+      'Copy',
+      controller.openCopy ? () => controller.openCopy?.(entry) : undefined,
+    ),
+    action(
+      'toggle-favorite',
+      'Add to favorites',
+      controller.toggleFavorite
+        ? () => controller.toggleFavorite?.(entry)
+        : undefined,
+    ),
+    action(
+      'export',
+      'Export',
+      controller.export ? () => controller.export?.(entry) : undefined,
+    ),
     trash,
   ]);
 }

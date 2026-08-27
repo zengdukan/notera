@@ -37,7 +37,9 @@ describe('content actions', () => {
       'export',
       'trash',
     ]);
-    expect(actionIdsFor(createContentActions(folder, controller, 'context'))).toEqual(
+    expect(
+      actionIdsFor(createContentActions(folder, controller, 'context')),
+    ).toEqual(
       actionIdsFor(createContentActions(folder, controller, 'overflow')),
     );
   });

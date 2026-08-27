@@ -19,7 +19,9 @@ export function DeleteTrashModal({
       </SectionMessage>
       <Inline space="space.100">
         <Button onClick={onCancel}>Cancel</Button>
-        <Button appearance="danger" onClick={() => void onDelete()}>Delete permanently</Button>
+        <Button appearance="danger" onClick={() => void onDelete()}>
+          Delete permanently
+        </Button>
       </Inline>
     </Stack>
   );

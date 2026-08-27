@@ -20,7 +20,11 @@ export function ExportModal({
   readonly store: ExportOperationStore;
   readonly onReturnToEdit: () => void;
 }) {
-  const operation = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
+  const operation = useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    store.getSnapshot,
+  );
   const [format, setFormat] = useState<ExportFormat>('MARKDOWN');
   const [saveFailed, setSaveFailed] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -39,7 +43,12 @@ export function ExportModal({
   };
 
   if (operation?.state === 'RUNNING') {
-    return <ExportProgress operation={operation} onCancel={() => void controller.cancel()} />;
+    return (
+      <ExportProgress
+        operation={operation}
+        onCancel={() => void controller.cancel()}
+      />
+    );
   }
   if (operation) {
     return <ExportReport operation={operation} />;
@@ -47,10 +56,18 @@ export function ExportModal({
   if (saveFailed) {
     return (
       <Stack space="space.200">
-        <SectionMessage appearance="warning" title="Latest changes could not be saved">
-          Export the last successfully saved version, or return to editing without exporting.
+        <SectionMessage
+          appearance="warning"
+          title="Latest changes could not be saved"
+        >
+          Export the last successfully saved version, or return to editing
+          without exporting.
         </SectionMessage>
-        <Button appearance="primary" isLoading={starting} onClick={() => void start('saved')}>
+        <Button
+          appearance="primary"
+          isLoading={starting}
+          onClick={() => void start('saved')}
+        >
           Export last saved version
         </Button>
         <Button onClick={onReturnToEdit}>Return to editing</Button>
@@ -66,17 +83,29 @@ export function ExportModal({
           { name: 'export-format', value: 'MARKDOWN', label: 'Markdown' },
           { name: 'export-format', value: 'PDF', label: 'PDF' },
         ]}
-        onChange={(event) => setFormat(event.currentTarget.value as ExportFormat)}
+        onChange={(event) =>
+          setFormat(event.currentTarget.value as ExportFormat)
+        }
       />
-      <SectionMessage appearance="warning" title="Export creates plaintext files">
-        Exported files are outside Notera encryption and must be protected separately.
+      <SectionMessage
+        appearance="warning"
+        title="Export creates plaintext files"
+      >
+        Exported files are outside Notera encryption and must be protected
+        separately.
       </SectionMessage>
       {failed ? (
         <SectionMessage appearance="error" title="Export could not start">
           Try again without exposing any output path.
         </SectionMessage>
       ) : null}
-      <Button appearance="primary" isLoading={starting} onClick={() => void start('try')}>Export</Button>
+      <Button
+        appearance="primary"
+        isLoading={starting}
+        onClick={() => void start('try')}
+      >
+        Export
+      </Button>
     </Stack>
   );
 }

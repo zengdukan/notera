@@ -22,7 +22,9 @@ export function CreateProfileForm({
               {({ fieldProps }) => <Textfield {...fieldProps} autoFocus />}
             </Field>
             <Field name="password" label="Password" isRequired>
-              {({ fieldProps }) => <Textfield {...fieldProps} type="password" />}
+              {({ fieldProps }) => (
+                <Textfield {...fieldProps} type="password" />
+              )}
             </Field>
             <FormFooter>
               <Button appearance="primary" type="submit" isLoading={submitting}>

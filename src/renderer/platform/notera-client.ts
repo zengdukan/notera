@@ -85,7 +85,10 @@ export function createNoteraClient(
       listener: (payload: EventPayload<Key>) => void,
     ): () => void {
       const contract = eventContracts[key];
-      return eventMethod(api, key)((payload) => {
+      return eventMethod(
+        api,
+        key,
+      )((payload) => {
         const parsed = contract.payload.safeParse(payload);
         if (parsed.success) listener(parsed.data as EventPayload<Key>);
       });

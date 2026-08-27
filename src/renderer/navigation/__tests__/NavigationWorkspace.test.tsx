@@ -10,55 +10,108 @@ import type { NoteraClient } from '../../platform/notera-client';
 import { ActiveDocumentLifecycle } from '../../notes/document-lifecycle';
 import { NoteWriteCoordinator } from '../../notes/note-write-coordinator';
 
-const firstNote = { kind: 'note' as const, id: 'first', title: 'First', folderId: 'root', contentVersion: 1, updatedAt: 1 };
+import { NavigationWorkspace } from '../NavigationWorkspace';
+
+const firstNote = {
+  kind: 'note' as const,
+  id: 'first',
+  title: 'First',
+  folderId: 'root',
+  contentVersion: 1,
+  updatedAt: 1,
+};
 const secondNote = { ...firstNote, id: 'second', title: 'Second' };
 const mockFlush = jest.fn(async () => undefined);
 
 jest.mock('../ResizableNavigation', () => ({
-  ResizableNavigation: ({ header, tree, children, onFavorites, onRecent, onTrash }: {
-    header: ReactNode; tree: ReactNode; children: ReactNode;
-    onFavorites(): void; onRecent(): void; onTrash(): void;
+  ResizableNavigation: ({
+    header,
+    tree,
+    children,
+    onFavorites,
+    onRecent,
+    onTrash,
+  }: {
+    header: ReactNode;
+    tree: ReactNode;
+    children: ReactNode;
+    onFavorites(): void;
+    onRecent(): void;
+    onTrash(): void;
   }) => (
     <div>
       {header}
-      <button type="button" onClick={onFavorites}>Favorites</button>
-      <button type="button" onClick={onRecent}>Recent</button>
-      <button type="button" onClick={onTrash}>Trash</button>
-      {tree}<main>{children}</main>
+      <button type="button" onClick={onFavorites}>
+        Favorites
+      </button>
+      <button type="button" onClick={onRecent}>
+        Recent
+      </button>
+      <button type="button" onClick={onTrash}>
+        Trash
+      </button>
+      {tree}
+      <main>{children}</main>
     </div>
   ),
 }));
 jest.mock('../NavigationHeader', () => ({
   NavigationHeader: ({ onSearch }: { onSearch(): void }) => (
-    <button type="button" onClick={onSearch}>Search</button>
+    <button type="button" onClick={onSearch}>
+      Search
+    </button>
   ),
 }));
 jest.mock('../tree-queries', () => ({
   QueryContentTree: ({ onOpen }: { onOpen(entry: typeof firstNote): void }) => (
     <div>
-      <button type="button" onClick={() => onOpen(firstNote)}>Open first</button>
-      <button type="button" onClick={() => onOpen(secondNote)}>Open second</button>
+      <button type="button" onClick={() => onOpen(firstNote)}>
+        Open first
+      </button>
+      <button type="button" onClick={() => onOpen(secondNote)}>
+        Open second
+      </button>
     </div>
   ),
 }));
 jest.mock('../../notes/NoteWorkspace', () => ({
-  NoteWorkspace: ({ note, lifecycle, onMore }: {
+  NoteWorkspace: ({
+    note,
+    lifecycle,
+    onMore,
+  }: {
     note?: typeof firstNote;
     lifecycle: ActiveDocumentLifecycle;
-    onMore(action: 'create-version' | 'history' | 'export', note: typeof firstNote): void;
+    onMore(
+      action: 'create-version' | 'history' | 'export',
+      note: typeof firstNote,
+    ): void;
   }) => {
     useEffect(() => {
       if (!note) return undefined;
-      return lifecycle.attach({ isDirty: () => true, flush: mockFlush, stop: jest.fn() });
+      return lifecycle.attach({
+        isDirty: () => true,
+        flush: mockFlush,
+        stop: jest.fn(),
+      });
     }, [lifecycle, note]);
     return (
       <div>
         {note ? `Workspace ${note.title}` : 'No note selected'}
         {note ? (
           <>
-            <button type="button" onClick={() => onMore('create-version', note)}>Create version</button>
-            <button type="button" onClick={() => onMore('history', note)}>History</button>
-            <button type="button" onClick={() => onMore('export', note)}>Export</button>
+            <button
+              type="button"
+              onClick={() => onMore('create-version', note)}
+            >
+              Create version
+            </button>
+            <button type="button" onClick={() => onMore('history', note)}>
+              History
+            </button>
+            <button type="button" onClick={() => onMore('export', note)}>
+              Export
+            </button>
           </>
         ) : null}
       </div>
@@ -67,34 +120,56 @@ jest.mock('../../notes/NoteWorkspace', () => ({
 }));
 jest.mock('../../search/SearchModal', () => ({
   SearchModal: ({ onOpen }: { onOpen(result: unknown): void }) => (
-    <button type="button" onClick={() => onOpen({
-      noteId: 'search-note',
-      title: 'Search result',
-      excerpt: '',
-      folderPath: [
-        { id: 'root', name: '' },
-        { id: 'scoped', name: 'Scoped' },
-      ],
-      updatedAt: 1,
-      highlights: [],
-    })}>
+    <button
+      type="button"
+      onClick={() =>
+        onOpen({
+          noteId: 'search-note',
+          title: 'Search result',
+          excerpt: '',
+          folderPath: [
+            { id: 'root', name: '' },
+            { id: 'scoped', name: 'Scoped' },
+          ],
+          updatedAt: 1,
+          highlights: [],
+        })
+      }
+    >
       Open search result
     </button>
   ),
 }));
-jest.mock('../../favorites/FavoritesModal', () => ({ FavoritesModal: () => <div>Favorite notes</div> }));
-jest.mock('../../recent/RecentModal', () => ({ RecentModal: () => <div>Recent notes</div> }));
-jest.mock('../../history/CreateVersionModal', () => ({ CreateVersionModal: () => <div>Create version form</div> }));
-jest.mock('../../history/HistoryModal', () => ({ HistoryModal: () => <div>History workspace</div> }));
-jest.mock('../../trash/TrashModal', () => ({ TrashModal: () => <div>Trash workspace</div> }));
-jest.mock('../../export/ExportModal', () => ({ ExportModal: () => <div>Export workspace</div> }));
-jest.mock('../../shared-ui/ModalHost', () => ({
-  ModalHost: ({ modal }: { modal: { title: string; content: ReactNode } | null }) => (
-    modal === null ? null : <div role="dialog" aria-label={modal.title}>{modal.content}</div>
-  ),
+jest.mock('../../favorites/FavoritesModal', () => ({
+  FavoritesModal: () => <div>Favorite notes</div>,
 }));
-
-import { NavigationWorkspace } from '../NavigationWorkspace';
+jest.mock('../../recent/RecentModal', () => ({
+  RecentModal: () => <div>Recent notes</div>,
+}));
+jest.mock('../../history/CreateVersionModal', () => ({
+  CreateVersionModal: () => <div>Create version form</div>,
+}));
+jest.mock('../../history/HistoryModal', () => ({
+  HistoryModal: () => <div>History workspace</div>,
+}));
+jest.mock('../../trash/TrashModal', () => ({
+  TrashModal: () => <div>Trash workspace</div>,
+}));
+jest.mock('../../export/ExportModal', () => ({
+  ExportModal: () => <div>Export workspace</div>,
+}));
+jest.mock('../../shared-ui/ModalHost', () => ({
+  ModalHost: ({
+    modal,
+  }: {
+    modal: { title: string; content: ReactNode } | null;
+  }) =>
+    modal === null ? null : (
+      <div role="dialog" aria-label={modal.title}>
+        {modal.content}
+      </div>
+    ),
+}));
 
 function Unlock({ children }: { children: ReactNode }) {
   const { dispatch } = useSession();
@@ -109,13 +184,16 @@ function Unlock({ children }: { children: ReactNode }) {
       },
     });
   }, [dispatch]);
-  return <>{children}</>;
+  return children;
 }
 
 describe('NavigationWorkspace', () => {
   it('shares tree selection with the central note workspace', async () => {
     const user = userEvent.setup();
-    const client = { request: jest.fn(), subscribe: jest.fn() } as unknown as NoteraClient;
+    const client = {
+      request: jest.fn(),
+      subscribe: jest.fn(),
+    } as unknown as NoteraClient;
     render(
       <QueryClientProvider client={new QueryClient()}>
         <SessionProvider>
@@ -168,16 +246,22 @@ describe('NavigationWorkspace', () => {
 
     await user.keyboard('{Control>}j{/Control}');
     expect(await screen.findByRole('dialog', { name: 'Search' })).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Open search result' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Open search result' }),
+    );
     expect(await screen.findByText('Workspace Search result')).toBeVisible();
     expect(request).toHaveBeenCalledWith('note.get', { noteId: 'search-note' });
-    expect(screen.queryByRole('dialog', { name: 'Search' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('dialog', { name: 'Search' }),
+    ).not.toBeInTheDocument();
   });
 
   it('opens favorites, recent, and trash product modals from the navigation', async () => {
     const user = userEvent.setup();
     const client = {
-      request: jest.fn(async (key: string) => key === 'contentTree.listChildren' ? { items: [] } : {}),
+      request: jest.fn(async (key: string) =>
+        key === 'contentTree.listChildren' ? { items: [] } : {},
+      ),
       subscribe: jest.fn(),
     } as unknown as NoteraClient;
     render(

@@ -39,7 +39,9 @@ export function createActivityReporter(input: {
     stop(): void {
       if (!started) return;
       started = false;
-      events.forEach((event) => input.target.removeEventListener(event, report));
+      events.forEach((event) =>
+        input.target.removeEventListener(event, report),
+      );
     },
   });
 }

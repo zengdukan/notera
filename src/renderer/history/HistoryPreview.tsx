@@ -5,9 +5,11 @@ import { RendererSurface } from '../editor/RendererSurface';
 import type { HistorySnapshot } from './history-queries';
 
 export function HistoryPreview({
+  noteId,
   snapshot,
   loading,
 }: {
+  readonly noteId: string;
   readonly snapshot?: HistorySnapshot;
   readonly loading: boolean;
 }) {
@@ -16,7 +18,7 @@ export function HistoryPreview({
   return (
     <Stack space="space.150">
       <Text weight="semibold">{snapshot.title || 'Untitled'}</Text>
-      <RendererSurface document={snapshot.document} />
+      <RendererSurface noteId={noteId} document={snapshot.document} />
     </Stack>
   );
 }

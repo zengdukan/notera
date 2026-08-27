@@ -60,10 +60,17 @@ export interface TrashAttachmentReference extends AttachmentReferenceBase {
   readonly trashEntryId: TrashEntryId;
 }
 
+export interface UploadAttachmentReference extends AttachmentReferenceBase {
+  readonly source: 'UPLOAD';
+  readonly noteId: NoteId;
+  readonly expiresAt: Timestamp;
+}
+
 export type AttachmentReference =
   | CurrentNoteAttachmentReference
   | NoteVersionAttachmentReference
-  | TrashAttachmentReference;
+  | TrashAttachmentReference
+  | UploadAttachmentReference;
 
 const LOCAL_STATES: readonly AttachmentLocalState[] = [
   'IMPORTING',
@@ -120,4 +127,10 @@ export function createTrashAttachmentReference(
   input: Omit<TrashAttachmentReference, 'source'>,
 ): TrashAttachmentReference {
   return immutable({ ...input, source: 'TRASH' as const });
+}
+
+export function createUploadAttachmentReference(
+  input: Omit<UploadAttachmentReference, 'source'>,
+): UploadAttachmentReference {
+  return immutable({ ...input, source: 'UPLOAD' as const });
 }

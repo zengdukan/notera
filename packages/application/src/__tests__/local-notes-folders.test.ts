@@ -23,10 +23,12 @@ describe('LocalNotesService content tree', () => {
       parentFolderId: alpha.id,
       name: 'child',
     });
-    const child = (await service.listChildren({
-      parentFolderId: alpha.id,
-      limit: 20,
-    })).items[0];
+    const child = (
+      await service.listChildren({
+        parentFolderId: alpha.id,
+        limit: 20,
+      })
+    ).items[0];
     if (child?.kind !== 'folder') throw new Error('Expected child folder.');
     await expect(service.getFolderPath(child.id)).resolves.toEqual({
       items: [

@@ -22,12 +22,13 @@ export async function handleCloseRequest(input: {
       return;
     } catch {
       const choice = await input.chooseAfterFailure();
-      if (choice === 'retry') continue;
-      await input.complete({
-        requestId: input.requestId,
-        action: choice === 'discard' ? 'proceed' : 'cancel',
-      });
-      return;
+      if (choice !== 'retry') {
+        await input.complete({
+          requestId: input.requestId,
+          action: choice === 'discard' ? 'proceed' : 'cancel',
+        });
+        return;
+      }
     }
   }
 }

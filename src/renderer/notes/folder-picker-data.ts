@@ -26,8 +26,14 @@ export async function loadFolderPickerItems(
       });
       children.push(
         ...page.items
-          .filter((entry): entry is Extract<(typeof page.items)[number], { kind: 'folder' }> =>
-            entry.kind === 'folder')
+          .filter(
+            (
+              entry,
+            ): entry is Extract<
+              (typeof page.items)[number],
+              { kind: 'folder' }
+            > => entry.kind === 'folder',
+          )
           .map((folder) => ({
             item: {
               id: folder.id,
@@ -45,7 +51,7 @@ export async function loadFolderPickerItems(
     for (const folder of children) {
       result.push(folder.item);
       if (folder.hasChildren) {
-        result.push(...await loadChildren(folder.item.id, depth + 1));
+        result.push(...(await loadChildren(folder.item.id, depth + 1)));
       }
     }
     return result;

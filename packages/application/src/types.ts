@@ -2,10 +2,6 @@ import type { LocalProfileId, Timestamp, VaultId } from '@notera/domain';
 import type { LocalNotesService } from './local-notes/types';
 import type { LocalAttachmentsService } from './local-attachments/types';
 
-export type InternalSessionName = string & {
-  readonly __internalSessionName: unique symbol;
-};
-
 export interface PageRequest {
   readonly cursor?: string;
   readonly limit: number;

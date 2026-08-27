@@ -7,15 +7,18 @@ export function collectAdfMediaIds(document: AdfDocument): readonly string[] {
     const value = stack.pop();
     if (Array.isArray(value)) {
       stack.push(...value);
-      continue;
+    } else if (value !== null && typeof value === 'object') {
+      const node = value as Record<string, unknown>;
+      if (
+        node.type === 'media' &&
+        node.attrs !== null &&
+        typeof node.attrs === 'object'
+      ) {
+        const { id } = node.attrs as Record<string, unknown>;
+        if (typeof id === 'string') ids.add(id);
+      }
+      stack.push(...Object.values(node));
     }
-    if (value === null || typeof value !== 'object') continue;
-    const node = value as Record<string, unknown>;
-    if (node.type === 'media' && node.attrs !== null && typeof node.attrs === 'object') {
-      const id = (node.attrs as Record<string, unknown>).id;
-      if (typeof id === 'string') ids.add(id);
-    }
-    stack.push(...Object.values(node));
   }
   return Object.freeze([...ids]);
 }

@@ -27,8 +27,14 @@ describe('document session', () => {
     });
 
     state = documentSessionReducer(state, { type: 'begin-edit' });
-    state = documentSessionReducer(state, { type: 'change-title', title: 'Next' });
-    state = documentSessionReducer(state, { type: 'change-document', document: secondDocument });
+    state = documentSessionReducer(state, {
+      type: 'change-title',
+      title: 'Next',
+    });
+    state = documentSessionReducer(state, {
+      type: 'change-document',
+      document: secondDocument,
+    });
     expect(state).toMatchObject({
       mode: 'edit',
       draftRevision: 2,
@@ -47,10 +53,19 @@ describe('document session', () => {
       savedAt: 1,
       mode: 'edit',
     });
-    state = documentSessionReducer(state, { type: 'change-title', title: 'First' });
+    state = documentSessionReducer(state, {
+      type: 'change-title',
+      title: 'First',
+    });
     const savedDraft = state.draft;
-    state = documentSessionReducer(state, { type: 'save-started', revision: 1 });
-    state = documentSessionReducer(state, { type: 'change-title', title: 'Second' });
+    state = documentSessionReducer(state, {
+      type: 'save-started',
+      revision: 1,
+    });
+    state = documentSessionReducer(state, {
+      type: 'change-title',
+      title: 'Second',
+    });
     state = documentSessionReducer(state, {
       type: 'save-succeeded',
       revision: 1,
@@ -76,10 +91,22 @@ describe('document session', () => {
       savedAt: 1,
       mode: 'edit',
     });
-    state = documentSessionReducer(state, { type: 'change-title', title: 'Draft' });
-    state = documentSessionReducer(state, { type: 'save-started', revision: 1 });
+    state = documentSessionReducer(state, {
+      type: 'change-title',
+      title: 'Draft',
+    });
+    state = documentSessionReducer(state, {
+      type: 'save-started',
+      revision: 1,
+    });
     state = documentSessionReducer(state, { type: 'save-failed', revision: 1 });
-    expect(state).toMatchObject({ mode: 'edit', saveState: 'failed', draft: { title: 'Draft' } });
-    expect(documentSessionReducer(state, { type: 'show-preview' }).mode).toBe('preview');
+    expect(state).toMatchObject({
+      mode: 'edit',
+      saveState: 'failed',
+      draft: { title: 'Draft' },
+    });
+    expect(documentSessionReducer(state, { type: 'show-preview' }).mode).toBe(
+      'preview',
+    );
   });
 });

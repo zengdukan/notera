@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import type { ContentEntry } from './content-controller';
 import type { ContentAction } from './content-actions';
 import { ContentTreeRow } from './ContentTreeRow';
@@ -22,15 +24,23 @@ export function ContentTree({
   readonly selected?: { readonly kind: 'folder' | 'note'; readonly id: string };
   readonly onOpen: (entry: ContentEntry) => void;
   readonly onToggle: (folderId: string, expanded: boolean) => void;
-  readonly onCreateNote: (folder: Extract<ContentEntry, { kind: 'folder' }>) => void;
-  readonly onCreateFolder: (folder: Extract<ContentEntry, { kind: 'folder' }>) => void;
+  readonly onCreateNote: (
+    folder: Extract<ContentEntry, { kind: 'folder' }>,
+  ) => void;
+  readonly onCreateFolder: (
+    folder: Extract<ContentEntry, { kind: 'folder' }>,
+  ) => void;
   readonly getActions: (entry: ContentEntry) => readonly ContentAction[];
 }) {
   let first = true;
-  const rows = (values: readonly ContentTreeNode[], level: number): React.ReactNode =>
+  const rows = (values: readonly ContentTreeNode[], level: number): ReactNode =>
     values.map((node) => {
-      const expanded = node.entry.kind === 'folder' && expandedIds.has(node.entry.id);
-      const tabIndex = selected?.id === node.entry.id || (selected === undefined && first) ? 0 : -1;
+      const expanded =
+        node.entry.kind === 'folder' && expandedIds.has(node.entry.id);
+      const tabIndex =
+        selected?.id === node.entry.id || (selected === undefined && first)
+          ? 0
+          : -1;
       first = false;
       return (
         <div key={`${node.entry.kind}:${node.entry.id}`} role="none">
@@ -38,7 +48,10 @@ export function ContentTree({
             entry={node.entry}
             level={level}
             expanded={expanded}
-            selected={selected?.kind === node.entry.kind && selected.id === node.entry.id}
+            selected={
+              selected?.kind === node.entry.kind &&
+              selected.id === node.entry.id
+            }
             tabIndex={tabIndex}
             onOpen={() => onOpen(node.entry)}
             onToggle={(next) => {
@@ -59,5 +72,9 @@ export function ContentTree({
       );
     });
 
-  return <div role="tree" aria-label="Content">{rows(nodes, 1)}</div>;
+  return (
+    <div role="tree" aria-label="Content">
+      {rows(nodes, 1)}
+    </div>
+  );
 }

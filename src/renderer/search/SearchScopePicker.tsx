@@ -24,33 +24,52 @@ function FolderLevel({
 }) {
   const query = useTreeChildren({ client, profileId, parentFolderId });
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
-  const folders = (query.data?.pages.flatMap((page) => page.items) ?? [])
-    .filter((entry) => entry.kind === 'folder');
+  const folders = (
+    query.data?.pages.flatMap((page) => page.items) ?? []
+  ).filter((entry) => entry.kind === 'folder');
   return (
     <Stack space="space.050">
       {folders.map((folder) => (
         <Stack key={folder.id} space="space.050">
           <Inline space="space.050" alignBlock="center">
             {folder.hasChildren ? (
-              <Button appearance="subtle" onClick={() => setExpanded((current) => {
-                const next = new Set(current);
-                if (next.has(folder.id)) next.delete(folder.id); else next.add(folder.id);
-                return next;
-              })} aria-label={`${expanded.has(folder.id) ? 'Collapse' : 'Expand'} ${folder.name}`}>
+              <Button
+                appearance="subtle"
+                onClick={() =>
+                  setExpanded((current) => {
+                    const next = new Set(current);
+                    if (next.has(folder.id)) next.delete(folder.id);
+                    else next.add(folder.id);
+                    return next;
+                  })
+                }
+                aria-label={`${expanded.has(folder.id) ? 'Collapse' : 'Expand'} ${folder.name}`}
+              >
                 {expanded.has(folder.id) ? '−' : '+'}
               </Button>
             ) : null}
-            <Button appearance="subtle" onClick={() => onChoose({ id: folder.id, name: folder.name })} aria-label={`Choose ${folder.name}`}>
+            <Button
+              appearance="subtle"
+              onClick={() => onChoose({ id: folder.id, name: folder.name })}
+              aria-label={`Choose ${folder.name}`}
+            >
               {folder.name}
             </Button>
           </Inline>
           {expanded.has(folder.id) ? (
-            <FolderLevel client={client} profileId={profileId} parentFolderId={folder.id} onChoose={onChoose} />
+            <FolderLevel
+              client={client}
+              profileId={profileId}
+              parentFolderId={folder.id}
+              onChoose={onChoose}
+            />
           ) : null}
         </Stack>
       ))}
       {query.hasNextPage ? (
-        <Button appearance="subtle" onClick={() => void query.fetchNextPage()}>Load more folders</Button>
+        <Button appearance="subtle" onClick={() => void query.fetchNextPage()}>
+          Load more folders
+        </Button>
       ) : null}
     </Stack>
   );
@@ -80,15 +99,36 @@ export function SearchScopePicker({
       onClose={() => setOpen(false)}
       placement="bottom-start"
       trigger={(triggerProps) => (
-        <Button {...triggerProps} onClick={() => setOpen((current) => !current)} aria-label={`Search scope: ${value?.name ?? 'All notes'}`}>
+        <Button
+          {...triggerProps}
+          onClick={() => setOpen((current) => !current)}
+          aria-label={`Search scope: ${value?.name ?? 'All notes'}`}
+        >
           {value?.name ?? 'All notes'}
         </Button>
       )}
       content={() => (
         <Stack space="space.100">
-          <Button appearance="subtle" onClick={() => choose(undefined)} aria-label="Choose All notes">All notes</Button>
-          <Button appearance="subtle" onClick={() => choose({ id: rootFolderId, name: 'Root' })} aria-label="Choose Root">Root</Button>
-          <FolderLevel client={client} profileId={profileId} parentFolderId={rootFolderId} onChoose={choose} />
+          <Button
+            appearance="subtle"
+            onClick={() => choose(undefined)}
+            aria-label="Choose All notes"
+          >
+            All notes
+          </Button>
+          <Button
+            appearance="subtle"
+            onClick={() => choose({ id: rootFolderId, name: 'Root' })}
+            aria-label="Choose Root"
+          >
+            Root
+          </Button>
+          <FolderLevel
+            client={client}
+            profileId={profileId}
+            parentFolderId={rootFolderId}
+            onChoose={choose}
+          />
         </Stack>
       )}
     />

@@ -27,7 +27,11 @@ describe('profile query keys', () => {
       profileSettingsKey(profileId),
     ];
 
-    keys.forEach((key) => expect(key.slice(0, 2)).toEqual(['profile', profileId]));
-    expect(new Set(keys.map((key) => JSON.stringify(key))).size).toBe(keys.length);
+    keys.forEach((key) =>
+      expect(key.slice(0, 2)).toEqual(['profile', profileId]),
+    );
+    expect(new Set(keys.map((key) => JSON.stringify(key))).size).toBe(
+      keys.length,
+    );
   });
 });

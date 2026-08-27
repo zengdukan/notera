@@ -248,10 +248,12 @@ describe('note IPC contracts', () => {
     };
 
     expect(noteContracts.saveDraft.request.parse(request)).toEqual(request);
-    expect(noteContracts.saveDraft.request.safeParse({
-      ...request,
-      expectedContentVersion: 1,
-    }).success).toBe(false);
+    expect(
+      noteContracts.saveDraft.request.safeParse({
+        ...request,
+        expectedContentVersion: 1,
+      }).success,
+    ).toBe(false);
     expect(
       noteContracts.saveDraft.response.parse({
         ret: true,
@@ -305,13 +307,17 @@ describe('search IPC contracts', () => {
     };
 
     expect(searchResultSchema.parse(result)).toEqual(result);
-    expect(searchContracts.query.response.parse({
-      ret: true,
-      data: { items: [result] },
-    })).toBeDefined();
-    expect(searchResultSchema.safeParse({
-      ...result,
-      folderPath: undefined,
-    }).success).toBe(false);
+    expect(
+      searchContracts.query.response.parse({
+        ret: true,
+        data: { items: [result] },
+      }),
+    ).toBeDefined();
+    expect(
+      searchResultSchema.safeParse({
+        ...result,
+        folderPath: undefined,
+      }).success,
+    ).toBe(false);
   });
 });

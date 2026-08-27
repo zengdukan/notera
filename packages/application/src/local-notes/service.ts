@@ -160,7 +160,9 @@ class SessionLocalNotesService implements LocalNotesService {
   }
 
   renameNote(input: Parameters<LocalNotesService['renameNote']>[0]) {
-    return this.run('WRITE', (database) => renameNote(database, input, this.now()));
+    return this.run('WRITE', (database) =>
+      renameNote(database, input, this.now()),
+    );
   }
 
   saveDraft(input: Parameters<LocalNotesService['saveDraft']>[0]) {

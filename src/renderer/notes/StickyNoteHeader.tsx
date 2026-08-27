@@ -1,6 +1,9 @@
 import Breadcrumbs, { BreadcrumbsItem } from '@atlaskit/breadcrumbs';
 import Button from '@atlaskit/button/new';
-import DropdownMenu, { DropdownItem, DropdownItemGroup } from '@atlaskit/dropdown-menu';
+import DropdownMenu, {
+  DropdownItem,
+  DropdownItemGroup,
+} from '@atlaskit/dropdown-menu';
 import Heading from '@atlaskit/heading';
 import { Box, Inline, Text, xcss } from '@atlaskit/primitives';
 import Textfield from '@atlaskit/textfield';
@@ -37,7 +40,10 @@ const saveLabel: Readonly<Record<SaveState, string>> = Object.freeze({
   failed: 'Not saved',
 });
 
-const MORE_ACTIONS: readonly { readonly id: NoteMoreAction; readonly label: string }[] = Object.freeze([
+const MORE_ACTIONS: readonly {
+  readonly id: NoteMoreAction;
+  readonly label: string;
+}[] = Object.freeze([
   { id: 'create-version', label: 'Create version' },
   { id: 'history', label: 'History' },
   { id: 'export', label: 'Export' },
@@ -75,9 +81,24 @@ export function StickyNoteHeader({
 }) {
   const displayTitle = title || 'Untitled';
   return (
-    <Box xcss={[headerStyles, mode === 'edit' ? editHeaderStyles : previewHeaderStyles]}>
-      <Inline alignBlock="center" space="space.100" spread="space-between" shouldWrap={false}>
-        <Inline alignBlock="center" space="space.100" shouldWrap={false} xcss={identityStyles}>
+    <Box
+      xcss={[
+        headerStyles,
+        mode === 'edit' ? editHeaderStyles : previewHeaderStyles,
+      ]}
+    >
+      <Inline
+        alignBlock="center"
+        space="space.100"
+        spread="space-between"
+        shouldWrap={false}
+      >
+        <Inline
+          alignBlock="center"
+          space="space.100"
+          shouldWrap={false}
+          xcss={identityStyles}
+        >
           <Breadcrumbs label="Note path" maxItems={3} size="small">
             {path.map((item) => (
               <BreadcrumbsItem key={item.id} text={item.name} />
@@ -100,20 +121,29 @@ export function StickyNoteHeader({
         </Inline>
         <Inline alignBlock="center" space="space.050" shouldWrap={false}>
           <Text as="span">
-            <span aria-live="polite" role="status">{saveLabel[saveState]}</span>
+            <span aria-live="polite" role="status">
+              {saveLabel[saveState]}
+            </span>
           </Text>
           {saveState === 'failed' && onRetry ? (
-            <Button appearance="subtle" onClick={onRetry}>Retry save</Button>
+            <Button appearance="subtle" onClick={onRetry}>
+              Retry save
+            </Button>
           ) : null}
           <Button appearance="subtle" onClick={onToggleFavorite}>
             {isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           </Button>
-          <Button appearance="primary" onClick={mode === 'edit' ? onPreview : onEdit}>
+          <Button
+            appearance="primary"
+            onClick={mode === 'edit' ? onPreview : onEdit}
+          >
             {mode === 'edit' ? 'Preview' : 'Edit'}
           </Button>
           <DropdownMenu<HTMLButtonElement>
             trigger={({ triggerRef, ...props }) => (
-              <Button {...props} ref={triggerRef} appearance="subtle">More</Button>
+              <Button {...props} ref={triggerRef} appearance="subtle">
+                More
+              </Button>
             )}
           >
             <DropdownItemGroup>

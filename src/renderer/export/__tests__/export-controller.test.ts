@@ -12,7 +12,13 @@ describe('export controller', () => {
       calls.push(key);
       if (key === 'export.startNote') return { status: 'started', operationId };
       if (key === 'operation.getStatus') {
-        return { operationId, kind: 'NOTE_EXPORT', state: 'RUNNING', phase: 'READING', progress: null };
+        return {
+          operationId,
+          kind: 'NOTE_EXPORT',
+          state: 'RUNNING',
+          phase: 'READING',
+          progress: null,
+        };
       }
       throw new Error(`Unexpected ${key}`);
     });
@@ -24,14 +30,23 @@ describe('export controller', () => {
       getActiveNoteId: () => 'note',
     });
 
-    await expect(controller.start({ noteId: 'note', format: 'PDF', save: 'try' })).resolves.toBe('started');
+    await expect(
+      controller.start({ noteId: 'note', format: 'PDF', save: 'try' }),
+    ).resolves.toBe('started');
     expect(calls).toEqual(['export.startNote', 'operation.getStatus']);
-    expect(store.getSnapshot()).toMatchObject({ operationId, phase: 'READING' });
+    expect(store.getSnapshot()).toMatchObject({
+      operationId,
+      phase: 'READING',
+    });
   });
 
   it('offers the saved snapshot when flushing the active note fails', async () => {
     const lifecycle = new ActiveDocumentLifecycle();
-    lifecycle.attach({ isDirty: () => true, flush: jest.fn().mockRejectedValue(new Error('save')), stop: jest.fn() });
+    lifecycle.attach({
+      isDirty: () => true,
+      flush: jest.fn().mockRejectedValue(new Error('save')),
+      stop: jest.fn(),
+    });
     const request = jest.fn();
     const controller = createExportController({
       client: { request, subscribe: jest.fn() } as unknown as NoteraClient,
@@ -40,7 +55,9 @@ describe('export controller', () => {
       getActiveNoteId: () => 'note',
     });
 
-    await expect(controller.start({ noteId: 'note', format: 'MARKDOWN', save: 'try' })).resolves.toBe('save-failed');
+    await expect(
+      controller.start({ noteId: 'note', format: 'MARKDOWN', save: 'try' }),
+    ).resolves.toBe('save-failed');
     expect(request).not.toHaveBeenCalled();
   });
 });

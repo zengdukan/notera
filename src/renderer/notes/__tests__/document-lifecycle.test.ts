@@ -25,7 +25,11 @@ describe('ActiveDocumentLifecycle', () => {
   it('stops and detaches the active coordinator during secure cleanup', () => {
     const lifecycle = new ActiveDocumentLifecycle();
     const stop = jest.fn();
-    const detach = lifecycle.attach({ isDirty: () => false, flush: jest.fn(), stop });
+    const detach = lifecycle.attach({
+      isDirty: () => false,
+      flush: jest.fn(),
+      stop,
+    });
 
     detach();
     expect(stop).toHaveBeenCalledTimes(1);

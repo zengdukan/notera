@@ -4,9 +4,56 @@ const core = ['undo', 'redo', 'text-style'];
 
 describe('responsive editor toolbar layout', () => {
   it.each([
-    [1200, [...core, 'bold', 'italic', 'underline', 'text-color', 'more-formatting', 'link', 'bullet-list', 'number-list', 'task-list', 'list', 'table', 'media', 'emoji', 'insert']],
-    [1024, [...core, 'bold', 'italic', 'underline', 'text-color', 'more-formatting', 'link', 'bullet-list', 'number-list', 'task-list', 'list', 'insert']],
-    [768, [...core, 'bold', 'italic', 'underline', 'more-formatting', 'link', 'list', 'insert']],
+    [
+      1200,
+      [
+        ...core,
+        'bold',
+        'italic',
+        'underline',
+        'text-color',
+        'more-formatting',
+        'link',
+        'bullet-list',
+        'number-list',
+        'task-list',
+        'list',
+        'table',
+        'media',
+        'emoji',
+        'insert',
+      ],
+    ],
+    [
+      1024,
+      [
+        ...core,
+        'bold',
+        'italic',
+        'underline',
+        'text-color',
+        'more-formatting',
+        'link',
+        'bullet-list',
+        'number-list',
+        'task-list',
+        'list',
+        'insert',
+      ],
+    ],
+    [
+      768,
+      [
+        ...core,
+        'bold',
+        'italic',
+        'underline',
+        'more-formatting',
+        'link',
+        'list',
+        'insert',
+      ],
+    ],
     [476, [...core, 'bold', 'more-formatting', 'list', 'insert']],
     [410, [...core, 'more-formatting', 'list', 'insert']],
   ])('uses the Fullpage action order at %dpx', (width, visible) => {
@@ -18,7 +65,10 @@ describe('responsive editor toolbar layout', () => {
     (width) => {
       const layout = toolbarLayoutForWidth(width);
       const actions = [
-        ...layout.visible.filter((id) => !['more-formatting', 'list', 'insert', 'text-style'].includes(id)),
+        ...layout.visible.filter(
+          (id) =>
+            !['more-formatting', 'list', 'insert', 'text-style'].includes(id),
+        ),
         ...layout.moreFormatting,
         ...layout.list,
         ...layout.insert,
@@ -31,11 +81,17 @@ describe('responsive editor toolbar layout', () => {
   );
 
   it('moves actions into their specified menus at each breakpoint', () => {
-    expect(toolbarLayoutForWidth(1024).insert).toEqual(expect.arrayContaining(['table', 'media', 'emoji']));
-    expect(toolbarLayoutForWidth(768).list).toEqual(expect.arrayContaining(['bullet-list', 'number-list', 'task-list']));
+    expect(toolbarLayoutForWidth(1024).insert).toEqual(
+      expect.arrayContaining(['table', 'media', 'emoji']),
+    );
+    expect(toolbarLayoutForWidth(768).list).toEqual(
+      expect.arrayContaining(['bullet-list', 'number-list', 'task-list']),
+    );
     expect(toolbarLayoutForWidth(768).moreFormatting).toContain('text-color');
     expect(toolbarLayoutForWidth(476).insert).toContain('link');
-    expect(toolbarLayoutForWidth(476).moreFormatting).toEqual(expect.arrayContaining(['italic', 'underline']));
+    expect(toolbarLayoutForWidth(476).moreFormatting).toEqual(
+      expect.arrayContaining(['italic', 'underline']),
+    );
     expect(toolbarLayoutForWidth(410).moreFormatting).toContain('bold');
   });
 });

@@ -35,7 +35,10 @@ export function createWindowCloseController(input: {
     },
 
     complete(value: CompleteCloseInput): void {
-      if (pendingRequestId === undefined || value.requestId !== pendingRequestId) {
+      if (
+        pendingRequestId === undefined ||
+        value.requestId !== pendingRequestId
+      ) {
         throw new ApplicationError('INVALID_ENTITY_STATE');
       }
       pendingRequestId = undefined;

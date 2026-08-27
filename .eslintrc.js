@@ -89,6 +89,29 @@ module.exports = {
       },
     },
     {
+      files: ['src/renderer/**/*.ts', 'src/renderer/**/*.tsx'],
+      env: {
+        browser: true,
+        es2022: true,
+        jest: true,
+      },
+      rules: {
+        // Renderer modules use named exports and TypeScript optional props.
+        // ADS render-prop APIs also require forwarding their supplied props.
+        'import/prefer-default-export': 'off',
+        'no-await-in-loop': 'off',
+        'no-restricted-syntax': 'off',
+        'no-use-before-define': 'off',
+        'no-void': 'off',
+        'react/jsx-props-no-spreading': 'off',
+        'react/no-unstable-nested-components': [
+          'error',
+          { allowAsProps: true },
+        ],
+        'react/require-default-props': 'off',
+      },
+    },
+    {
       files: ['src/renderer/export/**/*.ts', 'src/renderer/export/**/*.tsx'],
       env: {
         browser: true,
@@ -172,7 +195,10 @@ module.exports = {
       },
     },
     {
-      files: ['src/main/demo-media/**/*.ts'],
+      files: [
+        'src/main/demo-media/**/*.ts',
+        'src/main/media-adapter/**/*.ts',
+      ],
       env: {
         node: true,
         es2022: true,
@@ -184,10 +210,13 @@ module.exports = {
         'import/prefer-default-export': 'off',
         'lines-between-class-members': 'off',
         'no-await-in-loop': 'off',
+        'no-continue': 'off',
         'no-nested-ternary': 'off',
+        'no-plusplus': 'off',
         'no-promise-executor-return': 'off',
         'no-restricted-syntax': 'off',
         'no-undef': 'off',
+        'no-void': 'off',
       },
     },
   ],

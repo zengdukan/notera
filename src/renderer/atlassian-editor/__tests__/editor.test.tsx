@@ -6,12 +6,16 @@ import userEvent from '@testing-library/user-event';
 const initialDocument = {
   version: 1 as const,
   type: 'doc' as const,
-  content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Initial' }] }],
+  content: [
+    { type: 'paragraph', content: [{ type: 'text', text: 'Initial' }] },
+  ],
 };
 const changedDocument = {
   version: 1 as const,
   type: 'doc' as const,
-  content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Changed' }] }],
+  content: [
+    { type: 'paragraph', content: [{ type: 'text', text: 'Changed' }] },
+  ],
 };
 const requestDocument = jest.fn((receive: (document: unknown) => void) => {
   receive(changedDocument);
@@ -35,7 +39,12 @@ const mockEditorApi = {
       toggleSubscript: command('subscript'),
     },
   },
-  blockType: { commands: { setTextLevel: command('text-level'), clearFormatting: command('clear') } },
+  blockType: {
+    commands: {
+      setTextLevel: command('text-level'),
+      clearFormatting: command('clear'),
+    },
+  },
   hyperlink: { commands: { showLinkToolbar: command('link') } },
   list: {
     commands: {
@@ -76,7 +85,9 @@ jest.mock('@atlaskit/editor-core/composable-editor', () => ({
         data-document={JSON.stringify(props.defaultValue)}
         data-testid="composable-editor"
       >
-        <button type="button" onClick={props.onChange}>Simulate document change</button>
+        <button type="button" onClick={props.onChange}>
+          Simulate document change
+        </button>
       </div>
     );
   },
@@ -85,14 +96,26 @@ jest.mock('@atlaskit/editor-core/preset-universal', () => ({
   useUniversalPreset: () => mockPreset,
 }));
 jest.mock('@atlaskit/editor-core/use-preset', () => ({
-  usePreset: (factory: () => unknown) => ({ preset: factory(), editorApi: mockEditorApi }),
+  usePreset: (factory: () => unknown) => ({
+    preset: factory(),
+    editorApi: mockEditorApi,
+  }),
 }));
-jest.mock('@atlaskit/editor-plugins/block-controls', () => ({ blockControlsPlugin: Symbol('block-controls') }));
-jest.mock('@atlaskit/editor-plugins/caption', () => ({ captionPlugin: Symbol('caption') }));
-jest.mock('@atlaskit/editor-plugins/grid', () => ({ gridPlugin: Symbol('grid') }));
-jest.mock('@atlaskit/editor-plugins/highlight', () => ({ highlightPlugin: Symbol('highlight') }));
-jest.mock('@atlaskit/editor-plugins/media', () => ({ mediaPlugin: Symbol('media') }));
-jest.mock('../media-provider', () => ({ mediaProvider: Promise.resolve({}) }));
+jest.mock('@atlaskit/editor-plugins/block-controls', () => ({
+  blockControlsPlugin: Symbol('block-controls'),
+}));
+jest.mock('@atlaskit/editor-plugins/caption', () => ({
+  captionPlugin: Symbol('caption'),
+}));
+jest.mock('@atlaskit/editor-plugins/grid', () => ({
+  gridPlugin: Symbol('grid'),
+}));
+jest.mock('@atlaskit/editor-plugins/highlight', () => ({
+  highlightPlugin: Symbol('highlight'),
+}));
+jest.mock('@atlaskit/editor-plugins/media', () => ({
+  mediaPlugin: Symbol('media'),
+}));
 jest.mock('../emoji/get-emoji-provider', () => ({
   currentUser: { id: 'user' },
   getEmojiProvider: jest.fn(() => Promise.resolve({})),
@@ -115,6 +138,8 @@ jest.mock('../mermaid', () => ({
 
 import { Editor } from '../editor';
 
+const mediaProvider = Promise.resolve({} as never);
+
 describe('Atlaskit product editor', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -122,27 +147,52 @@ describe('Atlaskit product editor', () => {
   });
 
   it('renders a chromeless editor without demo-owned page controls', () => {
-    render(<Editor document={initialDocument} onChange={jest.fn()} />);
+    render(
+      <Editor
+        mediaProvider={mediaProvider}
+        document={initialDocument}
+        onChange={jest.fn()}
+      />,
+    );
 
-    expect(screen.getByTestId('composable-editor')).toHaveAttribute('data-appearance', 'chromeless');
+    expect(screen.getByTestId('composable-editor')).toHaveAttribute(
+      'data-appearance',
+      'chromeless',
+    );
     expect(screen.getByTestId('composable-editor')).toHaveAttribute(
       'data-document',
       JSON.stringify(initialDocument),
     );
     expect(screen.queryByLabelText('Page title')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Publish' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Clear' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Fixed width|Full width/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Publish' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Clear' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Fixed width|Full width/ }),
+    ).not.toBeInTheDocument();
   });
 
   it('reads changed ADF through the public editor API callback', async () => {
     const user = userEvent.setup();
     const onChange = jest.fn();
-    render(<Editor document={initialDocument} onChange={onChange} />);
+    render(
+      <Editor
+        mediaProvider={mediaProvider}
+        document={initialDocument}
+        onChange={onChange}
+      />,
+    );
 
-    await user.click(screen.getByRole('button', { name: 'Simulate document change' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Simulate document change' }),
+    );
 
-    expect(requestDocument).toHaveBeenCalledWith(expect.any(Function), { alwaysFire: true });
+    expect(requestDocument).toHaveBeenCalledWith(expect.any(Function), {
+      alwaysFire: true,
+    });
     expect(onChange).toHaveBeenCalledWith(changedDocument);
   });
 
@@ -150,6 +200,7 @@ describe('Atlaskit product editor', () => {
     const onToolbarReady = jest.fn();
     render(
       <Editor
+        mediaProvider={mediaProvider}
         document={initialDocument}
         onChange={jest.fn()}
         onToolbarReady={onToolbarReady}
@@ -160,34 +211,78 @@ describe('Atlaskit product editor', () => {
     const toolbar = onToolbarReady.mock.calls.at(-1)?.[0];
     toolbar('bold');
 
-    expect(mockEditorApi.textFormatting.commands.toggleStrong).toHaveBeenCalled();
+    expect(
+      mockEditorApi.textFormatting.commands.toggleStrong,
+    ).toHaveBeenCalled();
     expect(execute).toHaveBeenCalledWith(expect.any(Symbol));
   });
 
   it('maps formatting, lists and insert actions without private editor state', async () => {
     const onToolbarReady = jest.fn();
-    render(<Editor document={initialDocument} onChange={jest.fn()} onToolbarReady={onToolbarReady} />);
+    render(
+      <Editor
+        mediaProvider={mediaProvider}
+        document={initialDocument}
+        onChange={jest.fn()}
+        onToolbarReady={onToolbarReady}
+      />,
+    );
     await waitFor(() => expect(onToolbarReady).toHaveBeenCalled());
     const toolbar = onToolbarReady.mock.calls.at(-1)?.[0];
 
     for (const action of [
-      'undo', 'redo', 'heading-2', 'italic', 'underline', 'strike', 'inline-code',
-      'superscript', 'subscript', 'link', 'bullet-list', 'number-list', 'task-list',
-      'outdent', 'indent', 'table', 'text-color', 'highlight-color', 'date', 'status',
-      'media', 'emoji', 'math', 'mermaid', 'rule', 'layout', 'panel', 'code-block',
+      'undo',
+      'redo',
+      'heading-2',
+      'italic',
+      'underline',
+      'strike',
+      'inline-code',
+      'superscript',
+      'subscript',
+      'link',
+      'bullet-list',
+      'number-list',
+      'task-list',
+      'outdent',
+      'indent',
+      'table',
+      'text-color',
+      'highlight-color',
+      'date',
+      'status',
+      'media',
+      'emoji',
+      'math',
+      'mermaid',
+      'rule',
+      'layout',
+      'panel',
+      'code-block',
     ]) {
       toolbar(action);
     }
 
     expect(mockEditorApi.undoRedoPlugin.actions.undo).toHaveBeenCalled();
-    expect(mockEditorApi.blockType.commands.setTextLevel).toHaveBeenCalledWith('heading2', expect.anything());
+    expect(mockEditorApi.blockType.commands.setTextLevel).toHaveBeenCalledWith(
+      'heading2',
+      expect.anything(),
+    );
     expect(mockEditorApi.list.commands.toggleBulletList).toHaveBeenCalled();
     expect(mockEditorApi.table.commands.insertTableWithSize).toHaveBeenCalled();
     expect(showMediaPicker).toHaveBeenCalled();
     expect(mockEditorApi.emoji.actions.openTypeAhead).toHaveBeenCalled();
-    expect(mockInsertMath).toHaveBeenCalledWith(expect.any(Function), mockEditorActions);
-    expect(mockInsertMermaid).toHaveBeenCalledWith(expect.any(Function), mockEditorActions);
+    expect(mockInsertMath).toHaveBeenCalledWith(
+      expect.any(Function),
+      mockEditorActions,
+    );
+    expect(mockInsertMermaid).toHaveBeenCalledWith(
+      expect.any(Function),
+      mockEditorActions,
+    );
     expect(mockEditorActions.replaceSelection).toHaveBeenCalled();
-    expect((mockEditorActions as Record<string, unknown>)._privateGetEditorView).toBeUndefined();
+    expect(
+      Reflect.get(mockEditorActions, '_privateGetEditorView'),
+    ).toBeUndefined();
   });
 });

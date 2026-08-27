@@ -48,9 +48,23 @@ describe('FavoritesModal', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Open First' }));
     expect(onOpen).toHaveBeenCalledWith(note);
-    await user.click(screen.getByRole('button', { name: 'Remove First from favorites' }));
-    await waitFor(() => expect(request).toHaveBeenCalledWith('favorite.remove', { noteId: note.id }));
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Open First' })).not.toBeInTheDocument());
-    expect(queryClient.getQueryData<{ isFavorite: boolean }>(noteKey(profileId, note.id))?.isFavorite).toBe(false);
+    await user.click(
+      screen.getByRole('button', { name: 'Remove First from favorites' }),
+    );
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith('favorite.remove', {
+        noteId: note.id,
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Open First' }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(
+      queryClient.getQueryData<{ isFavorite: boolean }>(
+        noteKey(profileId, note.id),
+      )?.isFavorite,
+    ).toBe(false);
   });
 });

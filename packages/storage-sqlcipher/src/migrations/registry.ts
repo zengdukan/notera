@@ -3,12 +3,14 @@ import { BASE_SCHEMA_VERSION } from '../schema/baseline-v1';
 import { V2_PENDING_VAULT_META_DIGEST } from '../schema/v2';
 import { V3_NOTE_VERSION_NAME } from '../schema/v3';
 import { V4_NORMALIZED_ATTACHMENT_BLOBS } from '../schema/v4';
+import { V5_UPLOAD_ATTACHMENT_REFERENCES } from '../schema/v5';
 import type { Migration } from './types';
 
 export const PRODUCTION_MIGRATIONS: readonly Migration[] = Object.freeze([
   V2_PENDING_VAULT_META_DIGEST,
   V3_NOTE_VERSION_NAME,
   V4_NORMALIZED_ATTACHMENT_BLOBS,
+  V5_UPLOAD_ATTACHMENT_REFERENCES,
 ]);
 
 export const CURRENT_SCHEMA_VERSION =

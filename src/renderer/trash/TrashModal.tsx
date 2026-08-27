@@ -35,7 +35,10 @@ export function TrashModal({
   readonly controller: TrashController;
 }) {
   const trash = useTrashItems({ client, profileId });
-  const items = useMemo(() => uniqueTrashItems(trash.data?.pages), [trash.data?.pages]);
+  const items = useMemo(
+    () => uniqueTrashItems(trash.data?.pages),
+    [trash.data?.pages],
+  );
   const [action, setAction] = useState<Action>();
   const [feedback, setFeedback] = useState<'missing' | 'failed'>();
   const [deletedFlag, setDeletedFlag] = useState(false);
@@ -100,7 +103,10 @@ export function TrashModal({
   return (
     <Stack space="space.200">
       {feedback === 'missing' ? (
-        <SectionMessage appearance="information" title="This item is no longer in trash">
+        <SectionMessage
+          appearance="information"
+          title="This item is no longer in trash"
+        >
           The trash list has been refreshed.
         </SectionMessage>
       ) : null}
@@ -118,13 +124,24 @@ export function TrashModal({
         onDelete={(item) => setAction({ kind: 'delete', item })}
       />
       {trash.hasNextPage ? (
-        <Button appearance="subtle" isLoading={trash.isFetchingNextPage} onClick={() => void trash.fetchNextPage()}>
+        <Button
+          appearance="subtle"
+          isLoading={trash.isFetchingNextPage}
+          onClick={() => void trash.fetchNextPage()}
+        >
           Load more
         </Button>
       ) : null}
       {deletedFlag ? (
-        <FlagGroup label="Trash notifications" onDismissed={() => setDeletedFlag(false)}>
-          <Flag id="trash-deleted" appearance="success" title="Permanently deleted" />
+        <FlagGroup
+          label="Trash notifications"
+          onDismissed={() => setDeletedFlag(false)}
+        >
+          <Flag
+            id="trash-deleted"
+            appearance="success"
+            title="Permanently deleted"
+          />
         </FlagGroup>
       ) : null}
     </Stack>

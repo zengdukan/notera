@@ -92,22 +92,74 @@ describe('attachment reference lifecycle', () => {
       items: [expect.objectContaining({ id: attachment.id })],
     });
 
-    await expect(manager.localNotes.saveDraft({
-      noteId: note.id,
-      title: 'Invalid attachment must roll back',
-      document: {
-        type: 'doc',
-        version: 1,
-        content: [{
-          type: 'media',
-          attrs: { id: '10000000-0000-4000-8000-000000000099' },
-        }],
-      },
-    })).rejects.toBeDefined();
+    await expect(
+      manager.localNotes.saveDraft({
+        noteId: note.id,
+        title: 'Invalid attachment must roll back',
+        document: {
+          type: 'doc',
+          version: 1,
+          content: [
+            {
+              type: 'media',
+              attrs: { id: '10000000-0000-4000-8000-000000000099' },
+            },
+          ],
+        },
+      }),
+    ).rejects.toBeDefined();
     await expect(manager.localNotes.getNote(note.id)).resolves.toMatchObject({
       title: note.title,
       contentVersion: 2,
     });
+
+    await manager.localNotes.saveDraft({
+      noteId: note.id,
+      title: note.title,
+      document: { type: 'doc', version: 1 },
+    });
+    await expect(
+      manager.localAttachments.listForNote({ noteId: note.id, limit: 10 }),
+    ).resolves.toMatchObject({ items: [] });
+    await expect(manager.localAttachments.collectGarbage()).resolves.toEqual({
+      scannedCount: 1,
+      collectedCount: 1,
+      retryCount: 0,
+    });
+    await manager.close();
+  });
+
+  it('does not open an attachment through a different note scope', async () => {
+    const manager = await createProfileManager({ appDataRoot: tempRoot() });
+    const profile = await manager.createProfile({
+      displayName: 'Scoped reader',
+      password: 'correct horse battery staple',
+    });
+    const first = await manager.localNotes.createNote({
+      folderId: profile.rootFolderId,
+      title: 'Owner',
+    });
+    const second = await manager.localNotes.createNote({
+      folderId: profile.rootFolderId,
+      title: 'Other',
+    });
+    const attachment = await manager.localAttachments.importAttachment({
+      noteId: first.id,
+      fileName: 'scoped.bin',
+      mimeType: 'application/octet-stream',
+      source: (async function* attachmentSource() {
+        yield new Uint8Array([1]);
+      })(),
+    });
+
+    await expect(
+      manager.localAttachments.openReader(attachment.id, second.id),
+    ).rejects.toMatchObject({ code: 'ENTITY_NOT_FOUND' });
+    const reader = await manager.localAttachments.openReader(
+      attachment.id,
+      first.id,
+    );
+    await reader.close();
     await manager.close();
   });
 });

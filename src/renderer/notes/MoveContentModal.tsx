@@ -30,7 +30,9 @@ export function MoveContentModal({
         value={target}
         onChange={setTarget}
       />
-      <ButtonGroup label={`${operation === 'move' ? 'Move' : 'Copy'} content actions`}>
+      <ButtonGroup
+        label={`${operation === 'move' ? 'Move' : 'Copy'} content actions`}
+      >
         <Button onClick={onCancel}>Cancel</Button>
         <Button appearance="primary" onClick={() => void onSubmit(target)}>
           {operation === 'move' ? 'Move' : 'Copy'}

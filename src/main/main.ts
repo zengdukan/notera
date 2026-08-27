@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import path from 'node:path';
 
-import { createProfileManager } from '@notera/application';
+import { createProfileManager, type ProfileManager } from '@notera/application';
 import {
   app,
   BrowserWindow,
@@ -14,8 +14,8 @@ import {
 } from 'electron';
 
 import MenuBuilder from './menu';
-import { startElectronDemoMedia } from './demo-media/electron-lifecycle';
-import type { DemoMediaServer } from './demo-media/server';
+import { startElectronMediaAdapter } from './media-adapter/electron-lifecycle';
+import type { MediaAdapterServer } from './media-adapter/server';
 import { createMainRuntime, type MainRuntime } from './runtime';
 import { createMediaApiArgument } from '../shared/atlassian-editor/media-runtime';
 import { resolveHtmlPath } from './util';
@@ -44,7 +44,8 @@ protocol.registerSchemesAsPrivileged([
 
 let mainWindow: BrowserWindow | undefined;
 let runtime: MainRuntime | undefined;
-let demoMediaServer: DemoMediaServer | undefined;
+let manager: ProfileManager | undefined;
+let mediaAdapter: MediaAdapterServer | undefined;
 let shutdown: Promise<void> | undefined;
 let exitAllowed = false;
 
@@ -54,7 +55,6 @@ function fixedLog(code: string): void {
 
 async function start(): Promise<void> {
   const appDataRoot = app.getPath('userData');
-  demoMediaServer = await startElectronDemoMedia({ appDataRoot });
   const preloadPath = app.isPackaged
     ? path.join(__dirname, 'preload.js')
     : path.join(__dirname, '../../.erb/dll/preload.js');
@@ -66,6 +66,14 @@ async function start(): Promise<void> {
     : path.join(__dirname, '../../assets/icon.png');
   const entryUrl = resolveHtmlPath('index.html');
   const exportPageUrl = resolveHtmlPath('export.html');
+  manager = await createProfileManager({ appDataRoot });
+  mediaAdapter = await startElectronMediaAdapter({
+    manager,
+    allowedOrigin: new URL(entryUrl).origin,
+    randomBytes: () => randomBytes(32),
+    randomUUID,
+    now: Date.now,
+  });
   mainWindow = createSecureWindow({
     factory: {
       create: (options) =>
@@ -75,7 +83,7 @@ async function start(): Promise<void> {
     preloadPath,
     entryUrl,
     iconPath,
-    additionalArguments: [createMediaApiArgument(demoMediaServer.apiBaseUrl)],
+    additionalArguments: [createMediaApiArgument(mediaAdapter.apiBaseUrl)],
   }) as BrowserWindow;
   mainWindow.on('closed', () => {
     mainWindow = undefined;
@@ -85,6 +93,8 @@ async function start(): Promise<void> {
   runtime = await createMainRuntime({
     appDataRoot,
     window: mainWindow,
+    profileManager: manager,
+    sessionMedia: mediaAdapter,
     electron: {
       createProfileManager,
       ipcMain,
@@ -163,7 +173,10 @@ app.on('before-quit', (event) => {
   if (shutdown !== undefined) return;
   shutdown = Promise.all([
     Promise.resolve(runtime?.close()).catch(() => undefined),
-    Promise.resolve(demoMediaServer?.close()).catch(() => undefined),
+    Promise.resolve(mediaAdapter?.close()).catch(() => undefined),
+    runtime === undefined
+      ? Promise.resolve(manager?.close()).catch(() => undefined)
+      : Promise.resolve(),
   ]).then(() => {
     exitAllowed = true;
     app.exit(0);
@@ -177,7 +190,10 @@ app
   .whenReady()
   .then(start)
   .catch(async () => {
-    await Promise.resolve(demoMediaServer?.close()).catch(() => undefined);
+    await Promise.all([
+      Promise.resolve(mediaAdapter?.close()).catch(() => undefined),
+      Promise.resolve(manager?.close()).catch(() => undefined),
+    ]);
     fixedLog('START_FAILED');
     app.exit(1);
   });

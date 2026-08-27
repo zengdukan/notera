@@ -87,7 +87,10 @@ type Overlay =
     }
   | {
       readonly kind: 'settings';
-      readonly device: { theme: 'SYSTEM' | 'LIGHT' | 'DARK'; language: 'zh-CN' | 'en' };
+      readonly device: {
+        theme: 'SYSTEM' | 'LIGHT' | 'DARK';
+        language: 'zh-CN' | 'en';
+      };
       readonly profile: { autoLockMinutes: 1 | 5 | 15 | 30 | 60 };
     };
 
@@ -143,39 +146,65 @@ function UnlockedNavigationWorkspace({
   const queryClient = useQueryClient();
   const [selection, setSelection] = useState<ContentEntry>();
   const [editingNoteId, setEditingNoteId] = useState<string>();
-  const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(new Set());
+  const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
   const [overlay, setOverlay] = useState<Overlay>();
   const exportStore = useMemo(() => new ExportOperationStore(), []);
-  const historyController = useMemo(() => createHistoryController({
-    client,
-    queryClient,
-    profileId: profile.localProfileId,
-    lifecycle,
-    writeCoordinator,
-    onRestored: (detail) => {
-      setEditingNoteId(undefined);
-      setSelection(detail);
-      setOverlay(undefined);
-    },
-    onMissing: (noteId) => {
-      setSelection((current) => current?.kind === 'note' && current.id === noteId ? undefined : current);
-      setOverlay(undefined);
-      void queryClient.invalidateQueries({
-        queryKey: treeKey(profile.localProfileId, profile.rootFolderId),
-      });
-    },
-  }), [client, lifecycle, profile.localProfileId, profile.rootFolderId, queryClient, writeCoordinator]);
-  const trashController = useMemo(() => createTrashController({
-    client,
-    queryClient,
-    profileId: profile.localProfileId,
-  }), [client, profile.localProfileId, queryClient]);
-  const exportController = useMemo(() => createExportController({
-    client,
-    lifecycle,
-    store: exportStore,
-    getActiveNoteId: () => selection?.kind === 'note' ? selection.id : undefined,
-  }), [client, exportStore, lifecycle, selection]);
+  const historyController = useMemo(
+    () =>
+      createHistoryController({
+        client,
+        queryClient,
+        profileId: profile.localProfileId,
+        lifecycle,
+        writeCoordinator,
+        onRestored: (detail) => {
+          setEditingNoteId(undefined);
+          setSelection(detail);
+          setOverlay(undefined);
+        },
+        onMissing: (noteId) => {
+          setSelection((current) =>
+            current?.kind === 'note' && current.id === noteId
+              ? undefined
+              : current,
+          );
+          setOverlay(undefined);
+          void queryClient.invalidateQueries({
+            queryKey: treeKey(profile.localProfileId, profile.rootFolderId),
+          });
+        },
+      }),
+    [
+      client,
+      lifecycle,
+      profile.localProfileId,
+      profile.rootFolderId,
+      queryClient,
+      writeCoordinator,
+    ],
+  );
+  const trashController = useMemo(
+    () =>
+      createTrashController({
+        client,
+        queryClient,
+        profileId: profile.localProfileId,
+      }),
+    [client, profile.localProfileId, queryClient],
+  );
+  const exportController = useMemo(
+    () =>
+      createExportController({
+        client,
+        lifecycle,
+        store: exportStore,
+        getActiveNoteId: () =>
+          selection?.kind === 'note' ? selection.id : undefined,
+      }),
+    [client, exportStore, lifecycle, selection],
+  );
 
   useEffect(() => {
     const unsubscribeProgress = client.subscribe(
@@ -205,7 +234,15 @@ function UnlockedNavigationWorkspace({
         select: setSelection,
         beginEditing: setEditingNoteId,
       }),
-    [client, lifecycle, profile.localProfileId, profile.rootFolderId, queryClient, selection, writeCoordinator],
+    [
+      client,
+      lifecycle,
+      profile.localProfileId,
+      profile.rootFolderId,
+      queryClient,
+      selection,
+      writeCoordinator,
+    ],
   );
 
   useEffect(() => () => lifecycle.clear(), [lifecycle]);
@@ -231,36 +268,47 @@ function UnlockedNavigationWorkspace({
     await controller.createNote(folderId);
   };
 
-  const openListedNote = useCallback(async (
-    noteId: string,
-    knownPath?: readonly { readonly id: string }[],
-  ): Promise<boolean> => {
-    if (selection?.kind === 'note' && selection.id !== noteId) {
+  const openListedNote = useCallback(
+    async (
+      noteId: string,
+      knownPath?: readonly { readonly id: string }[],
+    ): Promise<boolean> => {
+      if (selection?.kind === 'note' && selection.id !== noteId) {
+        try {
+          await lifecycle.flush();
+        } catch {
+          return false;
+        }
+      }
       try {
-        await lifecycle.flush();
+        const detail = await client.request('note.get', { noteId });
+        const path =
+          knownPath ??
+          (
+            await client.request('contentTree.getFolderPath', {
+              folderId: detail.folderId,
+            })
+          ).items;
+        queryClient.setQueryData(
+          noteKey(profile.localProfileId, noteId),
+          detail,
+        );
+        setExpandedIds(
+          (current) => new Set([...current, ...path.map((item) => item.id)]),
+        );
+        setEditingNoteId(undefined);
+        setSelection(detail);
+        setOverlay(undefined);
+        await queryClient.invalidateQueries({
+          queryKey: recentKey(profile.localProfileId),
+        });
+        return true;
       } catch {
         return false;
       }
-    }
-    try {
-      const detail = await client.request('note.get', { noteId });
-      const path = knownPath ?? (
-        await client.request('contentTree.getFolderPath', { folderId: detail.folderId })
-      ).items;
-      queryClient.setQueryData(noteKey(profile.localProfileId, noteId), detail);
-      setExpandedIds((current) => new Set([
-        ...current,
-        ...path.map((item) => item.id),
-      ]));
-      setEditingNoteId(undefined);
-      setSelection(detail);
-      setOverlay(undefined);
-      await queryClient.invalidateQueries({ queryKey: recentKey(profile.localProfileId) });
-      return true;
-    } catch {
-      return false;
-    }
-  }, [client, lifecycle, profile.localProfileId, queryClient, selection]);
+    },
+    [client, lifecycle, profile.localProfileId, queryClient, selection],
+  );
 
   useEffect(() => {
     const openSearch = (event: KeyboardEvent) => {
@@ -284,7 +332,9 @@ function UnlockedNavigationWorkspace({
             client={client}
             profileId={profile.localProfileId}
             rootFolderId={profile.rootFolderId}
-            onOpen={(result) => openListedNote(result.noteId, result.folderPath)}
+            onOpen={(result) =>
+              openListedNote(result.noteId, result.folderPath)
+            }
           />
         ),
       };
@@ -323,7 +373,10 @@ function UnlockedNavigationWorkspace({
           <CreateVersionModal
             defaultName={overlay.defaultName}
             onCreate={async (versionName) => {
-              await historyController.create({ noteId: overlay.note.id, versionName });
+              await historyController.create({
+                noteId: overlay.note.id,
+                versionName,
+              });
               setOverlay(undefined);
             }}
           />
@@ -378,7 +431,11 @@ function UnlockedNavigationWorkspace({
       };
     }
     if (overlay.kind === 'message') {
-      return { kind: overlay.kind, title: overlay.title, content: <Text>Available in this offline workspace.</Text> };
+      return {
+        kind: overlay.kind,
+        title: overlay.title,
+        content: <Text>Available in this offline workspace.</Text>,
+      };
     }
     if (overlay.kind === 'create-folder') {
       return {
@@ -400,7 +457,11 @@ function UnlockedNavigationWorkspace({
         title: 'Rename',
         content: (
           <RenameContentModal
-            initialName={overlay.entry.kind === 'folder' ? overlay.entry.name : overlay.entry.title}
+            initialName={
+              overlay.entry.kind === 'folder'
+                ? overlay.entry.name
+                : overlay.entry.title
+            }
             allowBlank={overlay.entry.kind === 'note'}
             onRename={async (name) => {
               await controller.rename(overlay.entry, name);
@@ -416,7 +477,11 @@ function UnlockedNavigationWorkspace({
         title: 'Move to trash',
         content: (
           <TrashContentModal
-            name={overlay.entry.kind === 'folder' ? overlay.entry.name : overlay.entry.title || 'Untitled'}
+            name={
+              overlay.entry.kind === 'folder'
+                ? overlay.entry.name
+                : overlay.entry.title || 'Untitled'
+            }
             onCancel={() => setOverlay(undefined)}
             onConfirm={async () => {
               await controller.trash(overlay.entry);
@@ -438,9 +503,10 @@ function UnlockedNavigationWorkspace({
             disabledIds={overlay.disabledIds}
             onCancel={() => setOverlay(undefined)}
             onSubmit={async (folderId) => {
-              const result = overlay.operation === 'move'
-                ? await controller.move(overlay.entry, folderId)
-                : await controller.copy(overlay.entry, folderId);
+              const result =
+                overlay.operation === 'move'
+                  ? await controller.move(overlay.entry, folderId)
+                  : await controller.copy(overlay.entry, folderId);
               if (result === 'ready') setOverlay(undefined);
             }}
           />
@@ -459,12 +525,20 @@ function UnlockedNavigationWorkspace({
             setOverlay({ ...overlay, device });
           }}
           onUpdateProfile={async (value) => {
-            const nextProfile = await client.request('settings.updateProfile', value);
+            const nextProfile = await client.request(
+              'settings.updateProfile',
+              value,
+            );
             setOverlay({ ...overlay, profile: nextProfile });
           }}
           onRenameProfile={async (displayName) => {
-            const renamed = await client.request('profile.rename', { displayName });
-            dispatch({ type: 'unlocked', profile: { ...profile, displayName: renamed.displayName } });
+            const renamed = await client.request('profile.rename', {
+              displayName,
+            });
+            dispatch({
+              type: 'unlocked',
+              profile: { ...profile, displayName: renamed.displayName },
+            });
           }}
           onChangePassword={async (value) => {
             await client.request('profile.changePassword', value);
@@ -474,13 +548,26 @@ function UnlockedNavigationWorkspace({
             setOverlay(undefined);
           }}
           onRemove={async () => {
-            await client.request('profile.removeFromDevice', { localProfileId: profile.localProfileId });
+            await client.request('profile.removeFromDevice', {
+              localProfileId: profile.localProfileId,
+            });
             setOverlay(undefined);
           }}
         />
       ),
     };
-  }, [client, controller, dispatch, exportController, exportStore, historyController, openListedNote, overlay, profile, trashController]);
+  }, [
+    client,
+    controller,
+    dispatch,
+    exportController,
+    exportStore,
+    historyController,
+    openListedNote,
+    overlay,
+    profile,
+    trashController,
+  ]);
 
   const openSettings = async () => {
     const [device, profileSettings] = await Promise.all([
@@ -509,27 +596,32 @@ function UnlockedNavigationWorkspace({
     setOverlay({ kind: 'trash-bin', folders });
   };
 
-  const getActions = (entry: ContentEntry) => createContentActions(entry, {
-    open: (value) => void selectWithFlush(value),
-    createNote: (folderId) => void createNote(folderId),
-    openCreateFolder: (folder) => {
-      if (folder.kind === 'folder') {
-        setOverlay({ kind: 'create-folder', parentFolderId: folder.id });
-      }
-    },
-    rename: (value) => setOverlay({ kind: 'rename', entry: value }),
-    openMove: (value) => void openFolderOperation('move', value),
-    openCopy: (value) => void openFolderOperation('copy', value),
-    export: (value) => {
-      if (value.kind === 'note') {
-        if (exportStore.getSnapshot()?.state !== 'RUNNING') exportStore.clear();
-        setOverlay({ kind: 'export-note', note: value });
-      }
-    },
-    openTrash: (value) => setOverlay({ kind: 'trash', entry: value }),
-  });
+  const getActions = (entry: ContentEntry) =>
+    createContentActions(entry, {
+      open: (value) => void selectWithFlush(value),
+      createNote: (folderId) => void createNote(folderId),
+      openCreateFolder: (folder) => {
+        if (folder.kind === 'folder') {
+          setOverlay({ kind: 'create-folder', parentFolderId: folder.id });
+        }
+      },
+      rename: (value) => setOverlay({ kind: 'rename', entry: value }),
+      openMove: (value) => void openFolderOperation('move', value),
+      openCopy: (value) => void openFolderOperation('copy', value),
+      export: (value) => {
+        if (value.kind === 'note') {
+          if (exportStore.getSnapshot()?.state !== 'RUNNING')
+            exportStore.clear();
+          setOverlay({ kind: 'export-note', note: value });
+        }
+      },
+      openTrash: (value) => setOverlay({ kind: 'trash', entry: value }),
+    });
 
-  const handleNoteMore = async (action: NoteMoreAction, entry: Extract<ContentEntry, { kind: 'note' }>) => {
+  const handleNoteMore = async (
+    action: NoteMoreAction,
+    entry: Extract<ContentEntry, { kind: 'note' }>,
+  ) => {
     if (action === 'move' || action === 'copy') {
       void openFolderOperation(action, entry);
       return;
@@ -539,7 +631,11 @@ function UnlockedNavigationWorkspace({
       return;
     }
     if (action === 'create-version') {
-      setOverlay({ kind: 'create-version', note: entry, defaultName: localVersionName(new Date()) });
+      setOverlay({
+        kind: 'create-version',
+        note: entry,
+        defaultName: localVersionName(new Date()),
+      });
       return;
     }
     if (action === 'history') {
@@ -550,20 +646,31 @@ function UnlockedNavigationWorkspace({
     if (exportStore.getSnapshot()?.state !== 'RUNNING') exportStore.clear();
     setOverlay({ kind: 'export-note', note: entry });
   };
+  let createFolderParentId = profile.rootFolderId;
+  if (selection?.kind === 'folder') {
+    createFolderParentId = selection.id;
+  } else if (selection?.kind === 'note') {
+    createFolderParentId = selection.folderId;
+  }
 
   return (
     <>
       <ResizableNavigation
-        header={(
+        header={
           <NavigationHeader
             profileName={profile.displayName}
             onLock={() => void client.request('profile.lock', {})}
             onSearch={() => setOverlay({ kind: 'search' })}
             onCreateNote={() => void createNote()}
-            onCreateFolder={() => setOverlay({ kind: 'create-folder', parentFolderId: selection?.kind === 'folder' ? selection.id : selection?.kind === 'note' ? selection.folderId : profile.rootFolderId })}
+            onCreateFolder={() =>
+              setOverlay({
+                kind: 'create-folder',
+                parentFolderId: createFolderParentId,
+              })
+            }
           />
-        )}
-        tree={(
+        }
+        tree={
           <QueryContentTree
             client={client}
             profileId={profile.localProfileId}
@@ -574,15 +681,18 @@ function UnlockedNavigationWorkspace({
             onToggle={(folderId, expanded) =>
               setExpandedIds((current) => {
                 const next = new Set(current);
-                if (expanded) next.add(folderId); else next.delete(folderId);
+                if (expanded) next.add(folderId);
+                else next.delete(folderId);
                 return next;
               })
             }
             onCreateNote={(entry) => void createNote(entry.id)}
-            onCreateFolder={(entry) => setOverlay({ kind: 'create-folder', parentFolderId: entry.id })}
+            onCreateFolder={(entry) =>
+              setOverlay({ kind: 'create-folder', parentFolderId: entry.id })
+            }
             getActions={getActions}
           />
-        )}
+        }
         onFavorites={() => setOverlay({ kind: 'favorites' })}
         onRecent={() => setOverlay({ kind: 'recent' })}
         onTrash={() => void openTrash()}
@@ -593,7 +703,9 @@ function UnlockedNavigationWorkspace({
             client={client}
             profileId={profile.localProfileId}
             note={selection?.kind === 'note' ? selection : undefined}
-            initiallyEditing={selection?.kind === 'note' && editingNoteId === selection.id}
+            initiallyEditing={
+              selection?.kind === 'note' && editingNoteId === selection.id
+            }
             lifecycle={lifecycle}
             writeCoordinator={writeCoordinator}
             onMore={handleNoteMore}

@@ -32,7 +32,9 @@ describe('RecentModal', () => {
       </AppProviders>,
     );
 
-    await user.click(await screen.findByRole('button', { name: 'Open Recent note' }));
+    await user.click(
+      await screen.findByRole('button', { name: 'Open Recent note' }),
+    );
     expect(onOpen).toHaveBeenCalledWith(note);
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   });

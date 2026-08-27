@@ -8,7 +8,9 @@ describe('Math toolbar insertion', () => {
       replaceSelection: jest.fn().mockReturnValue(true),
     };
 
-    await expect(insertMathFromToolbar(openEditor, actions)).resolves.toBe(true);
+    await expect(insertMathFromToolbar(openEditor, actions)).resolves.toBe(
+      true,
+    );
     expect(openEditor).toHaveBeenCalledWith({ kind: 'block', latex: '' });
     expect(actions.replaceSelection).toHaveBeenCalledWith({
       type: 'extension',
@@ -29,7 +31,9 @@ describe('Math toolbar insertion', () => {
       replaceSelection: jest.fn(),
     };
 
-    await expect(insertMathFromToolbar(openEditor, actions)).resolves.toBe(false);
+    await expect(insertMathFromToolbar(openEditor, actions)).resolves.toBe(
+      false,
+    );
     await expect(insertMathFromToolbar(openEditor, null)).resolves.toBe(false);
     expect(actions.replaceSelection).not.toHaveBeenCalled();
     expect(actions.focus).not.toHaveBeenCalled();

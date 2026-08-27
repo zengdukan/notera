@@ -33,10 +33,12 @@ export const settingsGetDevice = defineRequestContract({
 export const settingsUpdateDevice = defineRequestContract({
   key: 'settings.updateDevice',
   channel: 'notera:settings:update-device',
-  request: deviceSettingsSchema.partial().refine(
-    (value) => Object.keys(value).length > 0,
-    'At least one device setting is required.',
-  ),
+  request: deviceSettingsSchema
+    .partial()
+    .refine(
+      (value) => Object.keys(value).length > 0,
+      'At least one device setting is required.',
+    ),
   data: deviceSettingsSchema,
   errors: ['SAVE_FAILED', 'DISK_FULL', 'IPC_OPERATION_FAILED'],
 });

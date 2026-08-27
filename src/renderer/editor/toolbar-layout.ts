@@ -69,15 +69,18 @@ export function toolbarLayoutForWidth(rawWidth: number): ToolbarLayout {
   const insert: ToolbarActionId[] = [];
   const visible: ToolbarActionId[] = ['undo', 'redo', 'text-style'];
 
-  if (width > 410) visible.push('bold'); else moreFormatting.push('bold');
+  if (width > 410) visible.push('bold');
+  else moreFormatting.push('bold');
   if (width > 476) {
     visible.push('italic', 'underline');
   } else {
     moreFormatting.push('italic', 'underline');
   }
-  if (width > 768) visible.push('text-color'); else moreFormatting.push('text-color');
+  if (width > 768) visible.push('text-color');
+  else moreFormatting.push('text-color');
   visible.push('more-formatting');
-  if (width > 476) visible.push('link'); else insert.push('link');
+  if (width > 476) visible.push('link');
+  else insert.push('link');
   if (width > 768) {
     visible.push('bullet-list', 'number-list', 'task-list');
   } else {

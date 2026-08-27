@@ -16,6 +16,7 @@ import {
   createCurrentNoteAttachmentReference,
   createNoteVersionAttachmentReference,
   createTrashAttachmentReference,
+  createUploadAttachmentReference,
   markAttachmentBlobGcPending,
   referencesForAttachment,
   removeAttachmentReference,
@@ -58,6 +59,12 @@ const trashReference = createTrashAttachmentReference({
   attachmentId,
   trashEntryId: asTrashEntryId(uuid('6')),
 });
+const uploadReference = createUploadAttachmentReference({
+  vaultId,
+  attachmentId,
+  noteId: asNoteId(uuid('7')),
+  expiresAt: asTimestamp(10_000),
+});
 
 describe('attachment reference rules', () => {
   it('separates immutable blob content from visible attachment metadata', () => {
@@ -85,11 +92,21 @@ describe('attachment reference rules', () => {
     ).toThrow(expect.objectContaining({ code: 'INVALID_ENTITY_STATE' }));
   });
 
-  it('counts current-note, permanent-version, and trash references', () => {
-    const references = [noteReference, versionReference, trashReference];
+  it('counts current-note, permanent-version, trash, and temporary upload references', () => {
+    const references = [
+      noteReference,
+      versionReference,
+      trashReference,
+      uploadReference,
+    ];
 
     expect(referencesForAttachment(attachment, references)).toEqual(references);
-    expect(countAttachmentReferences(attachment, references)).toBe(3);
+    expect(countAttachmentReferences(attachment, references)).toBe(4);
+    expect(uploadReference).toMatchObject({
+      source: 'UPLOAD',
+      noteId: asNoteId(uuid('7')),
+      expiresAt: asTimestamp(10_000),
+    });
   });
 
   it('does not mix references from another attachment', () => {
@@ -131,7 +148,12 @@ describe('attachment reference rules', () => {
       vaultId,
       sourceNoteId: noteReference.noteId,
       targetNoteId,
-      references: [noteReference, versionReference, trashReference],
+      references: [
+        noteReference,
+        versionReference,
+        trashReference,
+        uploadReference,
+      ],
     });
 
     expect(copied).toEqual([
@@ -143,7 +165,7 @@ describe('attachment reference rules', () => {
     ]);
   });
 
-  it('allows GC only when no current, history, or trash reference remains', () => {
+  it('allows GC only when no current, history, trash, or upload reference remains', () => {
     expect(() =>
       markAttachmentBlobGcPending(blob, [attachment], asTimestamp(2_000)),
     ).toThrow(expect.objectContaining({ code: 'ATTACHMENT_STILL_REFERENCED' }));

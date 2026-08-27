@@ -1,5 +1,8 @@
 import Button, { IconButton } from '@atlaskit/button/new';
-import DropdownMenu, { DropdownItem, DropdownItemGroup } from '@atlaskit/dropdown-menu';
+import DropdownMenu, {
+  DropdownItem,
+  DropdownItemGroup,
+} from '@atlaskit/dropdown-menu';
 import AddIcon from '@atlaskit/icon/core/add';
 import LockIcon from '@atlaskit/icon/core/lock-locked';
 import SearchIcon from '@atlaskit/icon/core/search';
@@ -21,11 +24,23 @@ export function NavigationHeader({
   return (
     <Stack space="space.150">
       <Inline alignBlock="center" spread="space-between">
-        <Text weight="semibold" maxLines={1}>{profileName}</Text>
-        <IconButton label="Lock profile" icon={LockIcon} appearance="subtle" onClick={onLock} />
+        <Text weight="semibold" maxLines={1}>
+          {profileName}
+        </Text>
+        <IconButton
+          label="Lock profile"
+          icon={LockIcon}
+          appearance="subtle"
+          onClick={onLock}
+        />
       </Inline>
       <Inline alignBlock="center" space="space.050">
-        <Button shouldFitContainer iconBefore={SearchIcon} onClick={onSearch} aria-label="Search">
+        <Button
+          shouldFitContainer
+          iconBefore={SearchIcon}
+          onClick={onSearch}
+          aria-label="Search"
+        >
           <Inline spread="space-between" grow="fill">
             <Text>Search</Text>
             <Text color="color.text.subtle">Ctrl + J</Text>
@@ -33,7 +48,13 @@ export function NavigationHeader({
         </Button>
         <DropdownMenu<HTMLButtonElement>
           trigger={({ triggerRef, ...props }) => (
-            <IconButton {...props} ref={triggerRef} label="Create" icon={AddIcon} appearance="primary" />
+            <IconButton
+              {...props}
+              ref={triggerRef}
+              label="Create"
+              icon={AddIcon}
+              appearance="primary"
+            />
           )}
         >
           <DropdownItemGroup>

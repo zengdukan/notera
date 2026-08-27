@@ -48,7 +48,12 @@ export function createExportController(input: {
     },
     async cancel() {
       const current = input.store.getSnapshot();
-      if (!current || current.state !== 'RUNNING' || cancelledId === current.operationId) return;
+      if (
+        !current ||
+        current.state !== 'RUNNING' ||
+        cancelledId === current.operationId
+      )
+        return;
       cancelledId = current.operationId;
       const status = await input.client.request('operation.cancel', {
         operationId: current.operationId,

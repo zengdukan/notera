@@ -1,9 +1,6 @@
 import type { NoteraApi } from '../../../shared';
 import { IPC_ERROR_MESSAGES } from '../../../shared';
-import {
-  createNoteraClient,
-  NoteraClientError,
-} from '../notera-client';
+import { createNoteraClient, NoteraClientError } from '../notera-client';
 import { createProfileLockSignal } from '../notera-events';
 
 function apiWith(overrides: Partial<NoteraApi>): NoteraApi {
@@ -21,9 +18,9 @@ describe('notera client', () => {
     });
     const client = createNoteraClient(api);
 
-    await expect(client.request('profile.getSessionState', {})).resolves.toEqual(
-      { state: 'LOCKED' },
-    );
+    await expect(
+      client.request('profile.getSessionState', {}),
+    ).resolves.toEqual({ state: 'LOCKED' });
   });
 
   it('throws only the safe code and reports profile locking', async () => {

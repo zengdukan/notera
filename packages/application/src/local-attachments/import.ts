@@ -7,6 +7,8 @@ import {
   createAttachment,
   createAttachmentBlob,
   createCurrentNoteAttachmentReference,
+  createUploadAttachmentReference,
+  MAX_ATTACHMENT_BYTES,
   type Attachment,
   type Timestamp,
   type VaultId,
@@ -15,6 +17,7 @@ import { StorageError, type VaultDatabase } from '@notera/storage-sqlcipher';
 import type { AttachmentStore, ImportedBlob } from '@notera/attachments';
 
 import type { SessionResources } from '../session';
+import { ApplicationError } from '../errors';
 import attachmentSummary from './mapping';
 import { mapImportError } from './errors';
 import type { ImportAttachmentInput } from './types';
@@ -74,11 +77,18 @@ function commitImport(
     }
     transaction.attachments.insertAttachment(attachment);
     transaction.attachments.addReferences([
-      createCurrentNoteAttachmentReference({
-        vaultId,
-        attachmentId,
-        noteId: input.noteId,
-      }),
+      input.reference.kind === 'UPLOAD'
+        ? createUploadAttachmentReference({
+            vaultId,
+            attachmentId,
+            noteId: input.noteId,
+            expiresAt: input.reference.expiresAt,
+          })
+        : createCurrentNoteAttachmentReference({
+            vaultId,
+            attachmentId,
+            noteId: input.noteId,
+          }),
     ]);
     return Object.freeze({
       attachment,
@@ -105,15 +115,30 @@ export default async function importAttachment(
 ) {
   const input = validateImportInput(value);
   requireActiveNote(resources.database, input.noteId);
-  const attachmentId = asAttachmentId(randomId());
+  if (input.reference.kind === 'UPLOAD' && input.reference.expiresAt <= now) {
+    throw new ApplicationError('ATTACHMENT_IMPORT_FAILED');
+  }
+  const attachmentId = input.attachmentId ?? asAttachmentId(randomId());
   const combined = combineSignals([resources.signal, input.signal]);
   let imported: ImportedBlob | undefined;
   let databasePhase = false;
   let transactionCommitted = false;
   try {
+    let total = 0;
+    const limitedSource = (async function* limitSource() {
+      // Streaming is required so the size limit never buffers the attachment in plaintext.
+      // eslint-disable-next-line no-restricted-syntax
+      for await (const chunk of input.source) {
+        total += chunk.byteLength;
+        if (total > MAX_ATTACHMENT_BYTES) {
+          throw new ApplicationError('ATTACHMENT_TOO_LARGE');
+        }
+        yield chunk;
+      }
+    })();
     imported = await resources.attachments.importBlob({
       vaultId,
-      source: input.source,
+      source: limitedSource,
       signal: combined.signal,
     });
     databasePhase = true;

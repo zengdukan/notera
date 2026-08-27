@@ -1,14 +1,5 @@
 /** @jest-environment jsdom */
 
-jest.mock('react-scrolllock', () => ({
-  __esModule: true,
-  default: ({ children }: { children: ReactNode }) => children,
-  TouchScrollable: ({ children }: { children: ReactNode }) => children,
-}));
-jest.mock('../../navigation/NavigationWorkspace', () => ({
-  NavigationWorkspace: () => <div>Note workspace</div>,
-}));
-
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
@@ -18,12 +9,21 @@ import { ModalHost } from '../../shared-ui/ModalHost';
 import { GlobalFlagGroup } from '../../shared-ui/GlobalFlagGroup';
 import type { NoteraClient } from '../../platform/notera-client';
 
+jest.mock('react-scrolllock', () => ({
+  __esModule: true,
+  default: ({ children }: { children: ReactNode }) => children,
+  TouchScrollable: ({ children }: { children: ReactNode }) => children,
+}));
+jest.mock('../../navigation/NavigationWorkspace', () => ({
+  NavigationWorkspace: () => <div>Note workspace</div>,
+}));
+
 function deferred<T>() {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((next) => {
-    resolve = next;
+  let resolveDeferred!: (value: T) => void;
+  const promise = new Promise<T>((resolve) => {
+    resolveDeferred = resolve;
   });
-  return { promise, resolve };
+  return { promise, resolve: resolveDeferred };
 }
 
 function providers(children: ReactNode) {
@@ -52,7 +52,9 @@ describe('application shell', () => {
     profiles.resolve({ items: [], nextCursor: null });
     session.resolve({ state: 'LOCKED' });
 
-    expect(await screen.findByText('Choose a profile to continue.')).toBeVisible();
+    expect(
+      await screen.findByText('Choose a profile to continue.'),
+    ).toBeVisible();
   });
 
   it('renders only one primary modal and restores focus when it closes', async () => {
@@ -76,7 +78,9 @@ describe('application shell', () => {
     render(providers(<Harness />));
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
     await user.keyboard('{Escape}');
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
   });
 
   it('renders cross-page feedback in one ADS flag group', () => {

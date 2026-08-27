@@ -31,7 +31,9 @@ describe('SettingsModal', () => {
     await user.keyboard('{Escape}');
     await user.click(screen.getByRole('tab', { name: 'Profile and security' }));
     await user.click(screen.getByRole('combobox', { name: 'Automatic lock' }));
-    expect(screen.getByRole('option', { name: '15 minutes' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('option', { name: '15 minutes' }),
+    ).toBeInTheDocument();
     expect(screen.queryByText('Never')).not.toBeInTheDocument();
     expect(screen.queryByText('Switch profile')).not.toBeInTheDocument();
   });

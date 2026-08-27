@@ -18,7 +18,11 @@ export interface AttachmentSummary {
 }
 
 export interface ImportAttachmentInput {
+  readonly attachmentId?: AttachmentId;
   readonly noteId: NoteId;
+  readonly reference?:
+    | { readonly kind: 'CURRENT_NOTE' }
+    | { readonly kind: 'UPLOAD'; readonly expiresAt: Timestamp };
   readonly fileName: string;
   readonly mimeType: string;
   readonly source: AsyncIterable<Uint8Array>;
@@ -60,7 +64,10 @@ export interface LocalAttachmentsService {
   listForNote(
     input: ListAttachmentsForNoteInput,
   ): Promise<Page<AttachmentSummary>>;
-  openReader(attachmentId: AttachmentId): Promise<AttachmentContentReader>;
+  openReader(
+    attachmentId: AttachmentId,
+    noteId?: NoteId,
+  ): Promise<AttachmentContentReader>;
   removeFromNote(input: {
     readonly noteId: NoteId;
     readonly attachmentId: AttachmentId;
