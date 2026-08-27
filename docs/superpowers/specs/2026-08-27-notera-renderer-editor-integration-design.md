@@ -614,7 +614,7 @@ Media 测试覆盖 loopback、Origin、令牌范围与撤销、大小限制、�
 
 本清单用于后续实施状态跟踪。`[ ]` 表示未完成，`[x]` 表示该完整功能模块的实现和相关测试均已完成。每完成一项，就在该功能模块的同一次提交中更新对应状态；不为勾选状态单独创建提交。
 
-- [ ] Renderer 基础与 ADS 应用外壳：完成 ADS Provider、主题、国际化、TanStack Query、`noteraClient`、全局错误反馈、Modal Host 和 Profile 隔离缓存基础。
+- [x] Renderer 基础与 ADS 应用外壳：完成 ADS Provider、主题、国际化、TanStack Query、`noteraClient`、全局错误反馈、Modal Host 和 Profile 隔离缓存基础。
 - [ ] Profile、设置与安全生命周期：完成 Profile 选择、创建、解锁、重命名、修改密码、从设备移除、设备/Profile 设置、活动报告、自动锁定、手动锁定和窗口关闭守卫。
 - [ ] 左侧导航、内容树与内容操作：完成可调整/折叠导航、混合树、hover/焦点行内按钮、右键菜单以及目录/笔记的创建、重命名、移动、复制和移入回收站流程。
 - [ ] 笔记工作区与编辑器集成：完成 `DocumentSession`、本地单写入者保存、编辑/预览、sticky 笔记头部、自定义响应式工具栏、Atlaskit Editor/ReactRenderer 以及 Math、Mermaid、Emoji 适配。
