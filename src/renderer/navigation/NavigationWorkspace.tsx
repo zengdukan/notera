@@ -14,8 +14,12 @@ import {
   type SessionAction,
   type UnlockedSession,
 } from '../app/session';
-import { noteKey, recentKey } from '../app/query-keys';
+import { noteKey, recentKey, treeKey } from '../app/query-keys';
 import { FavoritesModal } from '../favorites/FavoritesModal';
+import { CreateVersionModal } from '../history/CreateVersionModal';
+import { createHistoryController } from '../history/history-controller';
+import { HistoryModal } from '../history/HistoryModal';
+import { localVersionName } from '../history/local-version-name';
 import type { NoteraClient } from '../platform/notera-client';
 import { RecentModal } from '../recent/RecentModal';
 import { SearchModal } from '../search/SearchModal';
@@ -48,6 +52,16 @@ type Overlay =
   | { readonly kind: 'search' }
   | { readonly kind: 'favorites' }
   | { readonly kind: 'recent' }
+  | {
+      readonly kind: 'create-version';
+      readonly note: Extract<ContentEntry, { kind: 'note' }>;
+      readonly defaultName: string;
+    }
+  | {
+      readonly kind: 'history';
+      readonly note: Extract<ContentEntry, { kind: 'note' }>;
+      readonly folders: readonly LoadedFolderPickerItem[];
+    }
   | { readonly kind: 'create-folder'; readonly parentFolderId: string }
   | { readonly kind: 'rename'; readonly entry: ContentEntry }
   | { readonly kind: 'trash'; readonly entry: ContentEntry }
@@ -118,6 +132,25 @@ function UnlockedNavigationWorkspace({
   const [editingNoteId, setEditingNoteId] = useState<string>();
   const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(new Set());
   const [overlay, setOverlay] = useState<Overlay>();
+  const historyController = useMemo(() => createHistoryController({
+    client,
+    queryClient,
+    profileId: profile.localProfileId,
+    lifecycle,
+    writeCoordinator,
+    onRestored: (detail) => {
+      setEditingNoteId(undefined);
+      setSelection(detail);
+      setOverlay(undefined);
+    },
+    onMissing: (noteId) => {
+      setSelection((current) => current?.kind === 'note' && current.id === noteId ? undefined : current);
+      setOverlay(undefined);
+      void queryClient.invalidateQueries({
+        queryKey: treeKey(profile.localProfileId, profile.rootFolderId),
+      });
+    },
+  }), [client, lifecycle, profile.localProfileId, profile.rootFolderId, queryClient, writeCoordinator]);
   const controller = useMemo(
     () =>
       createContentController({
@@ -241,6 +274,38 @@ function UnlockedNavigationWorkspace({
         ),
       };
     }
+    if (overlay.kind === 'create-version') {
+      return {
+        kind: overlay.kind,
+        title: 'Create version',
+        content: (
+          <CreateVersionModal
+            defaultName={overlay.defaultName}
+            onCreate={async (versionName) => {
+              await historyController.create({ noteId: overlay.note.id, versionName });
+              setOverlay(undefined);
+            }}
+          />
+        ),
+      };
+    }
+    if (overlay.kind === 'history') {
+      return {
+        kind: overlay.kind,
+        title: 'History',
+        width: 'x-large',
+        content: (
+          <HistoryModal
+            client={client}
+            profileId={profile.localProfileId}
+            noteId={overlay.note.id}
+            controller={historyController}
+            rootFolderId={profile.rootFolderId}
+            folders={overlay.folders}
+          />
+        ),
+      };
+    }
     if (overlay.kind === 'message') {
       return { kind: overlay.kind, title: overlay.title, content: <Text>Available in this offline workspace.</Text> };
     }
@@ -344,7 +409,7 @@ function UnlockedNavigationWorkspace({
         />
       ),
     };
-  }, [client, controller, dispatch, openListedNote, overlay, profile]);
+  }, [client, controller, dispatch, historyController, openListedNote, overlay, profile]);
 
   const openSettings = async () => {
     const [device, profileSettings] = await Promise.all([
@@ -382,7 +447,7 @@ function UnlockedNavigationWorkspace({
     openTrash: (value) => setOverlay({ kind: 'trash', entry: value }),
   });
 
-  const handleNoteMore = (action: NoteMoreAction, entry: Extract<ContentEntry, { kind: 'note' }>) => {
+  const handleNoteMore = async (action: NoteMoreAction, entry: Extract<ContentEntry, { kind: 'note' }>) => {
     if (action === 'move' || action === 'copy') {
       void openFolderOperation(action, entry);
       return;
@@ -391,12 +456,16 @@ function UnlockedNavigationWorkspace({
       setOverlay({ kind: 'trash', entry });
       return;
     }
-    const titles: Record<Exclude<NoteMoreAction, 'move' | 'copy' | 'trash'>, string> = {
-      'create-version': 'Create version',
-      history: 'History',
-      export: 'Export',
-    };
-    setOverlay({ kind: 'message', title: titles[action] });
+    if (action === 'create-version') {
+      setOverlay({ kind: 'create-version', note: entry, defaultName: localVersionName(new Date()) });
+      return;
+    }
+    if (action === 'history') {
+      const folders = await loadFolderPickerItems(client, profile.rootFolderId);
+      setOverlay({ kind: 'history', note: entry, folders });
+      return;
+    }
+    setOverlay({ kind: 'message', title: 'Export' });
   };
 
   return (

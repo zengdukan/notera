@@ -10,6 +10,7 @@ export interface HostedModal {
   readonly kind: string;
   readonly title: string;
   readonly content: ReactNode;
+  readonly width?: 'small' | 'medium' | 'large' | 'x-large';
 }
 
 export function ModalHost({
@@ -28,6 +29,7 @@ export function ModalHost({
     <ModalTransition>
       {open && (
         <ModalDialog
+          width={modal.width}
           onClose={() => {
             setOpen(false);
             onClose();

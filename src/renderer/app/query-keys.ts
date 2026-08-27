@@ -36,6 +36,12 @@ export const recentKey = (profileId: string) =>
 export const historyKey = (profileId: string, noteId: string) =>
   [...profilePrefix(profileId), 'history', noteId] as const;
 
+export const historySnapshotKey = (
+  profileId: string,
+  noteId: string,
+  versionId: string,
+) => [...historyKey(profileId, noteId), 'version', versionId] as const;
+
 export const trashKey = (profileId: string) =>
   [...profilePrefix(profileId), 'trash'] as const;
 

@@ -23,7 +23,6 @@ describe('LocalNotesService history use cases', () => {
     });
     await localNotes.saveDraft({
       noteId: note.id,
-      expectedContentVersion: note.contentVersion,
       title: 'Old title',
       document: historicalDocument,
     });
@@ -78,9 +77,15 @@ describe('LocalNotesService history use cases', () => {
 
     const changed = await localNotes.saveDraft({
       noteId: note.id,
-      expectedContentVersion: 2,
       title: 'Current title',
-      document: { type: 'doc', version: 1 },
+      document: {
+        type: 'doc',
+        version: 1,
+        content: [
+          { type: 'media', attrs: { id: historicalAttachment.id } },
+          { type: 'media', attrs: { id: currentAttachment.id } },
+        ],
+      },
     });
     const comparison = await localNotes.compareHistory({
       noteId: note.id,

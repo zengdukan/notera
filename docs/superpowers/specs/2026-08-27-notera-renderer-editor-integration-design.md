@@ -619,7 +619,7 @@ Media 测试覆盖 loopback、Origin、令牌范围与撤销、大小限制、�
 - [x] 左侧导航、内容树与内容操作：完成可调整/折叠导航、混合树、hover/焦点行内按钮、右键菜单以及目录/笔记的创建、重命名、移动、复制和移入回收站流程。
 - [x] 笔记工作区与编辑器集成：完成 `DocumentSession`、本地单写入者保存、编辑/预览、sticky 笔记头部、自定义响应式工具栏、Atlaskit Editor/ReactRenderer 以及 Math、Mermaid、Emoji 适配。
 - [x] 搜索、收藏与最近使用：完成目录范围搜索、Unicode 高亮、分页结果、收藏状态和最近使用 Modal 及其缓存一致性。
-- [ ] 历史版本：完成创建版本、只读预览、比较、复制、恢复、系统保护版本和不可变版本名称规则。
+- [x] 历史版本：完成创建版本、只读预览、比较、复制、恢复、系统保护版本和不可变版本名称规则。
 - [ ] 回收站：完成分页列表、单项恢复、目标目录选择、永久删除和相关树缓存更新。
 - [ ] 单笔记导出与长任务 UI：完成 Markdown/PDF 选择、明文提示、保存失败回退、进度、取消、完成报告和有损节点警告。
 - [ ] Atlaskit Media 生产适配：完成 note-scoped Media Provider、loopback Media Adapter、加密上传与 Range 读取、附件引用事务、锁定撤销、GC 衔接及 demo media 生产移除。

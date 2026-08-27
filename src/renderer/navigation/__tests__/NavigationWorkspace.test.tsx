@@ -41,12 +41,26 @@ jest.mock('../tree-queries', () => ({
   ),
 }));
 jest.mock('../../notes/NoteWorkspace', () => ({
-  NoteWorkspace: ({ note, lifecycle }: { note?: typeof firstNote; lifecycle: ActiveDocumentLifecycle }) => {
+  NoteWorkspace: ({ note, lifecycle, onMore }: {
+    note?: typeof firstNote;
+    lifecycle: ActiveDocumentLifecycle;
+    onMore(action: 'create-version' | 'history', note: typeof firstNote): void;
+  }) => {
     useEffect(() => {
       if (!note) return undefined;
       return lifecycle.attach({ isDirty: () => true, flush: mockFlush, stop: jest.fn() });
     }, [lifecycle, note]);
-    return <div>{note ? `Workspace ${note.title}` : 'No note selected'}</div>;
+    return (
+      <div>
+        {note ? `Workspace ${note.title}` : 'No note selected'}
+        {note ? (
+          <>
+            <button type="button" onClick={() => onMore('create-version', note)}>Create version</button>
+            <button type="button" onClick={() => onMore('history', note)}>History</button>
+          </>
+        ) : null}
+      </div>
+    );
   },
 }));
 jest.mock('../../search/SearchModal', () => ({
@@ -68,6 +82,8 @@ jest.mock('../../search/SearchModal', () => ({
 }));
 jest.mock('../../favorites/FavoritesModal', () => ({ FavoritesModal: () => <div>Favorite notes</div> }));
 jest.mock('../../recent/RecentModal', () => ({ RecentModal: () => <div>Recent notes</div> }));
+jest.mock('../../history/CreateVersionModal', () => ({ CreateVersionModal: () => <div>Create version form</div> }));
+jest.mock('../../history/HistoryModal', () => ({ HistoryModal: () => <div>History workspace</div> }));
 jest.mock('../../shared-ui/ModalHost', () => ({
   ModalHost: ({ modal }: { modal: { title: string; content: ReactNode } | null }) => (
     modal === null ? null : <div role="dialog" aria-label={modal.title}>{modal.content}</div>
@@ -171,5 +187,29 @@ describe('NavigationWorkspace', () => {
     expect(screen.getByText('Favorite notes')).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Recent' }));
     expect(screen.getByText('Recent notes')).toBeVisible();
+  });
+
+  it('opens create-version and history product modals from the note menu', async () => {
+    const user = userEvent.setup();
+    const request = jest.fn(async (key: string) => {
+      if (key === 'contentTree.listChildren') return { items: [] };
+      return {};
+    });
+    const client = { request, subscribe: jest.fn() } as unknown as NoteraClient;
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SessionProvider>
+          <Unlock>
+            <NavigationWorkspace client={client} />
+          </Unlock>
+        </SessionProvider>
+      </QueryClientProvider>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Open first' }));
+    await user.click(screen.getByRole('button', { name: 'Create version' }));
+    expect(screen.getByText('Create version form')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'History' }));
+    expect(await screen.findByText('History workspace')).toBeVisible();
   });
 });
