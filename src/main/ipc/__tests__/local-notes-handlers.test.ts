@@ -89,6 +89,14 @@ const cases: readonly MappingCase[] = [
     expectedResult: { items: [folder] },
   },
   {
+    key: 'contentTree.getFolderPath',
+    method: 'getFolderPath',
+    request: { folderId },
+    applicationArgument: folderId,
+    applicationResult: { items: [{ id: folderId, name: 'Folder' }] },
+    expectedResult: { items: [{ id: folderId, name: 'Folder' }] },
+  },
+  {
     key: 'contentTree.createFolder',
     method: 'createFolder',
     request: { parentFolderId: folderId, name: 'Folder' },
@@ -135,6 +143,14 @@ const cases: readonly MappingCase[] = [
     applicationArgument: noteId,
     applicationResult: noteDetail,
     expectedResult: noteDetail,
+  },
+  {
+    key: 'note.rename',
+    method: 'renameNote',
+    request: { noteId, title: 'Renamed' },
+    applicationArgument: { noteId, title: 'Renamed' },
+    applicationResult: { ...note, title: 'Renamed', contentVersion: 2 },
+    expectedResult: { ...note, title: 'Renamed', contentVersion: 2 },
   },
   {
     key: 'note.saveDraft',
@@ -455,7 +471,7 @@ function serviceFor(
 }
 
 describe('local note IPC handlers', () => {
-  it('binds exactly the 39 local note and organization requests', () => {
+  it('binds exactly the 41 local note and organization requests', () => {
     const bindings = createLocalNotesBindings({
       service: serviceFor('getNote', noteDetail, []),
       gate: openGate,
@@ -464,7 +480,7 @@ describe('local note IPC handlers', () => {
     expect(bindings.map((binding) => binding.key)).toEqual(
       cases.map((value) => value.key),
     );
-    expect(new Set(bindings.map((binding) => binding.key)).size).toBe(39);
+    expect(new Set(bindings.map((binding) => binding.key)).size).toBe(41);
   });
 
   test.each(cases)(

@@ -88,6 +88,26 @@ export function getNote(database: VaultDatabase, value: unknown): NoteDetail {
   return noteDetail(database, getActiveNoteEntity(database, value));
 }
 
+export function renameNote(
+  database: VaultDatabase,
+  input: { readonly noteId: unknown; readonly title: unknown },
+  now: Timestamp,
+): NoteSummary {
+  const noteId = asNoteId(input?.noteId);
+  const title = checkedTitle(input?.title);
+  const renamed = database.transaction((transaction) => {
+    const current = getActiveNoteEntity(database, noteId);
+    const next = updateNoteContent(current, {
+      title,
+      document: current.document,
+      updatedAt: now,
+    });
+    transaction.notes.replaceContent(next, current.contentVersion);
+    return next;
+  });
+  return noteSummary(renamed);
+}
+
 export function saveDraft(
   database: VaultDatabase,
   input: {

@@ -42,21 +42,32 @@ describe('LocalNotesService note use cases', () => {
     expect(created).not.toHaveProperty('sortOrder');
     await expect(localNotes.getNote(created.id)).resolves.toEqual(created);
 
+    const renamed = await localNotes.renameNote({
+      noteId: created.id,
+      title: 'Renamed without document DTO',
+    });
+    expect(renamed).toMatchObject({
+      id: created.id,
+      title: 'Renamed without document DTO',
+      contentVersion: 2,
+    });
+    expect(renamed).not.toHaveProperty('document');
+
     const saved = await localNotes.saveDraft({
       noteId: created.id,
-      expectedContentVersion: 1,
+      expectedContentVersion: 2,
       title: 'Saved',
       document,
     });
     expect(saved).toMatchObject({
       noteId: created.id,
-      contentVersion: 2,
+      contentVersion: 3,
       savedAt: expect.any(Number),
     });
     await expect(
       localNotes.saveDraft({
         noteId: created.id,
-        expectedContentVersion: 1,
+        expectedContentVersion: 2,
         title: 'Stale',
         document,
       }),
@@ -70,7 +81,7 @@ describe('LocalNotesService note use cases', () => {
       id: created.id,
       title: 'Saved',
       folderId: target.id,
-      contentVersion: 2,
+      contentVersion: 3,
     });
     const attachment = await manager.localAttachments.importAttachment({
       noteId: created.id,

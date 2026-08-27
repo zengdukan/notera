@@ -37,6 +37,7 @@ export interface NoteraApi {
   };
   readonly contentTree: {
     readonly listChildren: InvokeMethod<Request<'contentTree.listChildren'>>;
+    readonly getFolderPath: InvokeMethod<Request<'contentTree.getFolderPath'>>;
     readonly createFolder: InvokeMethod<Request<'contentTree.createFolder'>>;
     readonly renameFolder: InvokeMethod<Request<'contentTree.renameFolder'>>;
     readonly moveFolder: InvokeMethod<Request<'contentTree.moveFolder'>>;
@@ -45,6 +46,7 @@ export interface NoteraApi {
   readonly note: {
     readonly create: InvokeMethod<Request<'note.create'>>;
     readonly get: InvokeMethod<Request<'note.get'>>;
+    readonly rename: InvokeMethod<Request<'note.rename'>>;
     readonly saveDraft: InvokeMethod<Request<'note.saveDraft'>>;
     readonly move: InvokeMethod<Request<'note.move'>>;
     readonly copy: InvokeMethod<Request<'note.copy'>>;

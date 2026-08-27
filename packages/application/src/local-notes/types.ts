@@ -37,6 +37,11 @@ export interface FolderSummary {
   readonly hasChildren: boolean;
 }
 
+export interface FolderPathItem {
+  readonly id: FolderId;
+  readonly name: string;
+}
+
 export interface NoteSummary {
   readonly kind: 'note';
   readonly id: NoteId;
@@ -137,6 +142,7 @@ export interface ListChildrenInput {
 
 export interface LocalNotesService {
   listChildren(input: ListChildrenInput): Promise<Page<TreeEntrySummary>>;
+  getFolderPath(folderId: FolderId): Promise<{ readonly items: readonly FolderPathItem[] }>;
   createFolder(input: {
     readonly parentFolderId: FolderId;
     readonly name: string;
@@ -157,6 +163,10 @@ export interface LocalNotesService {
     readonly title?: string;
   }): Promise<NoteDetail>;
   getNote(noteId: NoteId): Promise<NoteDetail>;
+  renameNote(input: {
+    readonly noteId: NoteId;
+    readonly title: string;
+  }): Promise<NoteSummary>;
   saveDraft(input: {
     readonly noteId: NoteId;
     readonly expectedContentVersion: number;

@@ -62,6 +62,19 @@ export const contentTreeListChildren = defineRequestContract({
   ],
 });
 
+export const folderPathItemSchema = z.strictObject({
+  id: uuidSchema,
+  name: noteTitleSchema,
+});
+
+export const contentTreeGetFolderPath = defineRequestContract({
+  key: 'contentTree.getFolderPath',
+  channel: 'notera:content-tree:get-folder-path',
+  request: z.strictObject({ folderId: uuidSchema }),
+  data: z.strictObject({ items: z.array(folderPathItemSchema).min(1).max(1000) }),
+  errors: ['PROFILE_LOCKED', 'ENTITY_NOT_FOUND', 'DB_CORRUPT', 'IPC_OPERATION_FAILED'],
+});
+
 export const contentTreeCreateFolder = defineRequestContract({
   key: 'contentTree.createFolder',
   channel: 'notera:content-tree:create-folder',
@@ -133,6 +146,7 @@ export const contentTreeTrashFolder = defineRequestContract({
 
 export const contentTreeContracts = {
   listChildren: contentTreeListChildren,
+  getFolderPath: contentTreeGetFolderPath,
   createFolder: contentTreeCreateFolder,
   renameFolder: contentTreeRenameFolder,
   moveFolder: contentTreeMoveFolder,

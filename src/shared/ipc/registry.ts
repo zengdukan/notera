@@ -15,6 +15,7 @@ import {
 } from './contracts/batch';
 import {
   contentTreeCreateFolder,
+  contentTreeGetFolderPath,
   contentTreeListChildren,
   contentTreeMoveFolder,
   contentTreeRenameFolder,
@@ -42,6 +43,7 @@ import {
   noteGet,
   noteListRecent,
   noteMove,
+  noteRename,
   noteSaveDraft,
   noteTrash,
 } from './contracts/note';
@@ -98,12 +100,14 @@ export const requestContracts = {
   'profile.changePassword': profileChangePassword,
   'profile.removeFromDevice': profileRemoveFromDevice,
   'contentTree.listChildren': contentTreeListChildren,
+  'contentTree.getFolderPath': contentTreeGetFolderPath,
   'contentTree.createFolder': contentTreeCreateFolder,
   'contentTree.renameFolder': contentTreeRenameFolder,
   'contentTree.moveFolder': contentTreeMoveFolder,
   'contentTree.trashFolder': contentTreeTrashFolder,
   'note.create': noteCreate,
   'note.get': noteGet,
+  'note.rename': noteRename,
   'note.saveDraft': noteSaveDraft,
   'note.move': noteMove,
   'note.copy': noteCopy,

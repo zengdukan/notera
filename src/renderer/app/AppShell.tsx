@@ -9,6 +9,7 @@ import { NoteraClientError } from '../platform/notera-client';
 import { handleCloseRequest, type CloseFailureChoice } from '../profile/close-guard';
 import { ProfileGate } from '../profile/ProfileGate';
 import type { ProfileListItem } from '../profile/ProfileList';
+import { NavigationWorkspace } from '../navigation/NavigationWorkspace';
 import { useSession } from './session';
 
 const shellStyles = xcss({
@@ -99,9 +100,11 @@ export function AppShell({
         {loaded &&
         (state.status === 'locked' || state.status === 'unlocked') ? (
           <ProfileGate client={client} profiles={profiles}>
-            <Text as="p">
-              <FormattedMessage id="app.workspaceReady" />
-            </Text>
+            <NavigationWorkspace client={client}>
+              <Text as="p">
+                <FormattedMessage id="app.workspaceReady" />
+              </Text>
+            </NavigationWorkspace>
           </ProfileGate>
         ) : null}
         {state.status === 'fatal' ? (

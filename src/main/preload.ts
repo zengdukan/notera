@@ -95,6 +95,7 @@ const noteraApi = {
   },
   contentTree: {
     listChildren: bindRequest(requestContracts['contentTree.listChildren']),
+    getFolderPath: bindRequest(requestContracts['contentTree.getFolderPath']),
     createFolder: bindRequest(requestContracts['contentTree.createFolder']),
     renameFolder: bindRequest(requestContracts['contentTree.renameFolder']),
     moveFolder: bindRequest(requestContracts['contentTree.moveFolder']),
@@ -103,6 +104,7 @@ const noteraApi = {
   note: {
     create: bindRequest(requestContracts['note.create']),
     get: bindRequest(requestContracts['note.get']),
+    rename: bindRequest(requestContracts['note.rename']),
     saveDraft: bindRequest(requestContracts['note.saveDraft']),
     move: bindRequest(requestContracts['note.move']),
     copy: bindRequest(requestContracts['note.copy']),

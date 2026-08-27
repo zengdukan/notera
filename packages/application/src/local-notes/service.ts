@@ -15,6 +15,7 @@ import {
 } from './batch';
 import {
   createFolder,
+  getFolderPath,
   listChildren,
   moveFolder,
   renameFolder,
@@ -32,6 +33,7 @@ import {
   getNote,
   listRecent,
   moveNote,
+  renameNote,
   saveDraft,
   trashNote,
 } from './notes';
@@ -114,6 +116,10 @@ class SessionLocalNotesService implements LocalNotesService {
     return this.run('READ', (database) => listChildren(database, input));
   }
 
+  getFolderPath(folderId: Parameters<LocalNotesService['getFolderPath']>[0]) {
+    return this.run('READ', (database) => getFolderPath(database, folderId));
+  }
+
   createFolder(input: {
     readonly parentFolderId: Parameters<
       LocalNotesService['createFolder']
@@ -151,6 +157,10 @@ class SessionLocalNotesService implements LocalNotesService {
 
   getNote(noteId: Parameters<LocalNotesService['getNote']>[0]) {
     return this.run('READ', (database) => getNote(database, noteId));
+  }
+
+  renameNote(input: Parameters<LocalNotesService['renameNote']>[0]) {
+    return this.run('WRITE', (database) => renameNote(database, input, this.now()));
   }
 
   saveDraft(input: Parameters<LocalNotesService['saveDraft']>[0]) {

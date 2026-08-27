@@ -55,6 +55,21 @@ export const noteGet = defineRequestContract({
   errors: ['PROFILE_LOCKED', 'ENTITY_NOT_FOUND', 'IPC_OPERATION_FAILED'],
 });
 
+export const noteRename = defineRequestContract({
+  key: 'note.rename',
+  channel: 'notera:note:rename',
+  request: z.strictObject({ noteId: uuidSchema, title: noteTitleSchema }),
+  data: noteSummarySchema,
+  errors: [
+    'PROFILE_LOCKED',
+    'ENTITY_NOT_FOUND',
+    'CONTENT_VERSION_OVERFLOW',
+    'SAVE_FAILED',
+    'DISK_FULL',
+    'IPC_OPERATION_FAILED',
+  ],
+});
+
 export const saveDraftResultSchema = z.strictObject({
   noteId: uuidSchema,
   contentVersion: contentVersionSchema,
@@ -123,6 +138,7 @@ export const noteListRecent = defineRequestContract({
 export const noteContracts = {
   create: noteCreate,
   get: noteGet,
+  rename: noteRename,
   saveDraft: noteSaveDraft,
   move: noteMove,
   copy: noteCopy,

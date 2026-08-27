@@ -1,7 +1,9 @@
 import { ipcFailure } from '../common';
 import { batchContracts } from '../contracts/batch';
+import { contentTreeContracts } from '../contracts/content-tree';
 import { favoriteContracts } from '../contracts/favorite';
 import { historyContracts, versionRefSchema } from '../contracts/history';
+import { noteContracts } from '../contracts/note';
 import { searchContracts, searchResultSchema } from '../contracts/search';
 import { tagContracts } from '../contracts/tag';
 import { trashContracts, trashItemSchema } from '../contracts/trash';
@@ -10,6 +12,32 @@ const uuid = (suffix: number) =>
   `10000000-0000-4000-8000-${suffix.toString().padStart(12, '0')}`;
 
 describe('organization contract catalog', () => {
+  it('defines strict folder path and note rename contracts without ADF', () => {
+    expect(
+      contentTreeContracts.getFolderPath.request.parse({ folderId: uuid(1) }),
+    ).toEqual({ folderId: uuid(1) });
+    const path = {
+      items: [
+        { id: uuid(1), name: '' },
+        { id: uuid(2), name: 'Projects' },
+      ],
+    };
+    expect(contentTreeContracts.getFolderPath.data.parse(path)).toEqual(path);
+    const renamed = {
+      kind: 'note',
+      id: uuid(3),
+      title: 'Renamed',
+      folderId: uuid(2),
+      contentVersion: 2,
+      updatedAt: 3,
+    };
+    expect(
+      noteContracts.rename.request.parse({ noteId: uuid(3), title: 'Renamed' }),
+    ).toEqual({ noteId: uuid(3), title: 'Renamed' });
+    expect(noteContracts.rename.data.parse(renamed)).toEqual(renamed);
+    expect(noteContracts.rename.data.safeParse({ ...renamed, document: {} }).success).toBe(false);
+  });
+
   it('defines all fixed organization, history, trash and search channels', () => {
     const channels = [
       ...Object.values(tagContracts),

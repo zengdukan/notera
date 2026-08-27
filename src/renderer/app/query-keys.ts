@@ -9,6 +9,9 @@ export const noteKey = (profileId: string, noteId: string) =>
 export const folderPathKey = (profileId: string, folderId: string) =>
   [...profilePrefix(profileId), 'path', folderId] as const;
 
+export const folderPathsKey = (profileId: string) =>
+  [...profilePrefix(profileId), 'path'] as const;
+
 export const searchKey = (
   profileId: string,
   query: string,
@@ -20,6 +23,9 @@ export const searchKey = (
     query,
     ...(folderId === undefined ? [] : [folderId]),
   ] as const;
+
+export const searchesKey = (profileId: string) =>
+  [...profilePrefix(profileId), 'search'] as const;
 
 export const favoritesKey = (profileId: string) =>
   [...profilePrefix(profileId), 'favorites'] as const;

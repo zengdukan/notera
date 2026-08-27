@@ -128,6 +128,42 @@ describe('validated preload bridge', () => {
     });
   });
 
+  it('exposes folder paths and note rename through fixed contract channels', async () => {
+    const folderId = '10000000-0000-4000-8000-000000000001';
+    const noteId = '20000000-0000-4000-8000-000000000002';
+    const api = loadPreload();
+
+    mockInvoke.mockResolvedValueOnce({
+      ret: true,
+      data: { items: [{ id: folderId, name: 'Projects' }] },
+    });
+    await expect(api.contentTree.getFolderPath({ folderId })).resolves.toMatchObject({
+      ret: true,
+    });
+    expect(mockInvoke).toHaveBeenLastCalledWith('notera:content-tree:get-folder-path', {
+      folderId,
+    });
+
+    mockInvoke.mockResolvedValueOnce({
+      ret: true,
+      data: {
+          kind: 'note',
+          id: noteId,
+        folderId,
+        title: 'Renamed',
+        contentVersion: 2,
+        updatedAt: 2,
+      },
+    });
+    await expect(api.note.rename({ noteId, title: 'Renamed' })).resolves.toMatchObject({
+      ret: true,
+    });
+    expect(mockInvoke).toHaveBeenLastCalledWith('notera:note:rename', {
+      noteId,
+      title: 'Renamed',
+    });
+  });
+
   it('rejects invalid input before invoking Electron', async () => {
     const api = loadPreload();
 

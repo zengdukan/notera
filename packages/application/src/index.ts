@@ -15,6 +15,7 @@ export type {
   EntryRef,
   FavoriteNoteSummary,
   FolderSummary,
+  FolderPathItem,
   HistoryComparison,
   HistoryRestoreResult,
   HistorySnapshot,

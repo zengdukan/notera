@@ -23,6 +23,23 @@ describe('LocalNotesService content tree', () => {
       parentFolderId: alpha.id,
       name: 'child',
     });
+    const child = (await service.listChildren({
+      parentFolderId: alpha.id,
+      limit: 20,
+    })).items[0];
+    if (child?.kind !== 'folder') throw new Error('Expected child folder.');
+    await expect(service.getFolderPath(child.id)).resolves.toEqual({
+      items: [
+        { id: firstProfile.rootFolderId, name: '' },
+        { id: alpha.id, name: 'alpha' },
+        { id: child.id, name: 'child' },
+      ],
+    });
+    await expect(
+      service.getFolderPath(
+        '40000000-0000-4000-8000-000000000999' as typeof child.id,
+      ),
+    ).rejects.toMatchObject({ code: 'ENTITY_NOT_FOUND' });
 
     const page = await service.listChildren({
       parentFolderId: firstProfile.rootFolderId,
