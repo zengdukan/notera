@@ -72,4 +72,52 @@ describe('MediaSessionRegistry', () => {
       expect.objectContaining({ status: 401 }),
     );
   });
+
+  it('accepts Atlaskit query credentials only for trusted read requests', () => {
+    const registry = createMediaSessionRegistry({
+      apiBaseUrl: 'http://127.0.0.1:43125/api/media',
+      allowedOrigin: origin,
+      getSessionState: () => ({ state: 'UNLOCKED', localProfileId: profileId }),
+      randomBytes: () => new Uint8Array(32).fill(11),
+      now: () => 1_000,
+    });
+    const auth = registry.issue({ localProfileId: profileId, noteId });
+    const url = new URL(`${auth.baseUrl}/file/${noteId}/binary`);
+    url.search = new URLSearchParams({
+      client: auth.clientId,
+      collection: auth.collection,
+      token: auth.token,
+    }).toString();
+
+    expect(
+      registry.authorize(
+        new Request(url, { headers: { Origin: origin } }),
+      ),
+    ).toMatchObject({ noteId, collection: auth.collection });
+    expect(() =>
+      registry.authorize(
+        new Request(url, {
+          method: 'POST',
+          headers: { Origin: origin },
+        }),
+      ),
+    ).toThrow(expect.objectContaining({ status: 401 }));
+    expect(() =>
+      registry.authorize(
+        new Request(url, {
+          headers: {
+            Origin: origin,
+            Authorization: `Bearer ${auth.token}`,
+            'X-Client-Id': auth.clientId,
+          },
+        }),
+      ),
+    ).toThrow(expect.objectContaining({ status: 401 }));
+    url.searchParams.set('client', 'wrong-client');
+    expect(() =>
+      registry.authorize(
+        new Request(url, { headers: { Origin: origin } }),
+      ),
+    ).toThrow(expect.objectContaining({ status: 401 }));
+  });
 });

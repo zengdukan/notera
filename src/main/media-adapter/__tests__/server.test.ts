@@ -8,7 +8,7 @@ import { startMediaAdapterServer, type MediaAdapterServer } from '../server';
 const profileId = '10000000-0000-4000-8000-000000000001';
 const noteId = '20000000-0000-4000-8000-000000000001';
 const fileId = '30000000-0000-4000-8000-000000000001';
-const origin = 'null';
+const origin = 'http://localhost:1212';
 
 async function bytesOf(source: AsyncIterable<Uint8Array>): Promise<number[]> {
   const values: number[] = [];
@@ -23,7 +23,7 @@ describe('production Media Adapter server', () => {
     await Promise.all(servers.splice(0).map((server) => server.close()));
   });
 
-  it('authenticates one note, streams Atlaskit upload routes, and serves exact ranges', async () => {
+  it('authenticates one note across Atlaskit upload, query download, and exact ranges', async () => {
     const imported = new Map<
       string,
       { bytes: Uint8Array; input: ImportAttachmentInput }
@@ -195,6 +195,34 @@ describe('production Media Adapter server', () => {
       Uint8Array.from([2, 3, 4]),
     );
     expect(closeReader).toHaveBeenCalledTimes(1);
+
+    const downloadUrl = new URL(
+      `${server.apiBaseUrl}/file/${fileId}/binary`,
+    );
+    downloadUrl.search = new URLSearchParams({
+      client: auth.clientId,
+      collection: auth.collection,
+      dl: 'true',
+      'max-age': '2592000',
+      token: auth.token,
+    }).toString();
+    const downloaded = await fetch(downloadUrl, {
+      headers: { Referer: `${origin}/index.html` },
+    });
+    expect(downloaded.status).toBe(200);
+    expect(new Uint8Array(await downloaded.arrayBuffer())).toEqual(
+      Uint8Array.from([1, 2, 3, 4, 5]),
+    );
+    const probed = await fetch(downloadUrl, {
+      method: 'HEAD',
+      headers: {
+        Origin: origin,
+        'X-B3-SpanId': 'span',
+        'X-B3-TraceId': 'trace',
+      },
+    });
+    expect(probed.status).toBe(200);
+    expect(probed.headers.get('content-length')).toBe('5');
 
     server.revokeAll();
     await expect(

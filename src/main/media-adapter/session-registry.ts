@@ -102,14 +102,32 @@ export function createMediaSessionRegistry(input: {
       if (request.headers.get('Origin') !== input.allowedOrigin)
         return reject();
       const authorization = request.headers.get('Authorization');
-      const tokenValue = authorization?.match(
-        /^Bearer ([A-Za-z0-9_-]+)$/u,
-      )?.[1];
-      if (
-        tokenValue === undefined ||
-        request.headers.get('X-Client-Id') !== CLIENT_ID
-      ) {
-        return reject();
+      const headerClient = request.headers.get('X-Client-Id');
+      const url = new URL(request.url);
+      const queryToken = url.searchParams.get('token');
+      const queryClient = url.searchParams.get('client');
+      const hasHeaderCredentials =
+        authorization !== null || headerClient !== null;
+      const hasQueryCredentials = queryToken !== null || queryClient !== null;
+      if (hasHeaderCredentials === hasQueryCredentials) return reject();
+      let tokenValue: string;
+      if (hasHeaderCredentials) {
+        const candidate = authorization?.match(
+          /^Bearer ([A-Za-z0-9_-]+)$/u,
+        )?.[1];
+        if (candidate === undefined || headerClient !== CLIENT_ID)
+          return reject();
+        tokenValue = candidate;
+      } else {
+        if (
+          (request.method !== 'GET' && request.method !== 'HEAD') ||
+          queryClient !== CLIENT_ID ||
+          queryToken === null ||
+          !/^[A-Za-z0-9_-]+$/u.test(queryToken)
+        ) {
+          return reject();
+        }
+        tokenValue = queryToken;
       }
       const token = tokens.get(tokenValue);
       if (token === undefined) return reject();

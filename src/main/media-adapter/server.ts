@@ -137,9 +137,23 @@ function blank(response: Response, status: number): void {
   response.status(status).end();
 }
 
+function sourceOrigin(request: Request): string | undefined {
+  const origin = request.get('origin');
+  if (origin !== undefined) return origin;
+  const referer = request.get('referer');
+  if (referer === undefined) return undefined;
+  try {
+    return new URL(referer).origin;
+  } catch {
+    return undefined;
+  }
+}
+
 function requestFor(request: Request): globalThis.Request {
   const headers = new Headers();
-  ['origin', 'authorization', 'x-client-id'].forEach((name) => {
+  const origin = sourceOrigin(request);
+  if (origin !== undefined) headers.set('origin', origin);
+  ['authorization', 'x-client-id'].forEach((name) => {
     const value = request.get(name);
     if (value !== undefined) headers.set(name, value);
   });
@@ -244,7 +258,7 @@ export async function startMediaAdapterServer(input: {
   let registry: MediaSessionRegistry;
 
   app.use((request, response, next) => {
-    const origin = request.get('origin');
+    const origin = sourceOrigin(request);
     if (origin !== input.allowedOrigin) {
       blank(response, 401);
       return;
