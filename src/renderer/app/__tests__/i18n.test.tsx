@@ -14,7 +14,17 @@ describe('application internationalization', () => {
     expect(Object.keys(chineseMessages).sort()).toEqual(
       Object.keys(englishMessages).sort(),
     );
-    expect(messagesFor('zh-CN')).toBe(chineseMessages);
-    expect(messagesFor('en')).toBe(englishMessages);
+    expect(messagesFor('zh-CN')).toMatchObject(chineseMessages);
+    expect(messagesFor('en')).toMatchObject(englishMessages);
+  });
+
+  it('includes Chinese messages required by rendered editor content', () => {
+    expect(messagesFor('zh-CN')).toMatchObject({
+      'fabric.editor.fieldsetLabel': '操作项列表',
+      'fabric.editor.headingLink.noneSortingLabel': '无',
+      'fabric.editor.headingLink.noOrderLabel': '按照 A 到 Z 进行列排序',
+      'fabric.editor.tableHeader.sorting.no': '未对该列应用任何排序',
+      'platform.taskDecision.markTaskAsCompleted': '将任务标记为已完成',
+    });
   });
 });
