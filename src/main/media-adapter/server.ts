@@ -14,6 +14,7 @@ import express, {
   type Response,
 } from 'express';
 
+import { MAX_ATTACHMENT_BYTES } from '../../shared';
 import { parseRangeHeader, RangeNotSatisfiableError } from './range';
 import {
   createMediaSessionRegistry,
@@ -24,7 +25,6 @@ import {
 
 const HOST = '127.0.0.1';
 const API_PATH = '/api/media';
-const MAX_FILE_BYTES = 100 * 1024 * 1024;
 const UPLOAD_TTL_MS = 15 * 60 * 1_000;
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
@@ -210,7 +210,7 @@ async function encryptRequest(
     if (signal.aborted) throw new MediaAuthorizationError();
     const chunk = Buffer.isBuffer(raw) ? raw : Buffer.from(raw as Uint8Array);
     plaintextLength += chunk.byteLength;
-    if (plaintextLength > MAX_FILE_BYTES)
+    if (plaintextLength > MAX_ATTACHMENT_BYTES)
       throw new RangeError('upload too large');
     const encrypted = cipher.update(chunk);
     if (encrypted.byteLength > 0) ciphertext.push(encrypted);
@@ -329,14 +329,26 @@ export async function startMediaAdapterServer(input: {
         requireCollection(descriptorCollection, auth);
         const candidateId = text(descriptor.fileId);
         const { size } = descriptor;
+        if (!UUID.test(candidateId)) {
+          throw new TypeError('Invalid Media file ID.');
+        }
         if (
-          !UUID.test(candidateId) ||
-          (size !== undefined &&
-            (!Number.isSafeInteger(size) ||
-              Number(size) < 0 ||
-              Number(size) > MAX_FILE_BYTES))
+          size !== undefined &&
+          (!Number.isSafeInteger(size) || Number(size) < 0)
         ) {
-          rejected.push({ fileId: candidateId });
+          throw new TypeError('Invalid Media file size.');
+        }
+        if (size !== undefined && Number(size) > MAX_ATTACHMENT_BYTES) {
+          rejected.push({
+            fileId: candidateId,
+            error: {
+              code: 'ExceedMaxFileSizeLimit',
+              title: 'The expected file size exceeded the maximum size limit.',
+              href: 'https://developer.atlassian.com/cloud/media/',
+              limit: MAX_ATTACHMENT_BYTES,
+              size: Number(size),
+            },
+          });
           continue;
         }
         const uploadId = input.randomUUID();
@@ -438,7 +450,7 @@ export async function startMediaAdapterServer(input: {
         (sum, value) => sum + value.plaintextLength,
         chunk.plaintextLength,
       );
-      if (currentBytes > MAX_FILE_BYTES)
+      if (currentBytes > MAX_ATTACHMENT_BYTES)
         throw new RangeError('upload too large');
       upload.chunks.set(etag, chunk);
       response.sendStatus(201);
@@ -499,7 +511,7 @@ export async function startMediaAdapterServer(input: {
       );
       const conditionSize = record(body.conditions).size;
       if (
-        byteLength > MAX_FILE_BYTES ||
+        byteLength > MAX_ATTACHMENT_BYTES ||
         (upload.expectedSize !== undefined &&
           upload.expectedSize !== byteLength) ||
         (conditionSize !== undefined && Number(conditionSize) !== byteLength)

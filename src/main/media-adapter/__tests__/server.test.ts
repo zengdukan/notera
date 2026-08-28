@@ -449,6 +449,67 @@ describe('production Media Adapter server', () => {
     ).resolves.toMatchObject({ status: 401 });
   });
 
+  it('returns Atlaskit file-size rejection details for oversized uploads', async () => {
+    const server = await startMediaAdapterServer({
+      allowedOrigin: origin,
+      getSessionState: () => ({ state: 'UNLOCKED', localProfileId: profileId }),
+      notes: { getNote: jest.fn(async () => ({ id: noteId })) },
+      attachments: { importAttachment: jest.fn(), openReader: jest.fn() },
+      randomBytes: () => new Uint8Array(32).fill(1),
+      randomUUID: () => fileId,
+      now: () => 1_000,
+    });
+    servers.push(server);
+
+    const authResponse = await fetch(`${server.apiBaseUrl}/auth`, {
+      method: 'POST',
+      headers: { Origin: origin, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ noteId, context: {} }),
+    });
+    const auth = (await authResponse.json()) as {
+      token: string;
+      clientId: string;
+      collection: string;
+    };
+    const limit = 100 * 1024 * 1024;
+    const size = limit + 1;
+
+    const response = await fetch(
+      `${server.apiBaseUrl}/upload/createWithFiles`,
+      {
+        method: 'POST',
+        headers: {
+          Origin: origin,
+          Authorization: `Bearer ${auth.token}`,
+          'X-Client-Id': auth.clientId,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          descriptors: [{ fileId, collection: auth.collection, size }],
+        }),
+      },
+    );
+
+    expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toEqual({
+      data: {
+        created: [],
+        rejected: [
+          {
+            fileId,
+            error: {
+              code: 'ExceedMaxFileSizeLimit',
+              title: 'The expected file size exceeded the maximum size limit.',
+              href: 'https://developer.atlassian.com/cloud/media/',
+              limit,
+              size,
+            },
+          },
+        ],
+      },
+    });
+  });
+
   it('rejects an untrusted Origin without wildcard CORS or internal details', async () => {
     const server = await startMediaAdapterServer({
       allowedOrigin: origin,
