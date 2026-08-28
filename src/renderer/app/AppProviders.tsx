@@ -3,6 +3,8 @@ import AppProvider from '@atlaskit/app-provider';
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import { IntlProvider } from 'react-intl';
 
+import { MathEditorProvider } from '../atlassian-editor/math';
+import { MermaidEditorProvider } from '../atlassian-editor/mermaid';
 import { type AppLocale, messagesFor } from './i18n';
 import { createAppQueryClient } from './query-client';
 import { SessionProvider } from './session';
@@ -24,7 +26,11 @@ export function AppProviders({
     <AppProvider defaultColorMode="auto">
       <IntlProvider locale={locale} messages={messagesFor(locale)}>
         <QueryClientProvider client={queryClient ?? defaultClient}>
-          <SessionProvider>{children}</SessionProvider>
+          <SessionProvider>
+            <MathEditorProvider>
+              <MermaidEditorProvider>{children}</MermaidEditorProvider>
+            </MathEditorProvider>
+          </SessionProvider>
         </QueryClientProvider>
       </IntlProvider>
     </AppProvider>
