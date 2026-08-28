@@ -38,7 +38,7 @@ const operationAttachmentSummarySchema = z.strictObject({
     .number()
     .int()
     .min(0)
-    .max(100 * 1024 * 1024),
+    .max(500 * 1024 * 1024),
   localState: z.enum(['AVAILABLE', 'MISSING', 'CORRUPT']),
   previewable: z.boolean(),
   createdAt: timestampSchema,

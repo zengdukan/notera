@@ -10,7 +10,7 @@ import type {
 import type { AttachmentByteLength, Timestamp } from '../values';
 import { assertTimestampOrder, immutable } from './common';
 
-export const MAX_ATTACHMENT_BYTES = 100 * 1024 * 1024;
+export const MAX_ATTACHMENT_BYTES = 500 * 1024 * 1024;
 
 export type AttachmentLocalState =
   | 'IMPORTING'

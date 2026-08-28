@@ -9,7 +9,7 @@ import { defineRequestContract } from '../contract';
 import { cursorPageRequestSchema, cursorPageSchema } from '../pagination';
 import { startOperationResultSchema } from './operation';
 
-export const MAX_ATTACHMENT_BYTES = 100 * 1024 * 1024;
+export const MAX_ATTACHMENT_BYTES = 500 * 1024 * 1024;
 
 const nonBlankString = (limit: number) =>
   limitedUnicodeString(limit).refine((value) => value.trim().length > 0, {

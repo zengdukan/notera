@@ -1,6 +1,6 @@
 export const ATTACHMENT_MANIFEST_VERSION = 1 as const;
 export const ATTACHMENT_CHUNK_BYTES = 5 * 1024 * 1024;
-export const MAX_ATTACHMENT_BYTES = 100 * 1024 * 1024;
+export const MAX_ATTACHMENT_BYTES = 500 * 1024 * 1024;
 export const MANIFEST_HEADER_BYTES = 38;
 export const MANIFEST_CHUNK_RECORD_BYTES = 40;
 export const CIPHERTEXT_HASH_BYTES = 32;

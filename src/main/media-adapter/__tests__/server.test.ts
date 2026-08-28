@@ -471,7 +471,7 @@ describe('production Media Adapter server', () => {
       clientId: string;
       collection: string;
     };
-    const limit = 100 * 1024 * 1024;
+    const limit = 500 * 1024 * 1024;
     const size = limit + 1;
 
     const response = await fetch(

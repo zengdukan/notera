@@ -154,9 +154,10 @@ describe('streaming attachment import', () => {
     30_000,
   );
 
-  test('chunks exactly 100 MB and rejects the first excess byte', async () => {
+  test('chunks exactly 500 MiB and rejects the first excess byte', async () => {
+    const chunkCount = MAX_ATTACHMENT_BYTES / ATTACHMENT_CHUNK_BYTES;
     async function* source(extraByte: boolean): AsyncIterable<Uint8Array> {
-      for (let index = 0; index < 20; index += 1) {
+      for (let index = 0; index < chunkCount; index += 1) {
         yield new Uint8Array(ATTACHMENT_CHUNK_BYTES);
       }
       if (extraByte) yield new Uint8Array(1);
@@ -170,7 +171,7 @@ describe('streaming attachment import', () => {
     }
     expect({ total, count }).toEqual({
       total: MAX_ATTACHMENT_BYTES,
-      count: 20,
+      count: chunkCount,
     });
     let consumed = 0;
     await expect(async () => {

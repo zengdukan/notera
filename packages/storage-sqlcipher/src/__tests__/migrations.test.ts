@@ -212,26 +212,33 @@ afterEach(() => {
 describe('schema migrations', () => {
   it('derives the current version and selects only the continuous suffix', () => {
     const registry = registryModule();
-    expect(registry.CURRENT_SCHEMA_VERSION).toBe(5);
+    expect(registry.CURRENT_SCHEMA_VERSION).toBe(6);
     expect(registry.selectProductionMigrations(1)).toEqual([
       schemaV2Module().V2_PENDING_VAULT_META_DIGEST,
       schemaV3Module().V3_NOTE_VERSION_NAME,
       schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
       schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
+      expect.objectContaining({ targetVersion: 6 }),
     ]);
     expect(registry.selectProductionMigrations(2)).toEqual([
       schemaV3Module().V3_NOTE_VERSION_NAME,
       schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
       schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
+      expect.objectContaining({ targetVersion: 6 }),
     ]);
     expect(registry.selectProductionMigrations(3)).toEqual([
       schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
       schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
+      expect.objectContaining({ targetVersion: 6 }),
     ]);
     expect(registry.selectProductionMigrations(4)).toEqual([
       schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
+      expect.objectContaining({ targetVersion: 6 }),
     ]);
-    expect(registry.selectProductionMigrations(5)).toEqual([]);
+    expect(registry.selectProductionMigrations(5)).toEqual([
+      expect.objectContaining({ targetVersion: 6 }),
+    ]);
+    expect(registry.selectProductionMigrations(6)).toEqual([]);
 
     const v2 = migration(2);
     const v3 = migration(3);
@@ -501,6 +508,82 @@ describe('schema migrations', () => {
     connection.close();
   });
 
+  it('migrates v5 attachment blobs to the 500 MiB constraint without data loss', () => {
+    const filePath = tempDatabasePath('attachment-limit-v5.db');
+    const existingBlobId = '30000000-0000-4000-8000-000000000001';
+    const connection = openNewConnection(filePath);
+    connection.transaction(() => {
+      baselineV1Module().createBaselineV1(connection, {
+        identity: TEST_IDENTITY,
+        profileName: 'Profile',
+        vaultMetaDigest: vaultMetaDigest(),
+        createdAt: 1,
+      });
+      runnerModule().runMigrations(connection, 1, 5, [
+        schemaV2Module().V2_PENDING_VAULT_META_DIGEST,
+        schemaV3Module().V3_NOTE_VERSION_NAME,
+        schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
+        schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
+      ]);
+      connection
+        .prepare(
+          `INSERT INTO attachment_blobs(
+             blob_id, vault_id, content_sha256, byte_length, local_state,
+             file_key, manifest_version, manifest, created_at, updated_at
+           ) VALUES (?, ?, NULL, ?, 'MISSING', zeroblob(32), 1,
+                     zeroblob(0), 1, 1)`,
+        )
+        .run(existingBlobId, TEST_IDENTITY.id, 100 * 1024 * 1024);
+    })();
+    connection.close();
+
+    jest.dontMock('../migrations/registry');
+    jest.resetModules();
+    // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
+    const database = require('../database') as SnapshotDatabaseModule;
+    database
+      .openVaultDatabase({
+        filePath,
+        databaseKey: databaseKey(),
+        expectedVaultId: TEST_IDENTITY.id,
+        expectedVaultMetaDigest: vaultMetaDigest(),
+      })
+      .close();
+
+    const migrated = openTestConnection(filePath);
+    expect(
+      migrated.prepare('SELECT schema_version FROM schema_metadata').get(),
+    ).toEqual({ schema_version: 6 });
+    expect(
+      migrated
+        .prepare('SELECT byte_length FROM attachment_blobs WHERE blob_id = ?')
+        .get(existingBlobId),
+    ).toEqual({ byte_length: 100 * 1024 * 1024 });
+
+    const insertBlob = migrated.prepare(
+      `INSERT INTO attachment_blobs(
+         blob_id, vault_id, content_sha256, byte_length, local_state,
+         file_key, manifest_version, manifest, created_at, updated_at
+       ) VALUES (?, ?, NULL, ?, 'MISSING', zeroblob(32), 1,
+                 zeroblob(0), 1, 1)`,
+    );
+    expect(() =>
+      insertBlob.run(
+        '30000000-0000-4000-8000-000000000002',
+        TEST_IDENTITY.id,
+        500 * 1024 * 1024,
+      ),
+    ).not.toThrow();
+    expect(() =>
+      insertBlob.run(
+        '30000000-0000-4000-8000-000000000003',
+        TEST_IDENTITY.id,
+        500 * 1024 * 1024 + 1,
+      ),
+    ).toThrow();
+    migrated.close();
+  });
+
   it('produces the same normalized structure from snapshot and migration', () => {
     const freshPath = tempDatabasePath('fresh.db');
     // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
@@ -523,7 +606,8 @@ describe('schema migrations', () => {
       );
       INSERT INTO schema_metadata VALUES (1, 0);
     `);
-    runnerModule().runMigrations(migrated, 0, 5, [
+    const registry = registryModule();
+    runnerModule().runMigrations(migrated, 0, registry.CURRENT_SCHEMA_VERSION, [
       migration(1, (database) => {
         database.exec('DROP TABLE schema_metadata');
         baselineV1Module().createBaselineV1(database, {
@@ -533,10 +617,7 @@ describe('schema migrations', () => {
           createdAt: 1,
         });
       }),
-      schemaV2Module().V2_PENDING_VAULT_META_DIGEST,
-      schemaV3Module().V3_NOTE_VERSION_NAME,
-      schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
-      schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
+      ...registry.selectProductionMigrations(1),
     ]);
 
     const fresh = openTestConnection(freshPath);

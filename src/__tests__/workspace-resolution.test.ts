@@ -37,7 +37,8 @@ describe('workspace package resolution', () => {
     expect(attachments.createAttachmentStore).toBeInstanceOf(Function);
     expect(attachments.ATTACHMENT_CHUNK_BYTES).toBe(5 * 1024 * 1024);
     expect(attachments.ATTACHMENT_MANIFEST_VERSION).toBe(1);
-    expect(attachments.MAX_ATTACHMENT_BYTES).toBe(100 * 1024 * 1024);
+    expect(attachments.MAX_ATTACHMENT_BYTES).toBe(500 * 1024 * 1024);
+    expect(domain.MAX_ATTACHMENT_BYTES).toBe(500 * 1024 * 1024);
     const attachmentApi = attachments as Record<string, unknown>;
     expect(attachmentApi.encodeManifestV1).toBeUndefined();
     expect(attachmentApi.deriveBlobPath).toBeUndefined();

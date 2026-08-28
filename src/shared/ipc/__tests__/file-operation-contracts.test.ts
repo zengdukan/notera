@@ -58,7 +58,8 @@ describe('attachment and export contracts', () => {
     createdAt: 1,
   };
 
-  it('accepts the 100 MiB attachment boundary and rejects one byte over', () => {
+  it('accepts the 500 MiB attachment boundary and rejects one byte over', () => {
+    expect(MAX_ATTACHMENT_BYTES).toBe(500 * 1024 * 1024);
     expect(attachmentSummarySchema.parse(attachment)).toEqual(attachment);
     expect(() =>
       attachmentSummarySchema.parse({
@@ -163,6 +164,24 @@ describe('long operation state and events', () => {
 
   it('requires successful results to match the operation kind', () => {
     const completedAt = 10;
+    expect(
+      operationStatusSchema.parse({
+        operationId: uuid(1),
+        kind: 'ATTACHMENT_IMPORT',
+        state: 'SUCCEEDED',
+        result: {
+          attachment: {
+            id: uuid(4),
+            fileName: 'archive.zip',
+            mime: 'application/zip',
+            byteLength: 500 * 1024 * 1024,
+            localState: 'AVAILABLE',
+            previewable: false,
+            createdAt: 1,
+          },
+        },
+      }),
+    ).toBeDefined();
     expect(
       operationStatusSchema.parse({
         operationId: uuid(1),

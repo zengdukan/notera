@@ -47,7 +47,7 @@ describe('attachment manifest v1', () => {
     1,
     ATTACHMENT_CHUNK_BYTES,
     ATTACHMENT_CHUNK_BYTES + 1,
-    100 * 1024 * 1024,
+    500 * 1024 * 1024,
   ])('round-trips offsets for %i plaintext bytes', (plaintextLength) => {
     const encoded = encodedFor(plaintextLength);
     const manifest = decodeManifest(encoded);
