@@ -20,7 +20,11 @@ import type { Page, PageRequest } from '../types';
 import { noteDetail, noteSummary } from './mapping';
 import type { NoteDetail, NoteSummary } from './types';
 
-const EMPTY_DOCUMENT = asAdfDocument({ type: 'doc', version: 1 });
+const EMPTY_DOCUMENT = asAdfDocument({
+  type: 'doc',
+  version: 1,
+  content: [{ type: 'paragraph', content: [] }],
+});
 
 function checkedTitle(value: unknown): string {
   if (typeof value !== 'string' || [...value].length > 1_000) {

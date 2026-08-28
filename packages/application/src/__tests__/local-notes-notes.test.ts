@@ -35,7 +35,11 @@ describe('LocalNotesService note use cases', () => {
       kind: 'note',
       title: 'Draft',
       folderId: profile.rootFolderId,
-      document: { type: 'doc', version: 1 },
+      document: {
+        type: 'doc',
+        version: 1,
+        content: [{ type: 'paragraph', content: [] }],
+      },
       contentVersion: 1,
       isFavorite: false,
       tags: [],
