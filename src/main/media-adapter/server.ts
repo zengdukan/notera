@@ -45,6 +45,10 @@ const controlledMimeTypes = new Set([
   'image/webp',
   'text/plain',
 ]);
+const previewPlaceholder = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNg+M/AAAADAQABGN2NsQAAAABJRU5ErkJggg==',
+  'base64',
+);
 
 interface SessionState {
   readonly state: string;
@@ -110,6 +114,11 @@ function mediaType(mimeType: string): 'image' | 'video' | 'audio' | 'doc' {
   return 'doc';
 }
 
+function canServeImagePreview(mimeType: string): boolean {
+  const type = mediaType(mimeType);
+  return type === 'image' || type === 'video';
+}
+
 function fileData(value: {
   readonly id: string;
   readonly fileName: string;
@@ -124,7 +133,7 @@ function fileData(value: {
     mimeType: value.mimeType,
     mediaType: type,
     processingStatus: 'succeeded',
-    representations: type === 'image' || type === 'video' ? { image: {} } : {},
+    representations: canServeImagePreview(value.mimeType) ? { image: {} } : {},
     artifacts: {},
   };
 }
@@ -606,12 +615,70 @@ export async function startMediaAdapterServer(input: {
     }
   };
 
-  for (const suffix of ['binary', 'binary/cdn', 'image', 'image/cdn']) {
+  const sendImage = async (request: Request, response: Response) => {
+    let reader: AttachmentContentReader | undefined;
+    let auth: MediaAuthorization | undefined;
+    const abort = () => response.destroy();
+    try {
+      auth = authorize(request);
+      reader = await openScoped(request, auth);
+      const type = mediaType(reader.mimeType);
+      if (!canServeImagePreview(reader.mimeType)) {
+        blank(response, 404);
+        return;
+      }
+
+      const servesOriginalImage =
+        type === 'image' && controlledMimeTypes.has(reader.mimeType);
+      const body = servesOriginalImage ? undefined : previewPlaceholder;
+      response.status(200).set({
+        'Cache-Control': 'private, max-age=3600',
+        'Content-Length': String(body?.byteLength ?? reader.byteLength),
+        'Content-Type': servesOriginalImage ? reader.mimeType : 'image/png',
+        'X-Content-Type-Options': 'nosniff',
+      });
+      if (request.method === 'HEAD') {
+        response.end();
+        return;
+      }
+      if (body !== undefined) {
+        response.end(body);
+        return;
+      }
+
+      auth.signal.addEventListener('abort', abort, { once: true });
+      for await (const chunk of reader.stream()) {
+        if (!response.write(Buffer.from(chunk))) {
+          await new Promise<void>((resolve) => response.once('drain', resolve));
+        }
+      }
+      response.end();
+    } catch (error) {
+      blank(
+        response,
+        error instanceof MediaAuthorizationError ? error.status : 404,
+      );
+    } finally {
+      auth?.signal.removeEventListener('abort', abort);
+      await reader?.close().catch(() => undefined);
+    }
+  };
+
+  for (const suffix of ['binary', 'binary/cdn']) {
     app.get(`${API_PATH}/file/:fileId/${suffix}`, (request, response) => {
       void sendBinary(request, response);
     });
     app.head(`${API_PATH}/file/:fileId/${suffix}`, (request, response) => {
       void sendBinary(request, response);
+    });
+  }
+
+  for (const suffix of ['image', 'image/cdn']) {
+    app.get(`${API_PATH}/file/:fileId/${suffix}`, (request, response) => {
+      void sendImage(request, response);
+    });
+    app.head(`${API_PATH}/file/:fileId/${suffix}`, (request, response) => {
+      void sendImage(request, response);
     });
   }
 
@@ -687,7 +754,7 @@ export async function startMediaAdapterServer(input: {
       try {
         const auth = authorize(request);
         reader = await openScoped(request, auth);
-        if (!reader.mimeType.startsWith('image/')) {
+        if (!canServeImagePreview(reader.mimeType)) {
           blank(response, 404);
           return;
         }
