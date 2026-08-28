@@ -18,6 +18,17 @@ describe('application internationalization', () => {
     expect(messagesFor('en')).toMatchObject(englishMessages);
   });
 
+  it('defines localized media upload limits with a limit placeholder', () => {
+    expect(messagesFor('en')).toMatchObject({
+      'fabric.media.uploadRejectionFlagDescription':
+        '{fileName} is too big to upload. Files must be less than {limit}.',
+    });
+    expect(messagesFor('zh-CN')).toMatchObject({
+      'fabric.media.uploadRejectionFlagDescription':
+        '{fileName} 太大，无法上传。文件必须小于 {limit}。',
+    });
+  });
+
   it('includes Chinese messages required by rendered editor content', () => {
     expect(messagesFor('zh-CN')).toMatchObject({
       'fabric.editor.fieldsetLabel': '操作项列表',

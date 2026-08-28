@@ -6,4 +6,7 @@ export const englishMessages = Object.freeze({
   'app.fatal': 'Notera could not start.',
   'modal.close': 'Close',
   'flags.label': 'Notifications',
+  'fabric.media.errorFlagTitle': 'Your file failed to upload',
+  'fabric.media.uploadRejectionFlagDescription':
+    '{fileName} is too big to upload. Files must be less than {limit}.',
 });

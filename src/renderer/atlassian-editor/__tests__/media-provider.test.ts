@@ -55,7 +55,14 @@ describe('Atlassian Media provider', () => {
     );
     expect(provider.uploadParams).toEqual({
       collection: `notera-note-${noteId}`,
+      onUploadRejection: expect.any(Function),
     });
+    expect(
+      provider.uploadParams?.onUploadRejection?.({
+        reason: 'fileEmpty',
+        fileName: 'empty.txt',
+      }),
+    ).toBe(false);
     expect(fetchMock).toHaveBeenCalledWith(
       'http://127.0.0.1:43125/api/media/auth',
       expect.objectContaining({

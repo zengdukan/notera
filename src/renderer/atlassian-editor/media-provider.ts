@@ -5,6 +5,7 @@ import type {
   MediaClientConfig,
 } from '@atlaskit/media-core';
 import { mediaCollectionForNote } from '../../shared/atlassian-editor/media-runtime';
+import { publishMediaUploadRejection } from './media-upload-feedback';
 
 type MediaAuthResponse = Auth;
 
@@ -72,6 +73,15 @@ export async function createMediaProvider(
     uploadMediaClientConfig: mediaClientConfig,
     uploadParams: {
       collection,
+      onUploadRejection: (data) => {
+        if (data.reason !== 'fileSizeLimitExceeded') return false;
+        publishMediaUploadRejection({
+          noteId,
+          fileName: data.fileName,
+          limitBytes: data.limit,
+        });
+        return true;
+      },
     },
   };
 }

@@ -6,4 +6,7 @@ export const chineseMessages = Object.freeze({
   'app.fatal': 'Notera 无法启动。',
   'modal.close': '关闭',
   'flags.label': '通知',
+  'fabric.media.errorFlagTitle': '文件上传失败',
+  'fabric.media.uploadRejectionFlagDescription':
+    '{fileName} 太大，无法上传。文件必须小于 {limit}。',
 });
