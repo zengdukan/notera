@@ -67,6 +67,7 @@ interface EncryptedChunk {
   readonly ciphertext: readonly Buffer[];
   readonly tag: Buffer;
   readonly plaintextLength: number;
+  readonly partNumber: string;
 }
 
 interface PendingUpload {
@@ -197,6 +198,7 @@ async function encryptRequest(
     ciphertext: Object.freeze(ciphertext),
     tag: cipher.getAuthTag(),
     plaintextLength,
+    partNumber,
   });
 }
 
@@ -206,11 +208,10 @@ async function* decryptUpload(
   for (const etag of upload.order) {
     const value = upload.chunks.get(etag);
     if (value === undefined) throw new Error('missing encrypted chunk');
-    const partNumber = String(upload.order.indexOf(etag));
     const decipher = createDecipheriv(
       'aes-256-gcm',
       upload.key,
-      encryptionIv(upload, etag, partNumber),
+      encryptionIv(upload, etag, value.partNumber),
     );
     decipher.setAuthTag(value.tag);
     for (const ciphertext of value.ciphertext) {

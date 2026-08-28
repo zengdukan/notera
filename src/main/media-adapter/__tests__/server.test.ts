@@ -131,7 +131,7 @@ describe('production Media Adapter server', () => {
     const { uploadId } = created.data.created[0];
     await expect(
       fetch(
-        `${server.apiBaseUrl}/chunk/first?uploadId=${uploadId}&partNumber=0`,
+        `${server.apiBaseUrl}/chunk/first?uploadId=${uploadId}&partNumber=1`,
         {
           method: 'PUT',
           headers: { ...headers, 'Content-Type': 'application/octet-stream' },
@@ -141,7 +141,7 @@ describe('production Media Adapter server', () => {
     ).resolves.toMatchObject({ status: 201 });
     await expect(
       fetch(
-        `${server.apiBaseUrl}/chunk/second?uploadId=${uploadId}&partNumber=1`,
+        `${server.apiBaseUrl}/chunk/second?uploadId=${uploadId}&partNumber=2`,
         {
           method: 'PUT',
           headers: { ...headers, 'Content-Type': 'application/octet-stream' },
