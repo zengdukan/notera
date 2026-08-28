@@ -35,6 +35,8 @@ import {
   useMermaidEditor,
 } from './mermaid';
 
+const EDITOR_APPEARANCE = 'full-width' as const;
+
 export interface ProductEditorProps {
   readonly mediaProvider: NonNullable<EditorProps['media']>['provider'];
   readonly document: AdfDocument;
@@ -87,7 +89,7 @@ export function Editor({
     [mediaProvider],
   );
   const editorConfiguration: EditorProps = {
-    appearance: 'chromeless',
+    appearance: EDITOR_APPEARANCE,
     allowBlockType: {},
     allowBreakout: true,
     allowDate: true,
@@ -144,6 +146,9 @@ export function Editor({
           taskList: { enabled: true },
         },
       },
+      toolbarPlugin: {
+        contextualFormattingEnabled: 'always-pinned',
+      },
     },
   });
   const { preset, editorApi } = usePreset(() => {
@@ -158,7 +163,7 @@ export function Editor({
           allowLazyLoading: true,
           allowMarkingUploadsAsIncomplete: false,
           allowRemoteDimensionsFetch: true,
-          editorAppearance: 'chromeless',
+          editorAppearance: EDITOR_APPEARANCE,
           fullWidthEnabled: true,
         },
       ])
@@ -387,10 +392,15 @@ export function Editor({
     () => onToolbarReady?.(executeToolbar),
     [executeToolbar, onToolbarReady],
   );
+  useEffect(() => {
+    editorApi?.selectionToolbar?.actions.forceToolbarDockingWithoutAnalytics?.(
+      'none',
+    );
+  }, [editorApi]);
 
   return (
     <ComposableEditor
-      appearance="chromeless"
+      appearance={EDITOR_APPEARANCE}
       defaultValue={document}
       emojiProvider={emojiProvider}
       extensionProviders={[mathExtensionProvider, mermaidExtensionProvider]}

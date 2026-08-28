@@ -23,6 +23,7 @@ const requestDocument = jest.fn((receive: (document: unknown) => void) => {
 const execute = jest.fn();
 const command = (name: string) => jest.fn(() => Symbol(name));
 const showMediaPicker = jest.fn();
+const forceToolbarDockingWithoutAnalytics = jest.fn();
 const mockInsertMath = jest.fn(async () => true);
 const mockInsertMermaid = jest.fn(async () => true);
 const mockEditorApi = {
@@ -62,6 +63,9 @@ const mockEditorApi = {
   status: { commands: { insertStatus: command('status') } },
   media: { sharedState: { currentState: () => ({ showMediaPicker }) } },
   emoji: { actions: { openTypeAhead: jest.fn() } },
+  selectionToolbar: {
+    actions: { forceToolbarDockingWithoutAnalytics },
+  },
 };
 const mockEditorActions = {
   focus: jest.fn(),
@@ -69,6 +73,7 @@ const mockEditorActions = {
 };
 const mockPreset = { add: jest.fn() };
 mockPreset.add.mockReturnValue(mockPreset);
+const mockUseUniversalPreset = jest.fn(() => mockPreset);
 
 jest.mock('@atlaskit/editor-core/composable-editor', () => ({
   ComposableEditor: (props: {
@@ -93,7 +98,7 @@ jest.mock('@atlaskit/editor-core/composable-editor', () => ({
   },
 }));
 jest.mock('@atlaskit/editor-core/preset-universal', () => ({
-  useUniversalPreset: () => mockPreset,
+  useUniversalPreset: mockUseUniversalPreset,
 }));
 jest.mock('@atlaskit/editor-core/use-preset', () => ({
   usePreset: (factory: () => unknown) => ({
@@ -146,7 +151,7 @@ describe('Atlaskit product editor', () => {
     mockPreset.add.mockReturnValue(mockPreset);
   });
 
-  it('renders a chromeless editor without demo-owned page controls', () => {
+  it('uses the full-width appearance consistently across editor plugins', () => {
     render(
       <Editor
         mediaProvider={mediaProvider}
@@ -157,7 +162,7 @@ describe('Atlaskit product editor', () => {
 
     expect(screen.getByTestId('composable-editor')).toHaveAttribute(
       'data-appearance',
-      'chromeless',
+      'full-width',
     );
     expect(screen.getByTestId('composable-editor')).toHaveAttribute(
       'data-document',
@@ -173,6 +178,39 @@ describe('Atlaskit product editor', () => {
     expect(
       screen.queryByRole('button', { name: /Fixed width|Full width/ }),
     ).not.toBeInTheDocument();
+
+    expect(mockUseUniversalPreset).toHaveBeenCalledWith(
+      expect.objectContaining({
+        props: expect.objectContaining({ appearance: 'full-width' }),
+      }),
+    );
+    expect(mockPreset.add).toHaveBeenCalledWith([
+      expect.anything(),
+      expect.objectContaining({ editorAppearance: 'full-width' }),
+    ]);
+  });
+
+  it('keeps the external toolbar as the only formatting toolbar', async () => {
+    render(
+      <Editor
+        mediaProvider={mediaProvider}
+        document={initialDocument}
+        onChange={jest.fn()}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(forceToolbarDockingWithoutAnalytics).toHaveBeenCalledWith('none'),
+    );
+    expect(mockUseUniversalPreset).toHaveBeenCalledWith(
+      expect.objectContaining({
+        initialPluginConfiguration: expect.objectContaining({
+          toolbarPlugin: {
+            contextualFormattingEnabled: 'always-pinned',
+          },
+        }),
+      }),
+    );
   });
 
   it('reads changed ADF through the public editor API callback', async () => {

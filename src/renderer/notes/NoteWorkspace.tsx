@@ -39,12 +39,15 @@ type LoadedNote = {
 };
 
 const workspaceStyles = xcss({
+  display: 'flex',
+  flexDirection: 'column',
   height: '100vh',
   minWidth: '0',
-  overflow: 'auto',
+  overflow: 'hidden',
   backgroundColor: 'elevation.surface',
 });
 const toolbarStyles = xcss({
+  flexShrink: '0',
   position: 'sticky',
   top: 'space.0',
   zIndex: 'navigation',
@@ -56,10 +59,14 @@ const toolbarStyles = xcss({
   paddingInline: 'space.200',
 });
 const bodyStyles = xcss({
+  flexGrow: '1',
+  minHeight: '0',
   maxWidth: '100%',
   paddingBlock: 'space.300',
   paddingInline: 'space.400',
 });
+const editBodyStyles = xcss({ overflow: 'hidden' });
+const previewBodyStyles = xcss({ overflow: 'auto' });
 const centeredStyles = xcss({
   display: 'flex',
   alignItems: 'center',
@@ -312,7 +319,12 @@ export function NoteWorkspace({
         }
         onMore={(action) => void runMore(action)}
       />
-      <Box xcss={bodyStyles}>
+      <Box
+        xcss={[
+          bodyStyles,
+          session.mode === 'edit' ? editBodyStyles : previewBodyStyles,
+        ]}
+      >
         {session.mode === 'edit' ? (
           <EditorSurface
             key={session.noteId}

@@ -107,16 +107,32 @@ function setup(
     writeCoordinator: new NoteWriteCoordinator(),
     onMore: jest.fn(),
   };
-  render(
+  const view = render(
     <QueryClientProvider client={queryClient}>
       <NoteWorkspace {...props} />
     </QueryClientProvider>,
   );
-  return { request, lifecycle, props, queryClient };
+  return { request, lifecycle, props, queryClient, container: view.container };
 }
 
 describe('NoteWorkspace', () => {
-  it('opens an existing note in preview and switches to the chromeless editor on demand', async () => {
+  it('delegates edit-mode scrolling to the full-width editor', async () => {
+    const { container } = setup({ initiallyEditing: true });
+    const editor = await screen.findByLabelText('Editor surface');
+
+    expect(container.firstElementChild).toHaveStyle({ overflow: 'hidden' });
+    expect(editor.parentElement).toHaveStyle({ overflow: 'hidden' });
+  });
+
+  it('keeps the note body scrollable in preview mode', async () => {
+    const { container } = setup();
+    const renderer = await screen.findByLabelText('Renderer surface');
+
+    expect(container.firstElementChild).toHaveStyle({ overflow: 'hidden' });
+    expect(renderer.parentElement).toHaveStyle({ overflow: 'auto' });
+  });
+
+  it('opens an existing note in preview and switches to the full-width editor on demand', async () => {
     const user = userEvent.setup();
     setup();
 

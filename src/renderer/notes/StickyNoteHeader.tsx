@@ -19,6 +19,7 @@ export type NoteMoreAction =
   | 'trash';
 
 const headerStyles = xcss({
+  flexShrink: '0',
   position: 'sticky',
   zIndex: 'navigation',
   backgroundColor: 'elevation.surface',
