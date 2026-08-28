@@ -24,6 +24,8 @@ describe('application internationalization', () => {
       'fabric.editor.headingLink.noneSortingLabel': '无',
       'fabric.editor.headingLink.noOrderLabel': '按照 A 到 Z 进行列排序',
       'fabric.editor.tableHeader.sorting.no': '未对该列应用任何排序',
+      'fabric.media.expand': '展开',
+      'fabric.media.file_is_selected': '已选择文件 {name}',
       'platform.taskDecision.markTaskAsCompleted': '将任务标记为已完成',
     });
   });

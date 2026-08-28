@@ -10,6 +10,8 @@ import rendererEnglishMessages from '@atlaskit/afm-i18n-platform-editor-renderer
 import rendererChineseMessages from '@atlaskit/afm-i18n-platform-editor-renderer/i18n/zh';
 import taskDecisionEnglishMessages from '@atlaskit/afm-i18n-platform-elements-task-decision/i18n/en';
 import taskDecisionChineseMessages from '@atlaskit/afm-i18n-platform-elements-task-decision/i18n/zh';
+import mediaUiEnglishMessages from '@atlaskit/afm-i18n-platform-media-media-ui/i18n/en';
+import mediaUiChineseMessages from '@atlaskit/afm-i18n-platform-media-media-ui/i18n/zh';
 
 import { englishMessages } from './messages/en';
 import { chineseMessages } from './messages/zh-CN';
@@ -22,6 +24,7 @@ const messages = Object.freeze({
     ...editorCoreEnglishMessages,
     ...rendererEnglishMessages,
     ...taskDecisionEnglishMessages,
+    ...mediaUiEnglishMessages,
     ...englishMessages,
   }),
   'zh-CN': Object.freeze({
@@ -29,6 +32,7 @@ const messages = Object.freeze({
     ...editorCoreChineseMessages,
     ...rendererChineseMessages,
     ...taskDecisionChineseMessages,
+    ...mediaUiChineseMessages,
     ...chineseMessages,
   }),
 });
