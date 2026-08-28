@@ -86,6 +86,16 @@ function setup() {
 }
 
 describe('secure BrowserWindow', () => {
+  it('keeps the initial content viewport above the ADS desktop navigation breakpoint', () => {
+    const state = setup();
+
+    expect(state.options).toMatchObject({
+      width: 1280,
+      minWidth: 1120,
+      height: 728,
+    });
+  });
+
   it('sets all five explicit web security options and loads the app entry', () => {
     const state = setup();
     expect(state.created).toBe(state.window);

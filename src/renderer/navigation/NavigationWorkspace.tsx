@@ -670,6 +670,21 @@ function UnlockedNavigationWorkspace({
             }
           />
         }
+        collapsedHeader={
+          <NavigationHeader
+            compact
+            profileName={profile.displayName}
+            onLock={() => void client.request('profile.lock', {})}
+            onSearch={() => setOverlay({ kind: 'search' })}
+            onCreateNote={() => void createNote()}
+            onCreateFolder={() =>
+              setOverlay({
+                kind: 'create-folder',
+                parentFolderId: createFolderParentId,
+              })
+            }
+          />
+        }
         tree={
           <QueryContentTree
             client={client}

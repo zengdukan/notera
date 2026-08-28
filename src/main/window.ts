@@ -28,6 +28,7 @@ export interface BrowserWindowFactory {
   create(options: {
     readonly show: boolean;
     readonly width: number;
+    readonly minWidth: number;
     readonly height: number;
     readonly icon?: string;
     readonly webPreferences: {
@@ -70,7 +71,8 @@ export function createSecureWindow(input: {
 }): SecureWindowPort {
   const window = input.factory.create({
     show: false,
-    width: 1024,
+    width: 1280,
+    minWidth: 1120,
     height: 728,
     ...(input.iconPath === undefined ? {} : { icon: input.iconPath }),
     webPreferences: {
