@@ -570,6 +570,9 @@ export async function startMediaAdapterServer(input: {
         'Content-Type': controlledMimeTypes.has(reader.mimeType)
           ? reader.mimeType
           : 'application/octet-stream',
+        ...(text(request.query.dl) === 'true'
+          ? { 'Content-Disposition': 'attachment' }
+          : {}),
         'X-Content-Type-Options': 'nosniff',
         ...(range === undefined
           ? {}

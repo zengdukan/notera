@@ -191,6 +191,7 @@ describe('production Media Adapter server', () => {
     expect(ranged.status).toBe(206);
     expect(ranged.headers.get('content-range')).toBe('bytes 1-3/5');
     expect(ranged.headers.get('cache-control')).toBe('no-store');
+    expect(ranged.headers.get('content-disposition')).toBeNull();
     expect(new Uint8Array(await ranged.arrayBuffer())).toEqual(
       Uint8Array.from([2, 3, 4]),
     );
@@ -210,6 +211,7 @@ describe('production Media Adapter server', () => {
       headers: { Referer: `${origin}/index.html` },
     });
     expect(downloaded.status).toBe(200);
+    expect(downloaded.headers.get('content-disposition')).toBe('attachment');
     expect(new Uint8Array(await downloaded.arrayBuffer())).toEqual(
       Uint8Array.from([1, 2, 3, 4, 5]),
     );
