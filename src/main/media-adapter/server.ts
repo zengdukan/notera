@@ -32,6 +32,8 @@ const allowedHeaders = new Set([
   'authorization',
   'content-type',
   'range',
+  'x-b3-spanid',
+  'x-b3-traceid',
   'x-client-id',
 ]);
 const controlledMimeTypes = new Set([
@@ -258,7 +260,7 @@ export async function startMediaAdapterServer(input: {
     response.set({
       'Access-Control-Allow-Origin': input.allowedOrigin,
       'Access-Control-Allow-Headers':
-        'Authorization, Content-Type, Range, X-Client-Id',
+        'Authorization, Content-Type, Range, X-B3-SpanId, X-B3-TraceId, X-Client-Id',
       'Access-Control-Allow-Methods': 'GET, HEAD, POST, PUT, OPTIONS',
       'Access-Control-Expose-Headers':
         'Content-Length, Content-Range, Accept-Ranges',

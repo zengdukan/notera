@@ -231,4 +231,42 @@ describe('production Media Adapter server', () => {
       /profile|note|token|path|error/iu,
     );
   });
+
+  it('allows Atlaskit upload preflights with B3 trace headers', async () => {
+    const allowedOrigin = 'http://localhost:1212';
+    const server = await startMediaAdapterServer({
+      allowedOrigin,
+      getSessionState: () => ({ state: 'UNLOCKED', localProfileId: profileId }),
+      notes: { getNote: jest.fn() },
+      attachments: { importAttachment: jest.fn(), openReader: jest.fn() },
+      randomBytes: () => new Uint8Array(32).fill(1),
+      randomUUID: () => fileId,
+      now: () => 1_000,
+    });
+    servers.push(server);
+
+    const response = await fetch(
+      `${server.apiBaseUrl}/upload/createWithFiles?hashAlgorithm=sha256`,
+      {
+        method: 'OPTIONS',
+        headers: {
+          Origin: allowedOrigin,
+          'Access-Control-Request-Method': 'POST',
+          'Access-Control-Request-Headers':
+            'authorization,content-type,x-b3-spanid,x-b3-traceid,x-client-id',
+        },
+      },
+    );
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get('access-control-allow-origin')).toBe(
+      allowedOrigin,
+    );
+    expect(response.headers.get('access-control-allow-headers')).toContain(
+      'X-B3-SpanId',
+    );
+    expect(response.headers.get('access-control-allow-headers')).toContain(
+      'X-B3-TraceId',
+    );
+  });
 });
