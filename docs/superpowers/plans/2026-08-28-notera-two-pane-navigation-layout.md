@@ -54,3 +54,47 @@ git commit -m "fix(renderer): restore two-pane navigation layout"
 ```
 
 **快速一致性检查：** 计划只覆盖本地 Renderer 布局和窗口尺寸，不涉及同步协议、同步引擎、云端 API、Outbox、冲突或远端附件状态；测试、实现、验证和提交均归入同一完整功能模块。
+
+---
+
+## 功能模块 2：稳定真实运行时的展开侧栏显示
+
+**目标与功能逻辑**
+
+修复 `npm start` 真实 Electron 窗口中 React 已处于展开态、但左侧导航仍被隐藏的问题。根因是 Atlaskit Editor 后加载的 Compiled 原子 CSS 重复声明了 `display: none`，其加载顺序覆盖 Navigation System 的桌面媒体查询规则。展开态为 `SideNav` 提供稳定的 DOM 标记，并在 ADS `64rem` 桌面断点内用更高特异性的定向规则恢复显示；折叠态移除该标记，保证紧凑图标栏仍按原逻辑显示。组件同时从同一媒体查询初始化并监听视口变化，避免首次渲染和跨断点时的 React 状态与 ADS 布局不一致。
+
+**关键接口**
+
+`ResizableNavigation` 对外属性保持不变；内部使用 `window.matchMedia('(min-width: 64rem)')` 同步折叠状态，并仅在展开态向 `SideNav` 传入 `testId="notera-expanded-side-nav"`。`ResizableNavigation.css` 只选择同时具有 Navigation System 布局槽位和该展开标记的元素，不影响其他 Atlaskit 组件。
+
+**涉及文件**
+
+- 修改：`src/renderer/navigation/ResizableNavigation.tsx`
+- 新增：`src/renderer/navigation/ResizableNavigation.css`
+- 修改测试：`src/renderer/navigation/__tests__/ResizableNavigation.test.tsx`
+- 修改计划：`docs/superpowers/plans/2026-08-28-notera-two-pane-navigation-layout.md`
+
+**单元与运行时验证**
+
+- 验证低于 ADS 桌面断点时首次渲染紧凑导航。
+- 验证运行中跨过断点时同步切换折叠展示。
+- 验证展开态存在稳定样式标记，折叠态移除标记。
+- 验证真实 `npm start` Electron 窗口中左侧导航、中央工作区和可调整分隔线同时可见。
+
+**精确测试命令**
+
+```powershell
+npm test -- --runInBand src/main/__tests__/window.test.ts src/renderer/navigation/__tests__/ResizableNavigation.test.tsx src/renderer/navigation/__tests__/NavigationHeader.test.tsx src/renderer/navigation/__tests__/NavigationWorkspace.test.tsx
+npm run typecheck:app
+npx eslint src/renderer/navigation/ResizableNavigation.tsx src/renderer/navigation/__tests__/ResizableNavigation.test.tsx
+npm run build:renderer
+```
+
+**完成后的提交**
+
+```powershell
+git add docs/superpowers/plans/2026-08-28-notera-two-pane-navigation-layout.md src/renderer/navigation/ResizableNavigation.tsx src/renderer/navigation/ResizableNavigation.css src/renderer/navigation/__tests__/ResizableNavigation.test.tsx
+git commit -m "fix(renderer): stabilize expanded side navigation"
+```
+
+**快速一致性检查：** 本模块只处理本地 Renderer 的导航响应式状态和 CSS 级联，不改变业务接口，也不涉及任何同步相关功能；测试、实现、真实窗口验证和提交均归入同一完整功能模块。

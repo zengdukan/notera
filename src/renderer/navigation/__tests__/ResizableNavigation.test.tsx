@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Button from '@atlaskit/button/new';
 
@@ -9,19 +9,36 @@ import { ResizableNavigation } from '../ResizableNavigation';
 
 configureFeatureFlags();
 
+let desktopViewport = true;
+const mediaQueryListeners = new Set<(event: MediaQueryListEvent) => void>();
+
 Object.defineProperty(window, 'matchMedia', {
   configurable: true,
   value: jest.fn((query: string) => ({
-    matches: query === '(min-width: 64rem)',
+    get matches() {
+      return query === '(min-width: 64rem)' && desktopViewport;
+    },
     media: query,
     onchange: null,
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
+    addEventListener: jest.fn(
+      (_type: string, listener: (event: MediaQueryListEvent) => void) =>
+        mediaQueryListeners.add(listener),
+    ),
+    removeEventListener: jest.fn(
+      (_type: string, listener: (event: MediaQueryListEvent) => void) =>
+        mediaQueryListeners.delete(listener),
+    ),
     addListener: jest.fn(),
     removeListener: jest.fn(),
     dispatchEvent: jest.fn(),
   })),
 });
+
+function setDesktopViewport(matches: boolean) {
+  desktopViewport = matches;
+  const event = { matches, media: '(min-width: 64rem)' } as MediaQueryListEvent;
+  for (const listener of mediaQueryListeners) listener(event);
+}
 
 function renderNavigation() {
   const callbacks = {
@@ -44,6 +61,37 @@ function renderNavigation() {
 }
 
 describe('ResizableNavigation', () => {
+  beforeEach(() => {
+    desktopViewport = true;
+    mediaQueryListeners.clear();
+  });
+
+  it('shows the compact navigation immediately below the ADS desktop breakpoint', () => {
+    setDesktopViewport(false);
+
+    renderNavigation();
+
+    expect(
+      screen.getByRole('navigation', { name: 'Notera quick navigation' }),
+    ).toBeVisible();
+    expect(screen.queryByText('Content tree')).not.toBeInTheDocument();
+    expect(screen.getByText('Central workspace')).toBeVisible();
+  });
+
+  it('switches to the compact navigation when the viewport crosses the ADS breakpoint', async () => {
+    renderNavigation();
+    expect(screen.getByText('Content tree')).toBeVisible();
+
+    act(() => setDesktopViewport(false));
+
+    expect(
+      await screen.findByRole('navigation', {
+        name: 'Notera quick navigation',
+      }),
+    ).toBeVisible();
+    expect(screen.queryByText('Content tree')).not.toBeInTheDocument();
+  });
+
   it('keeps the two-pane desktop layout and replaces a collapsed tree with primary icon entries', async () => {
     const user = userEvent.setup();
     renderNavigation();
@@ -51,6 +99,7 @@ describe('ResizableNavigation', () => {
     expect(
       screen.getByRole('navigation', { name: 'Notera navigation' }),
     ).toBeInTheDocument();
+    expect(screen.getByTestId('notera-expanded-side-nav')).toBeInTheDocument();
     expect(screen.getByText('Content tree')).toBeVisible();
     expect(screen.getByText('Central workspace')).toBeVisible();
 
@@ -61,6 +110,9 @@ describe('ResizableNavigation', () => {
     const quickNavigation = await screen.findByRole('navigation', {
       name: 'Notera quick navigation',
     });
+    expect(
+      screen.queryByTestId('notera-expanded-side-nav'),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText('Content tree')).not.toBeInTheDocument();
     expect(screen.getByText('Central workspace')).toBeVisible();
     expect(

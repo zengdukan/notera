@@ -1,0 +1,10 @@
+/*
+ * Atlaskit packages emit shared Compiled display utility classes. Editor CSS
+ * loads after Navigation System CSS and can otherwise override the desktop
+ * SideNav rule with display: none.
+ */
+@media (min-width: 64rem) {
+  [data-layout-slot][data-testid='notera-expanded-side-nav'] {
+    display: initial;
+  }
+}

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Button, { IconButton } from '@atlaskit/button/new';
 import ClockIcon from '@atlaskit/icon/core/clock';
 import DeleteIcon from '@atlaskit/icon/core/delete';
@@ -19,6 +19,16 @@ import { Box, Stack, xcss } from '@atlaskit/primitives';
 import Tooltip from '@atlaskit/tooltip';
 
 import { NAVIGATION_DEFAULT_WIDTH } from './navigation-reducer';
+import './ResizableNavigation.css';
+
+const DESKTOP_NAVIGATION_QUERY = '(min-width: 64rem)';
+
+function startsCollapsed(): boolean {
+  if (typeof window === 'undefined' || window.matchMedia === undefined) {
+    return false;
+  }
+  return !window.matchMedia(DESKTOP_NAVIGATION_QUERY).matches;
+}
 
 const mainLayoutStyles = xcss({
   display: 'flex',
@@ -124,10 +134,22 @@ export function ResizableNavigation({
   readonly onTrash: () => void;
   readonly onSettings: () => void;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(startsCollapsed);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(DESKTOP_NAVIGATION_QUERY);
+    const syncWithViewport = (event?: MediaQueryListEvent) => {
+      setCollapsed(!(event?.matches ?? mediaQuery.matches));
+    };
+    syncWithViewport();
+    mediaQuery.addEventListener('change', syncWithViewport);
+    return () => mediaQuery.removeEventListener('change', syncWithViewport);
+  }, []);
+
   return (
-    <Root defaultSideNavCollapsed={false} isSideNavShortcutEnabled>
+    <Root defaultSideNavCollapsed={collapsed} isSideNavShortcutEnabled>
       <SideNav
+        testId={collapsed ? undefined : 'notera-expanded-side-nav'}
         label="Notera navigation"
         defaultWidth={NAVIGATION_DEFAULT_WIDTH}
         onCollapse={() => setCollapsed(true)}
