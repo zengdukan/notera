@@ -33,5 +33,15 @@ export function subscribeMediaUploadRejection(
 }
 
 export function formatMediaUploadLimit(limitBytes: number): string {
-  return `${limitBytes / 1024 / 1024} MB`;
+  const kilobyte = 1024;
+  const megabyte = kilobyte * 1024;
+  const gigabyte = megabyte * 1024;
+
+  if (limitBytes < megabyte) {
+    return `${limitBytes / kilobyte} KB`;
+  }
+  if (limitBytes < gigabyte) {
+    return `${limitBytes / megabyte} MB`;
+  }
+  return `${limitBytes / gigabyte} GB`;
 }
