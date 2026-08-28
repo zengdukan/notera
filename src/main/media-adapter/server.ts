@@ -572,6 +572,12 @@ export async function startMediaAdapterServer(input: {
       }
       const start = range?.start ?? 0;
       const endExclusive = range?.endExclusive ?? reader.byteLength;
+      const isDownload = text(request.query.dl) === 'true';
+      const downloadName = (
+        text(request.query.name) ||
+        reader.fileName ||
+        'download'
+      ).replace(/["\r\n]/gu, '_');
       response.status(range === undefined ? 200 : 206).set({
         'Accept-Ranges': 'bytes',
         'Cache-Control': 'no-store',
@@ -579,8 +585,10 @@ export async function startMediaAdapterServer(input: {
         'Content-Type': controlledMimeTypes.has(reader.mimeType)
           ? reader.mimeType
           : 'application/octet-stream',
-        ...(text(request.query.dl) === 'true'
-          ? { 'Content-Disposition': 'attachment' }
+        ...(isDownload
+          ? {
+              'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(downloadName)}`,
+            }
           : {}),
         'X-Content-Type-Options': 'nosniff',
         ...(range === undefined

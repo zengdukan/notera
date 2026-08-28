@@ -195,6 +195,47 @@ describe('production Media Adapter server', () => {
     expect(previewResponse.headers.get('content-type')).toBeNull();
   });
 
+  it.each([
+    {
+      caseName: 'the stored name',
+      requestedName: undefined,
+      expected:
+        "attachment; filename*=UTF-8''%E4%B8%8A%E4%BC%A0%20%E5%9B%BE%E7%89%87.png",
+    },
+    {
+      caseName: 'the requested name',
+      requestedName: '另存为 报告.png',
+      expected:
+        "attachment; filename*=UTF-8''%E5%8F%A6%E5%AD%98%E4%B8%BA%20%E6%8A%A5%E5%91%8A.png",
+    },
+  ])(
+    'uses $caseName as the UTF-8 download filename',
+    async ({ requestedName, expected }) => {
+      const { fileUrl, headers } = await startReadOnlyServer(
+        new Map([
+          [
+            fileId,
+            {
+              fileName: '上传 图片.png',
+              mimeType: 'image/png',
+              bytes: Uint8Array.from([1, 2, 3]),
+            },
+          ],
+        ]),
+      );
+      const downloadUrl = new URL(fileUrl(fileId, 'binary'));
+      downloadUrl.searchParams.set('dl', 'true');
+      if (requestedName !== undefined) {
+        downloadUrl.searchParams.set('name', requestedName);
+      }
+
+      const response = await fetch(downloadUrl, { headers });
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('content-disposition')).toBe(expected);
+    },
+  );
+
   it('authenticates one note across Atlaskit upload, query download, and exact ranges', async () => {
     const imported = new Map<
       string,
@@ -381,7 +422,9 @@ describe('production Media Adapter server', () => {
       headers: { Referer: `${origin}/index.html` },
     });
     expect(downloaded.status).toBe(200);
-    expect(downloaded.headers.get('content-disposition')).toBe('attachment');
+    expect(downloaded.headers.get('content-disposition')).toBe(
+      "attachment; filename*=UTF-8''image.png",
+    );
     expect(new Uint8Array(await downloaded.arrayBuffer())).toEqual(
       Uint8Array.from([1, 2, 3, 4, 5]),
     );
