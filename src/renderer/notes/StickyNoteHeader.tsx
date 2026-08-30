@@ -21,6 +21,7 @@ export type NoteMoreAction =
 const headerStyles = xcss({
   flexShrink: '0',
   position: 'sticky',
+  top: 'space.0',
   zIndex: 'navigation',
   backgroundColor: 'elevation.surface',
   borderBlockEndColor: 'color.border',
@@ -29,8 +30,6 @@ const headerStyles = xcss({
   paddingBlock: 'space.100',
   paddingInline: 'space.200',
 });
-const previewHeaderStyles = xcss({ top: 'space.0' });
-const editHeaderStyles = xcss({ top: 'space.500' });
 const identityStyles = xcss({ minWidth: '0', flexGrow: 1 });
 const titleStyles = xcss({ minWidth: '160px', maxWidth: '560px', flexGrow: 1 });
 
@@ -82,12 +81,7 @@ export function StickyNoteHeader({
 }) {
   const displayTitle = title || 'Untitled';
   return (
-    <Box
-      xcss={[
-        headerStyles,
-        mode === 'edit' ? editHeaderStyles : previewHeaderStyles,
-      ]}
-    >
+    <Box xcss={headerStyles}>
       <Inline
         alignBlock="center"
         space="space.100"

@@ -14,6 +14,41 @@ const paths = [
 ];
 
 describe('StickyNoteHeader', () => {
+  it('uses the same top anchor in edit and preview modes', () => {
+    const editView = render(
+      <StickyNoteHeader
+        mode="edit"
+        title="Draft"
+        path={paths}
+        saveState="clean"
+        isFavorite={false}
+        onTitleChange={jest.fn()}
+        onToggleFavorite={jest.fn()}
+        onEdit={jest.fn()}
+        onPreview={jest.fn()}
+        onMore={jest.fn()}
+      />,
+    );
+    const previewView = render(
+      <StickyNoteHeader
+        mode="preview"
+        title="Draft"
+        path={paths}
+        saveState="clean"
+        isFavorite={false}
+        onTitleChange={jest.fn()}
+        onToggleFavorite={jest.fn()}
+        onEdit={jest.fn()}
+        onPreview={jest.fn()}
+        onMore={jest.fn()}
+      />,
+    );
+
+    expect(editView.container.firstElementChild?.className).toBe(
+      previewView.container.firstElementChild?.className,
+    );
+  });
+
   it('keeps breadcrumbs, title, save status and ordered note actions in one header', () => {
     render(
       <StickyNoteHeader
