@@ -1,0 +1,89 @@
+.notera-profile-access {
+  min-height: 100vh;
+  background: var(--ds-surface, #ffffff);
+}
+
+.notera-profile-access__header {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--ds-space-400, 32px);
+  border-bottom: var(--ds-border-width, 1px) solid var(--ds-border, #091e4224);
+}
+
+.notera-profile-access__brand-mark {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--ds-radius-small, 3px);
+  background: var(--ds-background-brand-bold, #0c66e4);
+}
+
+.notera-profile-access__brand-mark img {
+  width: 24px;
+  height: 24px;
+}
+
+.notera-profile-access__main {
+  width: min(1120px, calc(100% - var(--ds-space-800, 64px)));
+  min-height: calc(100vh - 73px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(300px, 0.9fr) minmax(420px, 1.1fr);
+  align-items: center;
+  gap: var(--ds-space-800, 64px);
+  padding: var(--ds-space-600, 48px) 0;
+  box-sizing: border-box;
+}
+
+.notera-profile-access__hero {
+  max-width: 480px;
+}
+
+.notera-profile-access__panel {
+  padding: var(--ds-space-500, 40px);
+  border: var(--ds-border-width, 1px) solid var(--ds-border, #091e4224);
+  border-radius: var(--ds-radius-large, 12px);
+  background: var(--ds-surface-raised, #ffffff);
+  box-shadow: var(--ds-shadow-raised, 0 1px 1px #091e4240);
+}
+
+.notera-profile-access__feature-icon {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--ds-radius-medium, 6px);
+  color: var(--ds-icon-brand, #0c66e4);
+  background: var(--ds-background-selected, #e9f2ff);
+}
+
+@media (max-width: 820px) {
+  .notera-profile-access__header {
+    padding: 0 var(--ds-space-300, 24px);
+  }
+
+  .notera-profile-access__main {
+    width: min(520px, calc(100% - var(--ds-space-600, 48px)));
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .notera-profile-access__hero {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .notera-profile-access__main {
+    width: calc(100% - var(--ds-space-400, 32px));
+    padding: var(--ds-space-400, 32px) 0;
+  }
+
+  .notera-profile-access__panel {
+    padding: var(--ds-space-300, 24px);
+  }
+}

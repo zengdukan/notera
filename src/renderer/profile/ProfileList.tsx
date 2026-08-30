@@ -1,5 +1,6 @@
 import Button from '@atlaskit/button/new';
 import Heading from '@atlaskit/heading';
+import PersonIcon from '@atlaskit/icon/core/person';
 import { Inline, Stack } from '@atlaskit/primitives';
 
 export interface ProfileListItem {
@@ -21,9 +22,9 @@ export function ProfileList({
   return (
     <Stack space="space.200">
       <Inline alignBlock="center" spread="space-between">
-        <Heading size="medium">Profiles</Heading>
+        <Heading size="small">Profiles on this device</Heading>
         <Button appearance="subtle" onClick={onCreate}>
-          Create profile
+          Create new
         </Button>
       </Inline>
       <Stack space="space.050">
@@ -33,6 +34,8 @@ export function ProfileList({
             appearance={
               selectedId === profile.localProfileId ? 'primary' : 'subtle'
             }
+            aria-pressed={selectedId === profile.localProfileId}
+            iconBefore={PersonIcon}
             shouldFitContainer
             onClick={() => onSelect(profile)}
           >
