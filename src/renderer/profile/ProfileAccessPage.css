@@ -12,8 +12,7 @@
   --notera-profile-avatar-secondary: var(--ds-background-accent-lime-subtler);
   --notera-profile-avatar-secondary-text: var(--ds-text-accent-lime-bolder);
   --notera-profile-list-max-height: calc(
-    var(--ds-space-1000) + var(--ds-space-1000) + var(--ds-space-1000) +
-      var(--ds-space-100)
+    var(--ds-space-1000) + var(--ds-space-1000) + var(--ds-space-300)
   );
 
   min-height: 100vh;

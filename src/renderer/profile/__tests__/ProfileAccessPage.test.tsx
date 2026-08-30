@@ -95,6 +95,38 @@ describe('ProfileAccessPage', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('starts scrolling when a fourth Profile exceeds the three visible rows', () => {
+    const { rerender } = render(
+      <AppProviders locale="en">
+        <ProfileAccessPage
+          profiles={manyProfiles.slice(0, 3)}
+          onCreate={jest.fn()}
+          onUnlock={jest.fn()}
+        />
+      </AppProviders>,
+    );
+
+    expect(
+      screen.getByRole('listbox', { name: 'Profiles on this device' }),
+    ).not.toHaveAccessibleDescription();
+
+    rerender(
+      <AppProviders locale="en">
+        <ProfileAccessPage
+          profiles={manyProfiles.slice(0, 4)}
+          onCreate={jest.fn()}
+          onUnlock={jest.fn()}
+        />
+      </AppProviders>,
+    );
+
+    expect(
+      screen.getByRole('listbox', { name: 'Profiles on this device' }),
+    ).toHaveAccessibleDescription(
+      'More Profiles are available. Scroll to view them.',
+    );
+  });
+
   it('keeps every Profile selectable in an announced scrolling list', async () => {
     const user = userEvent.setup();
     render(

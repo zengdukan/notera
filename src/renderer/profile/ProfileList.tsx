@@ -7,7 +7,7 @@ import VisuallyHidden from '@atlaskit/visually-hidden';
 import { useId } from 'react';
 import { useIntl } from 'react-intl';
 
-const VISIBLE_PROFILE_COUNT = 4;
+const VISIBLE_PROFILE_COUNT = 3;
 
 export interface ProfileListItem {
   readonly localProfileId: string;
