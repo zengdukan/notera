@@ -57,11 +57,20 @@ describe('ProfileAccessPage', () => {
     await user.click(screen.getByRole('button', { name: 'Create Profile' }));
     expect(screen.getByLabelText(/Profile name/)).toBeVisible();
     expect(
+      screen.queryByText('Profile is stored only on this device.'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Create Profile' }),
+    ).not.toBeInTheDocument();
+    expect(
       screen.queryByRole('button', { name: 'Cancel' }),
     ).not.toBeInTheDocument();
     await user.click(screen.getByRole('option', { name: /Personal/ }));
     expect(
       screen.getByRole('button', { name: 'Unlock Profile' }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Create Profile' }),
     ).toBeVisible();
     expect(
       screen.getByText(

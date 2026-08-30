@@ -25,7 +25,7 @@ export function ProfileList({
   readonly selectedId?: string;
   readonly isDisabled?: boolean;
   readonly onSelect: (profile: ProfileListItem) => void;
-  readonly onCreate: () => void;
+  readonly onCreate?: () => void;
 }) {
   const intl = useIntl();
   const scrollHintId = useId();
@@ -83,14 +83,16 @@ export function ProfileList({
           </div>
         ))}
       </div>
-      <Button
-        appearance="subtle"
-        iconBefore={AddIcon}
-        isDisabled={isDisabled}
-        onClick={onCreate}
-      >
-        {intl.formatMessage({ id: 'profile.list.create' })}
-      </Button>
+      {onCreate ? (
+        <Button
+          appearance="subtle"
+          iconBefore={AddIcon}
+          isDisabled={isDisabled}
+          onClick={onCreate}
+        >
+          {intl.formatMessage({ id: 'profile.list.create' })}
+        </Button>
+      ) : null}
     </Stack>
   );
 }

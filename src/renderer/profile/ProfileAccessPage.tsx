@@ -43,7 +43,7 @@ export function ProfileAccessPage({
                 profiles={profiles}
                 isDisabled={isBusy}
                 selectedId={creating ? undefined : selected?.localProfileId}
-                onCreate={() => setCreating(true)}
+                onCreate={creating ? undefined : () => setCreating(true)}
                 onSelect={(profile) => {
                   setSelected(profile);
                   setCreating(false);
@@ -97,9 +97,6 @@ function AccessPanelHeader({
             }
           />
         </Heading>
-        <Text as="p" color="color.text.subtle">
-          <FormattedMessage id="profile.create.description" />
-        </Text>
       </Stack>
     );
   }
