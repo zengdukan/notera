@@ -50,6 +50,8 @@ export const englishMessages = Object.freeze({
   'profile.unlock.submitting': 'Unlocking Profile…',
   'profile.list.label': 'PROFILES',
   'profile.list.ariaLabel': 'Profiles on this device',
+  'profile.list.scrollHint':
+    'More Profiles are available. Scroll to view them.',
   'profile.list.description': 'This device · Encrypted',
   'profile.list.create': 'Create Profile',
   'profile.form.nameLabel': 'Profile name',

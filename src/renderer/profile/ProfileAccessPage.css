@@ -11,6 +11,10 @@
   --notera-profile-avatar-primary: var(--ds-background-brand-bold);
   --notera-profile-avatar-secondary: var(--ds-background-accent-lime-subtler);
   --notera-profile-avatar-secondary-text: var(--ds-text-accent-lime-bolder);
+  --notera-profile-list-max-height: calc(
+    var(--ds-space-1000) + var(--ds-space-1000) + var(--ds-space-1000) +
+      var(--ds-space-100)
+  );
 
   min-height: 100vh;
   background: var(--notera-profile-page-background);
@@ -85,11 +89,19 @@
 }
 
 .notera-profile-list {
+  max-block-size: var(--notera-profile-list-max-height);
   display: grid;
   gap: var(--ds-space-100);
+  overflow-y: auto;
+  overscroll-behavior-block: contain;
+}
+
+.notera-profile-list--scrollable {
+  padding-inline-end: var(--ds-space-050);
 }
 
 .notera-profile-list__item {
+  min-block-size: calc(var(--ds-space-600) + var(--ds-space-100));
   overflow: hidden;
   border: var(--ds-border-width) solid var(--notera-profile-panel-border);
   border-radius: var(--ds-radius-small);

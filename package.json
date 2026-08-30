@@ -121,6 +121,7 @@
     "@atlaskit/tokens": "^16.7.0",
     "@atlaskit/tooltip": "^24.0.8",
     "@atlaskit/util-service-support": "^6.3.3",
+    "@atlaskit/visually-hidden": "^4.4.0",
     "@electron/notarize": "^3.0.0",
     "@emotion/react": "^11.14.0",
     "@tanstack/react-query": "^5.102.7",

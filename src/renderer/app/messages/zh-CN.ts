@@ -44,6 +44,7 @@ export const chineseMessages = Object.freeze({
   'profile.unlock.submitting': '正在解锁…',
   'profile.list.label': 'PROFILES',
   'profile.list.ariaLabel': '这台设备上的 Profile',
+  'profile.list.scrollHint': '还有更多 Profile，请滚动查看。',
   'profile.list.description': '本机 · 已加密',
   'profile.list.create': '创建 Profile',
   'profile.form.nameLabel': 'Profile 名称',

@@ -3,7 +3,11 @@ import AddIcon from '@atlaskit/icon/core/add';
 import CheckMarkIcon from '@atlaskit/icon/core/check-mark';
 import { ButtonItem } from '@atlaskit/menu';
 import { Stack, Text } from '@atlaskit/primitives';
+import VisuallyHidden from '@atlaskit/visually-hidden';
+import { useId } from 'react';
 import { useIntl } from 'react-intl';
+
+const VISIBLE_PROFILE_COUNT = 4;
 
 export interface ProfileListItem {
   readonly localProfileId: string;
@@ -24,15 +28,25 @@ export function ProfileList({
   readonly onCreate: () => void;
 }) {
   const intl = useIntl();
+  const scrollHintId = useId();
+  const isScrollable = profiles.length > VISIBLE_PROFILE_COUNT;
 
   return (
     <Stack space="space.100">
       <Text as="p" color="color.text.subtle" weight="semibold">
         {intl.formatMessage({ id: 'profile.list.label' })}
       </Text>
+      {isScrollable ? (
+        <VisuallyHidden id={scrollHintId}>
+          {intl.formatMessage({ id: 'profile.list.scrollHint' })}
+        </VisuallyHidden>
+      ) : null}
       <div
+        aria-describedby={isScrollable ? scrollHintId : undefined}
         aria-label={intl.formatMessage({ id: 'profile.list.ariaLabel' })}
-        className="notera-profile-list"
+        className={`notera-profile-list${
+          isScrollable ? ' notera-profile-list--scrollable' : ''
+        }`}
         role="listbox"
       >
         {profiles.map((profile) => (

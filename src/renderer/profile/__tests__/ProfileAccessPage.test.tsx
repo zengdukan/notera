@@ -16,6 +16,18 @@ const profiles = [
   },
 ];
 
+const manyProfiles = [
+  ...profiles,
+  ...['Work', 'Research', 'Journal', 'Projects', 'Archive'].map(
+    (displayName, index) => ({
+      localProfileId: `20000000-0000-4000-8000-00000000000${index + 1}`,
+      displayName,
+      lastUsedAt: index + 2,
+      isCurrent: false,
+    }),
+  ),
+];
+
 function deferred<T>() {
   let resolveDeferred!: (value: T) => void;
   const promise = new Promise<T>((resolve) => {
@@ -72,6 +84,32 @@ describe('ProfileAccessPage', () => {
     expect(
       screen.queryByRole('listbox', { name: 'Profiles on this device' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('keeps every Profile selectable in an announced scrolling list', async () => {
+    const user = userEvent.setup();
+    render(
+      <AppProviders locale="en">
+        <ProfileAccessPage
+          profiles={manyProfiles}
+          onCreate={jest.fn()}
+          onUnlock={jest.fn()}
+        />
+      </AppProviders>,
+    );
+
+    const list = screen.getByRole('listbox', {
+      name: 'Profiles on this device',
+    });
+    expect(list).toHaveAccessibleDescription(
+      'More Profiles are available. Scroll to view them.',
+    );
+    expect(screen.getAllByRole('option')).toHaveLength(6);
+
+    await user.click(screen.getByRole('option', { name: /Archive/ }));
+    expect(
+      screen.getByRole('heading', { name: 'Unlock “Archive”' }),
+    ).toBeVisible();
   });
 
   it('renders the approved Simplified Chinese first-profile experience', () => {
