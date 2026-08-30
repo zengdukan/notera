@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import Button from '@atlaskit/button/new';
-import Form, { ErrorMessage, Field, FormFooter } from '@atlaskit/form';
+import Form, {
+  ErrorMessage,
+  Field,
+  FormFooter,
+  MessageWrapper,
+} from '@atlaskit/form';
 import Heading from '@atlaskit/heading';
 import LockIcon from '@atlaskit/icon/core/lock-locked';
 import { Inline, Stack, Text } from '@atlaskit/primitives';
@@ -66,7 +71,11 @@ export function UnlockProfileForm({
                 <Heading size="medium">{profile.displayName}</Heading>
               </Stack>
               {systemError ? (
-                <SectionMessage appearance="error" title={systemError.title}>
+                <SectionMessage
+                  appearance="error"
+                  headingLevel="h3"
+                  title={systemError.title}
+                >
                   <Text as="p">{systemError.description}</Text>
                 </SectionMessage>
               ) : null}
@@ -74,6 +83,7 @@ export function UnlockProfileForm({
                 name="password"
                 label="Master password"
                 isRequired
+                isDisabled={submitting}
                 defaultValue=""
                 validate={validatePassword}
               >
@@ -88,7 +98,9 @@ export function UnlockProfileForm({
                       )}
                     />
                     {error && (meta.touched || meta.submitFailed) ? (
-                      <ErrorMessage>{error}</ErrorMessage>
+                      <MessageWrapper>
+                        <ErrorMessage>{error}</ErrorMessage>
+                      </MessageWrapper>
                     ) : null}
                   </>
                 )}

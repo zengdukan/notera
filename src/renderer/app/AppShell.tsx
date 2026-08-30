@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import Heading from '@atlaskit/heading';
-import { Box, Stack, Text, xcss } from '@atlaskit/primitives';
+import { Box, Inline, Stack, Text, xcss } from '@atlaskit/primitives';
+import SectionMessage from '@atlaskit/section-message';
 import Spinner from '@atlaskit/spinner';
-import { FormattedMessage } from 'react-intl';
+import { FormattedMessage, useIntl } from 'react-intl';
 
 import type { NoteraClient } from '../platform/notera-client';
 import { NoteraClientError } from '../platform/notera-client';
@@ -16,12 +17,12 @@ import { NavigationWorkspace } from '../navigation/NavigationWorkspace';
 import { ActiveDocumentLifecycle } from '../notes/document-lifecycle';
 import { NoteWriteCoordinator } from '../notes/note-write-coordinator';
 import { useSession } from './session';
+import './AppShell.css';
 
 const shellStyles = xcss({
   minHeight: '100vh',
   backgroundColor: 'elevation.surface',
 });
-const accessStyles = xcss({ padding: 'space.300' });
 
 export function AppShell({
   client,
@@ -97,39 +98,13 @@ export function AppShell({
 
   return (
     <Box as="main" xcss={shellStyles}>
-      {state.status !== 'unlocked' ? (
-        <Box xcss={accessStyles}>
-          <Stack space="space.200">
-            <Heading size="xlarge">
-              <FormattedMessage id="app.name" />
-            </Heading>
-            {!loaded ||
-            state.status === 'booting' ||
-            state.status === 'unlocking' ? (
-              <Box as="div" role="status">
-                <Stack alignInline="center" space="space.100">
-                  <Spinner size="large" />
-                  <Text>
-                    <FormattedMessage id="app.starting" />
-                  </Text>
-                </Stack>
-              </Box>
-            ) : null}
-            {loaded && state.status === 'locked' ? (
-              <ProfileGate client={client} profiles={profiles}>
-                {null}
-              </ProfileGate>
-            ) : null}
-            {state.status === 'fatal' ? (
-              <Box as="div" role="alert">
-                <Text as="p">
-                  <FormattedMessage id="app.fatal" />
-                </Text>
-              </Box>
-            ) : null}
-          </Stack>
-        </Box>
+      {!loaded || state.status === 'booting' ? <StartupView /> : null}
+      {loaded && (state.status === 'locked' || state.status === 'unlocking') ? (
+        <ProfileGate client={client} profiles={profiles}>
+          {null}
+        </ProfileGate>
       ) : null}
+      {loaded && state.status === 'fatal' ? <FatalStartupView /> : null}
       {loaded && state.status === 'unlocked' ? (
         <ProfileGate client={client} profiles={profiles}>
           <NavigationWorkspace
@@ -140,5 +115,61 @@ export function AppShell({
         </ProfileGate>
       ) : null}
     </Box>
+  );
+}
+
+function StartupBrand() {
+  return (
+    <Inline alignBlock="center" space="space.150">
+      <span className="notera-startup__mark">
+        <span className="notera-startup__brand-image" />
+      </span>
+      <Heading size="large">
+        <FormattedMessage id="app.name" />
+      </Heading>
+    </Inline>
+  );
+}
+
+function StartupView() {
+  return (
+    <div className="notera-startup">
+      <div className="notera-startup__content">
+        <Stack alignInline="center" space="space.300">
+          <StartupBrand />
+          <Box as="div" role="status">
+            <Stack alignInline="center" space="space.100">
+              <Spinner size="large" />
+              <Text color="color.text.subtle">
+                <FormattedMessage id="app.starting" />
+              </Text>
+            </Stack>
+          </Box>
+        </Stack>
+      </div>
+    </div>
+  );
+}
+
+function FatalStartupView() {
+  const intl = useIntl();
+
+  return (
+    <div className="notera-startup">
+      <div className="notera-startup__content">
+        <Stack space="space.300">
+          <StartupBrand />
+          <SectionMessage
+            appearance="error"
+            headingLevel="h2"
+            title={intl.formatMessage({ id: 'app.fatal' })}
+          >
+            <Text as="p">
+              <FormattedMessage id="app.fatalDescription" />
+            </Text>
+          </SectionMessage>
+        </Stack>
+      </div>
+    </div>
   );
 }

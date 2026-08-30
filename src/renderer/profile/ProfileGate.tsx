@@ -49,10 +49,11 @@ export function ProfileGate({
     return () => reporter.stop();
   }, [client, state.status]);
 
-  if (state.status === 'locked') {
+  if (state.status === 'locked' || state.status === 'unlocking') {
     return (
       <ProfileAccessPage
         profiles={profiles}
+        isBusy={state.status === 'unlocking'}
         onCreate={(value) => controller.create(value)}
         onUnlock={(value) => controller.unlock(value)}
       />

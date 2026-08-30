@@ -21,9 +21,10 @@
   background: var(--ds-background-brand-bold, #0c66e4);
 }
 
-.notera-profile-access__brand-mark img {
+.notera-profile-access__brand-image {
   width: 24px;
   height: 24px;
+  background: url('../../../assets/icon.svg') center / contain no-repeat;
 }
 
 .notera-profile-access__main {

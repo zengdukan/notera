@@ -11,11 +11,13 @@ export interface ProfileListItem {
 export function ProfileList({
   profiles,
   selectedId,
+  isDisabled = false,
   onSelect,
   onCreate,
 }: {
   readonly profiles: readonly ProfileListItem[];
   readonly selectedId?: string;
+  readonly isDisabled?: boolean;
   readonly onSelect: (profile: ProfileListItem) => void;
   readonly onCreate: () => void;
 }) {
@@ -23,7 +25,7 @@ export function ProfileList({
     <Stack space="space.200">
       <Inline alignBlock="center" spread="space-between">
         <Heading size="small">Profiles on this device</Heading>
-        <Button appearance="subtle" onClick={onCreate}>
+        <Button appearance="subtle" isDisabled={isDisabled} onClick={onCreate}>
           Create new
         </Button>
       </Inline>
@@ -36,6 +38,7 @@ export function ProfileList({
             }
             aria-pressed={selectedId === profile.localProfileId}
             iconBefore={PersonIcon}
+            isDisabled={isDisabled}
             shouldFitContainer
             onClick={() => onSelect(profile)}
           >

@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import Button from '@atlaskit/button/new';
-import Form, { ErrorMessage, Field, FormFooter } from '@atlaskit/form';
+import Form, {
+  ErrorMessage,
+  Field,
+  FormFooter,
+  MessageWrapper,
+} from '@atlaskit/form';
 import Heading from '@atlaskit/heading';
 import PersonIcon from '@atlaskit/icon/core/person-add';
 import { Inline, Stack, Text } from '@atlaskit/primitives';
@@ -54,7 +59,11 @@ export function CreateProfileForm({
           <form {...formProps}>
             <Stack space="space.200">
               {systemError ? (
-                <SectionMessage appearance="error" title={systemError.title}>
+                <SectionMessage
+                  appearance="error"
+                  headingLevel="h3"
+                  title={systemError.title}
+                >
                   <Text as="p">{systemError.description}</Text>
                 </SectionMessage>
               ) : null}
@@ -62,6 +71,7 @@ export function CreateProfileForm({
                 name="displayName"
                 label="Profile name"
                 isRequired
+                isDisabled={submitting}
                 defaultValue=""
                 validate={validateProfileName}
               >
@@ -75,7 +85,9 @@ export function CreateProfileForm({
                       )}
                     />
                     {error && (meta.touched || meta.submitFailed) ? (
-                      <ErrorMessage>{error}</ErrorMessage>
+                      <MessageWrapper>
+                        <ErrorMessage>{error}</ErrorMessage>
+                      </MessageWrapper>
                     ) : null}
                   </>
                 )}
@@ -84,6 +96,7 @@ export function CreateProfileForm({
                 name="password"
                 label="Master password"
                 isRequired
+                isDisabled={submitting}
                 defaultValue=""
                 validate={validatePassword}
               >
@@ -97,7 +110,9 @@ export function CreateProfileForm({
                       )}
                     />
                     {error && (meta.touched || meta.submitFailed) ? (
-                      <ErrorMessage>{error}</ErrorMessage>
+                      <MessageWrapper>
+                        <ErrorMessage>{error}</ErrorMessage>
+                      </MessageWrapper>
                     ) : null}
                   </>
                 )}

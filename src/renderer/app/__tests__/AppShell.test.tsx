@@ -8,6 +8,7 @@ import { AppShell } from '../AppShell';
 import { ModalHost } from '../../shared-ui/ModalHost';
 import { GlobalFlagGroup } from '../../shared-ui/GlobalFlagGroup';
 import type { NoteraClient } from '../../platform/notera-client';
+import { NoteraClientError } from '../../platform/notera-client';
 
 jest.mock('react-scrolllock', () => ({
   __esModule: true,
@@ -20,10 +21,12 @@ jest.mock('../../navigation/NavigationWorkspace', () => ({
 
 function deferred<T>() {
   let resolveDeferred!: (value: T) => void;
-  const promise = new Promise<T>((resolve) => {
+  let rejectDeferred!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolve, reject) => {
     resolveDeferred = resolve;
+    rejectDeferred = reject;
   });
-  return { promise, resolve: resolveDeferred };
+  return { promise, resolve: resolveDeferred, reject: rejectDeferred };
 }
 
 function providers(children: ReactNode) {
@@ -52,9 +55,78 @@ describe('application shell', () => {
     profiles.resolve({ items: [], nextCursor: null });
     session.resolve({ state: 'LOCKED' });
 
+    expect(await screen.findByText('Create your first Profile')).toBeVisible();
+  });
+
+  it('keeps the Profile access page mounted while unlocking', async () => {
+    const user = userEvent.setup();
+    const unlock = deferred<{
+      state: 'UNLOCKED';
+      localProfileId: string;
+      displayName: string;
+      rootFolderId: string;
+    }>();
+    const profile = {
+      localProfileId: '10000000-0000-4000-8000-000000000001',
+      displayName: 'Personal',
+      lastUsedAt: 1,
+      isCurrent: false,
+    };
+    const request = jest.fn((key: string) => {
+      if (key === 'profile.list') {
+        return Promise.resolve({ items: [profile], nextCursor: null });
+      }
+      if (key === 'profile.getSessionState') {
+        return Promise.resolve({ state: 'LOCKED' });
+      }
+      if (key === 'profile.unlock') return unlock.promise;
+      return Promise.resolve({});
+    });
+    const client = {
+      request,
+      subscribe: jest.fn(() => () => undefined),
+    } as unknown as NoteraClient;
+
+    render(providers(<AppShell client={client} />));
+
+    const password = await screen.findByLabelText(/Master password/);
+    await user.type(password, 'secret');
+    const unlockButton = screen.getByRole('button', {
+      name: 'Unlock Profile',
+    });
+    await user.click(unlockButton);
+
+    expect(screen.getByText('Your notes stay on this device.')).toBeVisible();
+    expect(unlockButton).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Create new' })).toBeDisabled();
+
+    unlock.resolve({
+      state: 'UNLOCKED',
+      localProfileId: profile.localProfileId,
+      displayName: profile.displayName,
+      rootFolderId: '20000000-0000-4000-8000-000000000001',
+    });
+
+    expect(await screen.findByText('Note workspace')).toBeVisible();
+  });
+
+  it('shows safe ADS feedback when local startup fails', async () => {
+    const client = {
+      request: jest
+        .fn()
+        .mockRejectedValue(new NoteraClientError('IPC_OPERATION_FAILED')),
+      subscribe: jest.fn(() => () => undefined),
+    } as unknown as NoteraClient;
+
+    render(providers(<AppShell client={client} />));
+
+    expect(await screen.findByText('Notera could not start.')).toBeVisible();
     expect(
-      await screen.findByText('Choose a profile to continue.'),
+      screen.getByText(
+        'Notera could not access local Profile information. Restart the app and try again.',
+      ),
     ).toBeVisible();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('renders only one primary modal and restores focus when it closes', async () => {

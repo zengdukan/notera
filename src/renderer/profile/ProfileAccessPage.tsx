@@ -1,11 +1,9 @@
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import Heading from '@atlaskit/heading';
 import DevicesIcon from '@atlaskit/icon/core/devices';
 import LockIcon from '@atlaskit/icon/core/lock-locked';
 import ShieldIcon from '@atlaskit/icon/core/shield';
-import { Box, Inline, Stack, Text, xcss } from '@atlaskit/primitives';
-
-import noteraIconUrl from '../../../assets/icon.svg';
+import { Inline, Stack, Text, xcss } from '@atlaskit/primitives';
 
 import { CreateProfileForm } from './CreateProfileForm';
 import { ProfileList, type ProfileListItem } from './ProfileList';
@@ -16,10 +14,12 @@ const headerBrandStyles = xcss({ color: 'color.text' });
 
 export function ProfileAccessPage({
   profiles,
+  isBusy = false,
   onCreate,
   onUnlock,
 }: {
   readonly profiles: readonly ProfileListItem[];
+  readonly isBusy?: boolean;
   readonly onCreate: Parameters<typeof CreateProfileForm>[0]['onCreate'];
   readonly onUnlock: Parameters<typeof UnlockProfileForm>[0]['onUnlock'];
 }) {
@@ -33,7 +33,7 @@ export function ProfileAccessPage({
       <header className="notera-profile-access__header">
         <Inline space="space.150" alignBlock="center" xcss={headerBrandStyles}>
           <span className="notera-profile-access__brand-mark">
-            <img src={noteraIconUrl} alt="" />
+            <span className="notera-profile-access__brand-image" />
           </span>
           <Heading size="medium">Notera</Heading>
         </Inline>
@@ -72,6 +72,7 @@ export function ProfileAccessPage({
             {profiles.length > 0 ? (
               <ProfileList
                 profiles={profiles}
+                isDisabled={isBusy}
                 selectedId={creating ? undefined : selected?.localProfileId}
                 onCreate={() => setCreating(true)}
                 onSelect={(profile) => {
@@ -101,7 +102,7 @@ function Feature({
   title,
   description,
 }: {
-  readonly icon: React.ReactNode;
+  readonly icon: ReactNode;
   readonly title: string;
   readonly description: string;
 }) {

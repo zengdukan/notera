@@ -1,0 +1,28 @@
+.notera-startup {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: var(--ds-space-400, 32px);
+  background: var(--ds-surface, #ffffff);
+}
+
+.notera-startup__content {
+  width: min(440px, 100%);
+}
+
+.notera-startup__mark {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--ds-radius-medium, 6px);
+  background: var(--ds-background-brand-bold, #0c66e4);
+}
+
+.notera-startup__brand-image {
+  width: 36px;
+  height: 36px;
+  background: url('../../../assets/icon.svg') center / contain no-repeat;
+}
