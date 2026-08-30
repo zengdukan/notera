@@ -1,12 +1,5 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  type ReactElement,
-} from 'react';
+import { useCallback, useMemo, type ReactElement } from 'react';
 import { type EditorActions, type EditorProps } from '@atlaskit/editor-core';
-import { INPUT_METHOD } from '@atlaskit/editor-common/analytics';
 import { ComposableEditor } from '@atlaskit/editor-core/composable-editor';
 import { useUniversalPreset } from '@atlaskit/editor-core/preset-universal';
 import { usePreset } from '@atlaskit/editor-core/use-preset';
@@ -17,11 +10,9 @@ import { highlightPlugin } from '@atlaskit/editor-plugins/highlight';
 import { mediaPlugin } from '@atlaskit/editor-plugins/media';
 
 import type { AdfDocument } from '../../shared/ipc/adf';
-import type { ToolbarExecutor } from '../editor/toolbar-actions';
 import { emojiProvider } from '../editor/editor-providers';
 import {
   createMathExtensionProvider,
-  insertMathFromToolbar,
   mathDoubleClickPlugin,
   mathExtensionHandlers,
   mathInputRulePlugin,
@@ -29,7 +20,6 @@ import {
 } from './math';
 import {
   createMermaidExtensionProvider,
-  insertMermaidFromToolbar,
   mermaidDoubleClickPlugin,
   mermaidExtensionHandlers,
   useMermaidEditor,
@@ -42,7 +32,6 @@ export interface ProductEditorProps {
   readonly document: AdfDocument;
   readonly onChange: (document: AdfDocument) => void;
   readonly onEditorReady?: (actions: EditorActions) => void;
-  readonly onToolbarReady?: (execute: ToolbarExecutor) => void;
   readonly shouldFocus?: boolean;
   readonly primaryToolbarComponents?: ReactElement[];
 }
@@ -52,13 +41,11 @@ export function Editor({
   document,
   onChange,
   onEditorReady,
-  onToolbarReady,
   shouldFocus = false,
   primaryToolbarComponents,
 }: ProductEditorProps) {
   const openMathEditor = useMathEditor();
   const openMermaidEditor = useMermaidEditor();
-  const editorActions = useRef<EditorActions | null>(null);
   const mathExtensionProvider = useMemo(
     () => createMathExtensionProvider(openMathEditor),
     [openMathEditor],
@@ -188,215 +175,10 @@ export function Editor({
   }, [editorApi, onChange]);
   const handleEditorReady = useCallback(
     (actions: EditorActions) => {
-      editorActions.current = actions;
       onEditorReady?.(actions);
     },
     [onEditorReady],
   );
-  const executeToolbar = useCallback<ToolbarExecutor>(
-    (action) => {
-      const execute = editorApi?.core.actions.execute;
-      const textFormatting = editorApi?.textFormatting?.commands;
-      const insert = (node: object) => {
-        const inserted = editorActions.current?.replaceSelection(node) ?? false;
-        if (inserted) editorActions.current?.focus();
-      };
-      switch (action) {
-        case 'undo':
-          editorApi?.undoRedoPlugin?.actions.undo();
-          return;
-        case 'redo':
-          editorApi?.undoRedoPlugin?.actions.redo();
-          return;
-        case 'paragraph':
-          execute?.(
-            editorApi?.blockType?.commands.setTextLevel(
-              'normal',
-              INPUT_METHOD.TOOLBAR,
-            ),
-          );
-          return;
-        case 'heading-1':
-          execute?.(
-            editorApi?.blockType?.commands.setTextLevel(
-              'heading1',
-              INPUT_METHOD.TOOLBAR,
-            ),
-          );
-          return;
-        case 'heading-2':
-          execute?.(
-            editorApi?.blockType?.commands.setTextLevel(
-              'heading2',
-              INPUT_METHOD.TOOLBAR,
-            ),
-          );
-          return;
-        case 'heading-3':
-          execute?.(
-            editorApi?.blockType?.commands.setTextLevel(
-              'heading3',
-              INPUT_METHOD.TOOLBAR,
-            ),
-          );
-          return;
-        case 'bold':
-          execute?.(textFormatting?.toggleStrong(INPUT_METHOD.TOOLBAR));
-          return;
-        case 'italic':
-          execute?.(textFormatting?.toggleEm(INPUT_METHOD.TOOLBAR));
-          return;
-        case 'underline':
-          execute?.(textFormatting?.toggleUnderline(INPUT_METHOD.TOOLBAR));
-          return;
-        case 'strike':
-          execute?.(textFormatting?.toggleStrike(INPUT_METHOD.TOOLBAR));
-          return;
-        case 'inline-code':
-          execute?.(textFormatting?.toggleCode(INPUT_METHOD.TOOLBAR));
-          return;
-        case 'superscript':
-          execute?.(textFormatting?.toggleSuperscript(INPUT_METHOD.TOOLBAR));
-          return;
-        case 'subscript':
-          execute?.(textFormatting?.toggleSubscript(INPUT_METHOD.TOOLBAR));
-          return;
-        case 'link':
-          execute?.(
-            editorApi?.hyperlink?.commands.showLinkToolbar(
-              INPUT_METHOD.TOOLBAR,
-            ),
-          );
-          return;
-        case 'bullet-list':
-          execute?.(
-            editorApi?.list?.commands.toggleBulletList(INPUT_METHOD.TOOLBAR),
-          );
-          return;
-        case 'number-list':
-          execute?.(
-            editorApi?.list?.commands.toggleOrderedList(INPUT_METHOD.TOOLBAR),
-          );
-          return;
-        case 'task-list':
-          execute?.(editorApi?.taskDecision?.commands.toggleTaskList());
-          return;
-        case 'outdent':
-          execute?.(
-            editorApi?.list?.commands.outdentList(INPUT_METHOD.TOOLBAR),
-          );
-          return;
-        case 'indent':
-          execute?.(editorApi?.list?.commands.indentList(INPUT_METHOD.TOOLBAR));
-          return;
-        case 'table':
-          execute?.(
-            editorApi?.table?.commands.insertTableWithSize(
-              3,
-              3,
-              INPUT_METHOD.PICKER,
-            ),
-          );
-          return;
-        case 'text-color':
-          execute?.(
-            editorApi?.textColor?.commands.changeColor(
-              '#0052CC',
-              INPUT_METHOD.TOOLBAR,
-            ),
-          );
-          return;
-        case 'highlight-color':
-          execute?.(
-            editorApi?.highlight?.commands.changeColor({
-              color: '#FFF0B3',
-              inputMethod: INPUT_METHOD.TOOLBAR,
-            }),
-          );
-          return;
-        case 'clear-formatting':
-          execute?.(
-            editorApi?.blockType?.commands.clearFormatting(
-              INPUT_METHOD.TOOLBAR,
-            ),
-          );
-          return;
-        case 'date':
-          execute?.(
-            editorApi?.date?.commands.insertDate({
-              inputMethod: INPUT_METHOD.TOOLBAR,
-            }),
-          );
-          return;
-        case 'status':
-          execute?.(
-            editorApi?.status?.commands.insertStatus(INPUT_METHOD.TOOLBAR),
-          );
-          return;
-        case 'media':
-          editorApi?.media?.sharedState.currentState()?.showMediaPicker?.();
-          return;
-        case 'emoji':
-          editorApi?.emoji?.actions.openTypeAhead(INPUT_METHOD.TOOLBAR);
-          return;
-        case 'math':
-          void insertMathFromToolbar(openMathEditor, editorActions.current);
-          return;
-        case 'mermaid':
-          void insertMermaidFromToolbar(
-            openMermaidEditor,
-            editorActions.current,
-          );
-          return;
-        case 'rule':
-          insert({ type: 'rule' });
-          return;
-        case 'layout':
-          insert({
-            type: 'layoutSection',
-            content: [
-              {
-                type: 'layoutColumn',
-                content: [{ type: 'paragraph', content: [] }],
-              },
-              {
-                type: 'layoutColumn',
-                content: [{ type: 'paragraph', content: [] }],
-              },
-            ],
-          });
-          return;
-        case 'panel':
-          insert({
-            type: 'panel',
-            attrs: { panelType: 'info' },
-            content: [{ type: 'paragraph', content: [] }],
-          });
-          return;
-        case 'code-block':
-          insert({ type: 'codeBlock', attrs: { language: null }, content: [] });
-          return;
-        case 'align':
-        case 'text-style':
-        case 'more-formatting':
-        case 'list':
-        case 'insert':
-          return;
-        default:
-          return action satisfies never;
-      }
-    },
-    [editorApi, openMathEditor, openMermaidEditor],
-  );
-  useEffect(
-    () => onToolbarReady?.(executeToolbar),
-    [executeToolbar, onToolbarReady],
-  );
-  useEffect(() => {
-    editorApi?.selectionToolbar?.actions.forceToolbarDockingWithoutAnalytics?.(
-      'none',
-    );
-  }, [editorApi]);
 
   return (
     <ComposableEditor

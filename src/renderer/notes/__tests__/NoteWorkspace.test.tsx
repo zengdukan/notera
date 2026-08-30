@@ -48,12 +48,6 @@ jest.mock('../../editor/RendererSurface', () => ({
     <output aria-label="Renderer surface">{JSON.stringify(document)}</output>
   ),
 }));
-jest.mock('../../editor/ResponsiveEditorToolbar', () => ({
-  ResponsiveEditorToolbar: () => (
-    <div role="toolbar" aria-label="Editor formatting" />
-  ),
-}));
-
 const noteEntry = {
   kind: 'note' as const,
   id: '11111111-1111-4111-8111-111111111111',
@@ -132,22 +126,18 @@ describe('NoteWorkspace', () => {
     expect(renderer.parentElement).toHaveStyle({ overflow: 'auto' });
   });
 
-  it('opens an existing note in preview and switches to the full-width editor on demand', async () => {
+  it('switches to the editor without rendering a separate formatting toolbar', async () => {
     const user = userEvent.setup();
     setup();
 
     expect(await screen.findByLabelText('Renderer surface')).toHaveTextContent(
       'Preview',
     );
-    expect(
-      screen.queryByRole('toolbar', { name: 'Editor formatting' }),
-    ).not.toBeInTheDocument();
-
     await user.click(screen.getByRole('button', { name: 'Edit' }));
     expect(screen.getByLabelText('Editor surface')).toBeVisible();
     expect(
-      screen.getByRole('toolbar', { name: 'Editor formatting' }),
-    ).toBeVisible();
+      screen.queryByRole('toolbar', { name: 'Editor formatting' }),
+    ).not.toBeInTheDocument();
   });
 
   it('flushes the latest title and ADF before previewing', async () => {

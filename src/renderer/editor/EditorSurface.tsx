@@ -12,7 +12,6 @@ import {
   subscribeMediaUploadRejection,
   type MediaUploadRejectionFeedback,
 } from '../atlassian-editor/media-upload-feedback';
-import type { ToolbarExecutor } from './toolbar-actions';
 
 const EMPTY_EDITOR_CONTENT = Object.freeze([
   Object.freeze({ type: 'paragraph', content: Object.freeze([]) }),
@@ -56,14 +55,12 @@ export function EditorSurface({
   noteId,
   document,
   onChange,
-  onToolbarReady,
   onEditorReady,
   shouldFocus,
 }: {
   readonly noteId: string;
   readonly document: AdfDocument;
   readonly onChange: (document: AdfDocument) => void;
-  readonly onToolbarReady: (execute: ToolbarExecutor) => void;
   readonly onEditorReady?: (actions: EditorActions) => void;
   readonly shouldFocus?: boolean;
 }) {
@@ -84,7 +81,6 @@ export function EditorSurface({
         mediaProvider={mediaProviderForNote(noteId)}
         document={editorDocument}
         onChange={onChange}
-        onToolbarReady={onToolbarReady}
         onEditorReady={onEditorReady}
         shouldFocus={shouldFocus}
       />

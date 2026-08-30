@@ -42,7 +42,6 @@ describe('media upload feedback', () => {
           document={document}
           noteId={noteId}
           onChange={jest.fn()}
-          onToolbarReady={jest.fn()}
         />
       </IntlProvider>,
     );

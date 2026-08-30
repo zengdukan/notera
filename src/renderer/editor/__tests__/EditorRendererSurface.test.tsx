@@ -51,7 +51,6 @@ describe('note-scoped Editor and Renderer Media', () => {
           noteId={noteId}
           document={document}
           onChange={jest.fn()}
-          onToolbarReady={jest.fn()}
         />
         <RendererSurface noteId={noteId} document={document} />
       </>,

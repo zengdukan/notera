@@ -20,7 +20,6 @@ const renderSurface = (document: AdfDocument) =>
       document={document}
       noteId="note"
       onChange={jest.fn()}
-      onToolbarReady={jest.fn()}
     />,
   );
 

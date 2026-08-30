@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 const initialDocument = {
@@ -20,57 +20,14 @@ const changedDocument = {
 const requestDocument = jest.fn((receive: (document: unknown) => void) => {
   receive(changedDocument);
 });
-const execute = jest.fn();
-const command = (name: string) => jest.fn(() => Symbol(name));
-const showMediaPicker = jest.fn();
 const forceToolbarDockingWithoutAnalytics = jest.fn();
-const mockInsertMath = jest.fn(async () => true);
-const mockInsertMermaid = jest.fn(async () => true);
 const mockEditorApi = {
-  core: { actions: { execute, requestDocument } },
-  undoRedoPlugin: { actions: { undo: jest.fn(), redo: jest.fn() } },
-  textFormatting: {
-    commands: {
-      toggleStrong: command('strong'),
-      toggleEm: command('em'),
-      toggleUnderline: command('underline'),
-      toggleStrike: command('strike'),
-      toggleCode: command('code'),
-      toggleSuperscript: command('superscript'),
-      toggleSubscript: command('subscript'),
-    },
-  },
-  blockType: {
-    commands: {
-      setTextLevel: command('text-level'),
-      clearFormatting: command('clear'),
-    },
-  },
-  hyperlink: { commands: { showLinkToolbar: command('link') } },
-  list: {
-    commands: {
-      toggleBulletList: command('bullet-list'),
-      toggleOrderedList: command('ordered-list'),
-      outdentList: command('outdent'),
-      indentList: command('indent'),
-    },
-  },
-  taskDecision: { commands: { toggleTaskList: command('task-list') } },
-  table: { commands: { insertTableWithSize: command('table') } },
-  textColor: { commands: { changeColor: command('text-color') } },
-  highlight: { commands: { changeColor: command('highlight') } },
-  date: { commands: { insertDate: command('date') } },
-  status: { commands: { insertStatus: command('status') } },
-  media: { sharedState: { currentState: () => ({ showMediaPicker }) } },
-  emoji: { actions: { openTypeAhead: jest.fn() } },
+  core: { actions: { requestDocument } },
   selectionToolbar: {
     actions: { forceToolbarDockingWithoutAnalytics },
   },
 };
-const mockEditorActions = {
-  focus: jest.fn(),
-  replaceSelection: jest.fn(),
-};
+const mockEditorActions = {};
 const mockPreset = { add: jest.fn() };
 mockPreset.add.mockReturnValue(mockPreset);
 const mockUseUniversalPreset = jest.fn(() => mockPreset);
@@ -127,7 +84,6 @@ jest.mock('../emoji/get-emoji-provider', () => ({
 }));
 jest.mock('../math', () => ({
   createMathExtensionProvider: jest.fn(() => ({})),
-  insertMathFromToolbar: mockInsertMath,
   mathDoubleClickPlugin: jest.fn(() => Symbol('math-double-click')),
   mathExtensionHandlers: {},
   mathInputRulePlugin: Symbol('math-input-rule'),
@@ -135,7 +91,6 @@ jest.mock('../math', () => ({
 }));
 jest.mock('../mermaid', () => ({
   createMermaidExtensionProvider: jest.fn(() => ({})),
-  insertMermaidFromToolbar: mockInsertMermaid,
   mermaidDoubleClickPlugin: jest.fn(() => Symbol('mermaid-double-click')),
   mermaidExtensionHandlers: {},
   useMermaidEditor: jest.fn(() => jest.fn()),
@@ -190,7 +145,7 @@ describe('Atlaskit product editor', () => {
     ]);
   });
 
-  it('keeps the external toolbar as the only formatting toolbar', async () => {
+  it('leaves the Atlaskit formatting toolbar enabled', () => {
     render(
       <Editor
         mediaProvider={mediaProvider}
@@ -199,9 +154,7 @@ describe('Atlaskit product editor', () => {
       />,
     );
 
-    await waitFor(() =>
-      expect(forceToolbarDockingWithoutAnalytics).toHaveBeenCalledWith('none'),
-    );
+    expect(forceToolbarDockingWithoutAnalytics).not.toHaveBeenCalled();
     expect(mockUseUniversalPreset).toHaveBeenCalledWith(
       expect.objectContaining({
         initialPluginConfiguration: expect.objectContaining({
@@ -234,93 +187,4 @@ describe('Atlaskit product editor', () => {
     expect(onChange).toHaveBeenCalledWith(changedDocument);
   });
 
-  it('exposes toolbar actions backed by the public editor API', async () => {
-    const onToolbarReady = jest.fn();
-    render(
-      <Editor
-        mediaProvider={mediaProvider}
-        document={initialDocument}
-        onChange={jest.fn()}
-        onToolbarReady={onToolbarReady}
-      />,
-    );
-
-    await waitFor(() => expect(onToolbarReady).toHaveBeenCalled());
-    const toolbar = onToolbarReady.mock.calls.at(-1)?.[0];
-    toolbar('bold');
-
-    expect(
-      mockEditorApi.textFormatting.commands.toggleStrong,
-    ).toHaveBeenCalled();
-    expect(execute).toHaveBeenCalledWith(expect.any(Symbol));
-  });
-
-  it('maps formatting, lists and insert actions without private editor state', async () => {
-    const onToolbarReady = jest.fn();
-    render(
-      <Editor
-        mediaProvider={mediaProvider}
-        document={initialDocument}
-        onChange={jest.fn()}
-        onToolbarReady={onToolbarReady}
-      />,
-    );
-    await waitFor(() => expect(onToolbarReady).toHaveBeenCalled());
-    const toolbar = onToolbarReady.mock.calls.at(-1)?.[0];
-
-    for (const action of [
-      'undo',
-      'redo',
-      'heading-2',
-      'italic',
-      'underline',
-      'strike',
-      'inline-code',
-      'superscript',
-      'subscript',
-      'link',
-      'bullet-list',
-      'number-list',
-      'task-list',
-      'outdent',
-      'indent',
-      'table',
-      'text-color',
-      'highlight-color',
-      'date',
-      'status',
-      'media',
-      'emoji',
-      'math',
-      'mermaid',
-      'rule',
-      'layout',
-      'panel',
-      'code-block',
-    ]) {
-      toolbar(action);
-    }
-
-    expect(mockEditorApi.undoRedoPlugin.actions.undo).toHaveBeenCalled();
-    expect(mockEditorApi.blockType.commands.setTextLevel).toHaveBeenCalledWith(
-      'heading2',
-      expect.anything(),
-    );
-    expect(mockEditorApi.list.commands.toggleBulletList).toHaveBeenCalled();
-    expect(mockEditorApi.table.commands.insertTableWithSize).toHaveBeenCalled();
-    expect(showMediaPicker).toHaveBeenCalled();
-    expect(mockEditorApi.emoji.actions.openTypeAhead).toHaveBeenCalled();
-    expect(mockInsertMath).toHaveBeenCalledWith(
-      expect.any(Function),
-      mockEditorActions,
-    );
-    expect(mockInsertMermaid).toHaveBeenCalledWith(
-      expect.any(Function),
-      mockEditorActions,
-    );
-    expect(mockEditorActions.replaceSelection).toHaveBeenCalled();
-    expect(
-      Reflect.get(mockEditorActions, '_privateGetEditorView'),
-    ).toBeUndefined();
-  });
 });

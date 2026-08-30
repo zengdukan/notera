@@ -14,8 +14,6 @@ import {
 } from '../app/query-keys';
 import { EditorSurface } from '../editor/EditorSurface';
 import { RendererSurface } from '../editor/RendererSurface';
-import { ResponsiveEditorToolbar } from '../editor/ResponsiveEditorToolbar';
-import type { ToolbarExecutor } from '../editor/toolbar-actions';
 import type { ContentEntry } from '../navigation/content-controller';
 import { ActiveDocumentLifecycle } from './document-lifecycle';
 import {
@@ -46,18 +44,6 @@ const workspaceStyles = xcss({
   overflow: 'hidden',
   backgroundColor: 'elevation.surface',
 });
-const toolbarStyles = xcss({
-  flexShrink: '0',
-  position: 'sticky',
-  top: 'space.0',
-  zIndex: 'navigation',
-  backgroundColor: 'elevation.surface',
-  borderBlockEndColor: 'color.border',
-  borderBlockEndStyle: 'solid',
-  borderBlockEndWidth: 'border.width',
-  paddingBlock: 'space.100',
-  paddingInline: 'space.200',
-});
 const bodyStyles = xcss({
   flexGrow: '1',
   minHeight: '0',
@@ -73,8 +59,6 @@ const centeredStyles = xcss({
   justifyContent: 'center',
   minHeight: '60vh',
 });
-
-const noopToolbar: ToolbarExecutor = () => undefined;
 
 export function NoteWorkspace({
   client,
@@ -98,9 +82,6 @@ export function NoteWorkspace({
   const [session, setSession] = useState<DocumentSessionState>();
   const [loadError, setLoadError] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [executeToolbar, setExecuteToolbar] = useState<ToolbarExecutor>(
-    () => noopToolbar,
-  );
   const sessionRef = useRef<DocumentSessionState>();
   const coordinatorRef = useRef<SaveCoordinator>();
 
@@ -298,11 +279,6 @@ export function NoteWorkspace({
 
   return (
     <Box xcss={workspaceStyles}>
-      {session.mode === 'edit' ? (
-        <Box xcss={toolbarStyles}>
-          <ResponsiveEditorToolbar execute={executeToolbar} />
-        </Box>
-      ) : null}
       <StickyNoteHeader
         mode={session.mode}
         title={session.draft.title}
@@ -333,7 +309,6 @@ export function NoteWorkspace({
             onChange={(document) =>
               change({ type: 'change-document', document })
             }
-            onToolbarReady={(execute) => setExecuteToolbar(() => execute)}
             shouldFocus={initiallyEditing}
           />
         ) : (
