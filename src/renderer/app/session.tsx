@@ -20,12 +20,14 @@ export type SessionState =
       readonly discardedDraftProfileId?: string;
     }
   | { readonly status: 'unlocking'; readonly localProfileId: string }
+  | { readonly status: 'transitioning'; readonly profile: UnlockedSession }
   | { readonly status: 'unlocked'; readonly profile: UnlockedSession }
   | { readonly status: 'fatal'; readonly code: IpcErrorCode };
 
 export type SessionAction =
   | { readonly type: 'booting' }
   | { readonly type: 'unlocking'; readonly localProfileId: string }
+  | { readonly type: 'transitioning'; readonly profile: UnlockedSession }
   | { readonly type: 'unlocked'; readonly profile: UnlockedSession }
   | {
       readonly type: 'locked';
@@ -44,6 +46,8 @@ export function sessionReducer(
       return initialSessionState;
     case 'unlocking':
       return { status: 'unlocking', localProfileId: action.localProfileId };
+    case 'transitioning':
+      return { status: 'transitioning', profile: action.profile };
     case 'unlocked':
       return { status: 'unlocked', profile: action.profile };
     case 'locked':

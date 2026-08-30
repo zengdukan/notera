@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { AppProviders } from '../AppProviders';
@@ -34,6 +34,10 @@ function providers(children: ReactNode) {
 }
 
 describe('application shell', () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('loads the profile list and session state concurrently while preserving the shell', async () => {
     const profiles = deferred<{
       items: readonly unknown[];
@@ -50,7 +54,12 @@ describe('application shell', () => {
 
     render(providers(<AppShell client={client} />));
 
-    expect(screen.getByRole('status')).toHaveTextContent('Starting Notera');
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Loading local Profiles and session…',
+    );
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'No network connection is required.',
+    );
     expect(request).toHaveBeenCalledTimes(2);
     profiles.resolve({ items: [], nextCursor: null });
     session.resolve({ state: 'LOCKED' });
@@ -58,8 +67,9 @@ describe('application shell', () => {
     expect(await screen.findByText('Create your first Profile')).toBeVisible();
   });
 
-  it('keeps the Profile access page mounted while unlocking', async () => {
-    const user = userEvent.setup();
+  it('shows the approved workspace transition before rendering notes', async () => {
+    jest.useFakeTimers();
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const unlock = deferred<{
       state: 'UNLOCKED';
       localProfileId: string;
@@ -102,17 +112,57 @@ describe('application shell', () => {
       screen.getByRole('button', { name: 'Create Profile' }),
     ).toBeDisabled();
 
-    unlock.resolve({
-      state: 'UNLOCKED',
-      localProfileId: profile.localProfileId,
-      displayName: profile.displayName,
-      rootFolderId: '20000000-0000-4000-8000-000000000001',
+    await act(async () => {
+      unlock.resolve({
+        state: 'UNLOCKED',
+        localProfileId: profile.localProfileId,
+        displayName: profile.displayName,
+        rootFolderId: '20000000-0000-4000-8000-000000000001',
+      });
+      await Promise.resolve();
     });
 
+    expect(await screen.findByText('Profile unlocked')).toBeVisible();
+    expect(screen.getByText('Entering your local workspace…')).toBeVisible();
+    expect(screen.getByLabelText('Preparing workspace')).toBeVisible();
+    expect(screen.queryByText('Note workspace')).not.toBeInTheDocument();
+
+    act(() => {
+      jest.advanceTimersByTime(799);
+    });
+    expect(screen.queryByText('Note workspace')).not.toBeInTheDocument();
+
+    act(() => {
+      jest.advanceTimersByTime(1);
+    });
+    expect(screen.getByText('Note workspace')).toBeVisible();
+  });
+
+  it('restores an unlocked startup session without replaying the transition', async () => {
+    const profile = {
+      state: 'UNLOCKED',
+      localProfileId: '10000000-0000-4000-8000-000000000001',
+      displayName: 'Personal',
+      rootFolderId: '20000000-0000-4000-8000-000000000001',
+    } as const;
+    const client = {
+      request: jest.fn((key: string) =>
+        key === 'profile.list'
+          ? Promise.resolve({ items: [], nextCursor: null })
+          : Promise.resolve(profile),
+      ),
+      subscribe: jest.fn(() => () => undefined),
+    } as unknown as NoteraClient;
+
+    render(providers(<AppShell client={client} />));
+
     expect(await screen.findByText('Note workspace')).toBeVisible();
+    expect(screen.queryByText('Profile unlocked')).not.toBeInTheDocument();
   });
 
   it('shows safe ADS feedback when local startup fails', async () => {
+    const user = userEvent.setup();
+    const close = jest.spyOn(window, 'close').mockImplementation(() => {});
     const client = {
       request: jest
         .fn()
@@ -129,6 +179,9 @@ describe('application shell', () => {
       ),
     ).toBeVisible();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Close app' }));
+    expect(close).toHaveBeenCalledTimes(1);
+    close.mockRestore();
   });
 
   it('renders only one primary modal and restores focus when it closes', async () => {

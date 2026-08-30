@@ -17,7 +17,7 @@ export function createProfileController(input: {
       if (!('state' in profile) || profile.state !== 'UNLOCKED') {
         throw new Error('Invalid unlocked profile response.');
       }
-      input.dispatch({ type: 'unlocked', profile });
+      input.dispatch({ type: 'transitioning', profile });
     } catch (error) {
       input.dispatch({ type: 'locked' });
       throw error;

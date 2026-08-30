@@ -14,17 +14,25 @@ const profile = {
 };
 
 describe('session reducer', () => {
-  it('moves through unlocking and unlocked states', () => {
+  it('moves through unlocking, workspace transition, and unlocked states', () => {
     const unlocking = sessionReducer(initialSessionState, {
       type: 'unlocking',
       localProfileId: profile.localProfileId,
     });
-    const unlocked = sessionReducer(unlocking, { type: 'unlocked', profile });
+    const transitioning = sessionReducer(unlocking, {
+      type: 'transitioning',
+      profile,
+    });
+    const unlocked = sessionReducer(transitioning, {
+      type: 'unlocked',
+      profile,
+    });
 
     expect(unlocking).toEqual({
       status: 'unlocking',
       localProfileId: profile.localProfileId,
     });
+    expect(transitioning).toEqual({ status: 'transitioning', profile });
     expect(unlocked).toEqual({ status: 'unlocked', profile });
   });
 
