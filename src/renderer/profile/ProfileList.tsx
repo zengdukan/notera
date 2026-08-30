@@ -3,6 +3,7 @@ import AddIcon from '@atlaskit/icon/core/add';
 import CheckMarkIcon from '@atlaskit/icon/core/check-mark';
 import { ButtonItem } from '@atlaskit/menu';
 import { Stack, Text } from '@atlaskit/primitives';
+import { useIntl } from 'react-intl';
 
 export interface ProfileListItem {
   readonly localProfileId: string;
@@ -22,13 +23,15 @@ export function ProfileList({
   readonly onSelect: (profile: ProfileListItem) => void;
   readonly onCreate: () => void;
 }) {
+  const intl = useIntl();
+
   return (
     <Stack space="space.100">
       <Text as="p" color="color.text.subtle" weight="semibold">
-        PROFILES
+        {intl.formatMessage({ id: 'profile.list.label' })}
       </Text>
       <div
-        aria-label="Profiles on this device"
+        aria-label={intl.formatMessage({ id: 'profile.list.ariaLabel' })}
         className="notera-profile-list"
         role="listbox"
       >
@@ -39,7 +42,9 @@ export function ProfileList({
           >
             <ButtonItem
               aria-selected={selectedId === profile.localProfileId}
-              description="This device · Encrypted"
+              description={intl.formatMessage({
+                id: 'profile.list.description',
+              })}
               iconAfter={
                 selectedId === profile.localProfileId ? (
                   <CheckMarkIcon label="Selected" />
@@ -70,7 +75,7 @@ export function ProfileList({
         isDisabled={isDisabled}
         onClick={onCreate}
       >
-        Create Profile
+        {intl.formatMessage({ id: 'profile.list.create' })}
       </Button>
     </Stack>
   );

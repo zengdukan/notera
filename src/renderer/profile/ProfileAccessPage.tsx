@@ -1,16 +1,14 @@
-import { type ReactNode, useState } from 'react';
+import { useState } from 'react';
 import Heading from '@atlaskit/heading';
-import DevicesIcon from '@atlaskit/icon/core/devices';
-import LockIcon from '@atlaskit/icon/core/lock-locked';
-import ShieldIcon from '@atlaskit/icon/core/shield';
-import { Inline, Stack, Text, xcss } from '@atlaskit/primitives';
+import { Stack, Text } from '@atlaskit/primitives';
+import { FormattedMessage } from 'react-intl';
 
 import { CreateProfileForm } from './CreateProfileForm';
+import { ProfileAccessHeader } from './ProfileAccessHeader';
+import { ProfileAccessHero } from './ProfileAccessHero';
 import { ProfileList, type ProfileListItem } from './ProfileList';
 import { UnlockProfileForm } from './UnlockProfileForm';
 import './ProfileAccessPage.css';
-
-const headerBrandStyles = xcss({ color: 'color.text' });
 
 export function ProfileAccessPage({
   profiles,
@@ -30,43 +28,9 @@ export function ProfileAccessPage({
 
   return (
     <div className="notera-profile-access">
-      <header className="notera-profile-access__header">
-        <Inline space="space.150" alignBlock="center" xcss={headerBrandStyles}>
-          <span className="notera-profile-access__brand-mark">
-            <span className="notera-profile-access__brand-image" />
-          </span>
-          <Heading size="medium">Notera</Heading>
-        </Inline>
-      </header>
+      <ProfileAccessHeader />
       <main className="notera-profile-access__main">
-        <section className="notera-profile-access__hero">
-          <Stack space="space.400">
-            <Stack space="space.150">
-              <Heading size="xxlarge">Your notes stay on this device.</Heading>
-              <Text as="p" color="color.text.subtle">
-                Each Profile is an independent, encrypted local workspace. No
-                account registration or network connection is required.
-              </Text>
-            </Stack>
-            <Stack space="space.250">
-              <Feature
-                icon={<DevicesIcon label="" />}
-                title="Local Profiles"
-                description="Keep separate workspaces on this device."
-              />
-              <Feature
-                icon={<ShieldIcon label="" />}
-                title="Encrypted by default"
-                description="Your notes are protected with your master password."
-              />
-              <Feature
-                icon={<LockIcon label="" />}
-                title="Available offline"
-                description="Open and edit notes without an internet connection."
-              />
-            </Stack>
-          </Stack>
-        </section>
+        <ProfileAccessHero hasProfiles={profiles.length > 0} />
         <section className="notera-profile-access__panel">
           <Stack space="space.300">
             <AccessPanelHeader
@@ -87,10 +51,11 @@ export function ProfileAccessPage({
               />
             ) : null}
             {creating || selected === undefined ? (
-              <CreateProfileForm onCreate={onCreate} />
+              <CreateProfileForm isDisabled={isBusy} onCreate={onCreate} />
             ) : (
               <UnlockProfileForm
                 key={selected.localProfileId}
+                isDisabled={isBusy}
                 profile={selected}
                 onUnlock={onUnlock}
               />
@@ -115,13 +80,25 @@ function AccessPanelHeader({
     return (
       <Stack space="space.100">
         <Text as="p" color="color.text.brand" weight="semibold">
-          Set up a local workspace
+          <FormattedMessage
+            id={
+              isFirstProfile
+                ? 'profile.create.firstEyebrow'
+                : 'profile.create.eyebrow'
+            }
+          />
         </Text>
         <Heading size="xlarge">
-          {isFirstProfile ? 'Create your first Profile' : 'Create a Profile'}
+          <FormattedMessage
+            id={
+              isFirstProfile
+                ? 'profile.create.firstTitle'
+                : 'profile.create.title'
+            }
+          />
         </Heading>
         <Text as="p" color="color.text.subtle">
-          Choose a name and master password for this encrypted workspace.
+          <FormattedMessage id="profile.create.description" />
         </Text>
       </Stack>
     );
@@ -130,36 +107,17 @@ function AccessPanelHeader({
   return (
     <Stack space="space.100">
       <Text as="p" color="color.text.brand" weight="semibold">
-        Access a local workspace
+        <FormattedMessage id="profile.unlock.eyebrow" />
       </Text>
-      <Heading size="xlarge">Unlock “{selected?.displayName}”</Heading>
+      <Heading size="xlarge">
+        <FormattedMessage
+          id="profile.unlock.title"
+          values={{ profile: selected?.displayName }}
+        />
+      </Heading>
       <Text as="p" color="color.text.subtle">
-        Enter the master password to access your encrypted notes.
+        <FormattedMessage id="profile.unlock.description" />
       </Text>
     </Stack>
-  );
-}
-
-function Feature({
-  icon,
-  title,
-  description,
-}: {
-  readonly icon: ReactNode;
-  readonly title: string;
-  readonly description: string;
-}) {
-  return (
-    <Inline space="space.200" alignBlock="start">
-      <span className="notera-profile-access__feature-icon">{icon}</span>
-      <Stack space="space.050">
-        <Text as="p" weight="semibold">
-          {title}
-        </Text>
-        <Text as="p" color="color.text.subtle">
-          {description}
-        </Text>
-      </Stack>
-    </Inline>
   );
 }

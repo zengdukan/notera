@@ -103,7 +103,7 @@ export function AppShell({
 
   useEffect(() => {
     if (state.status !== 'transitioning') return undefined;
-    const profile = state.profile;
+    const { profile } = state;
     const timer = window.setTimeout(() => {
       dispatch({ type: 'unlocked', profile });
     }, WORKSPACE_TRANSITION_MS);
@@ -161,7 +161,7 @@ function StartupHeader() {
       </Inline>
       <Text color="color.text.subtle" size="small">
         <span className="notera-startup-header__status-dot" />
-        Local mode
+        <FormattedMessage id="profile.header.localMode" />
       </Text>
     </header>
   );
@@ -201,15 +201,15 @@ function FatalStartupView() {
       <main className="notera-startup-page__main">
         <section className="notera-startup-card">
           <Stack space="space.400">
-          <SectionMessage
-            appearance="error"
-            headingLevel="h2"
-            title={intl.formatMessage({ id: 'app.fatal' })}
-          >
-            <Text as="p">
-              <FormattedMessage id="app.fatalDescription" />
-            </Text>
-          </SectionMessage>
+            <SectionMessage
+              appearance="error"
+              headingLevel="h2"
+              title={intl.formatMessage({ id: 'app.fatal' })}
+            >
+              <Text as="p">
+                <FormattedMessage id="app.fatalDescription" />
+              </Text>
+            </SectionMessage>
             <Stack space="space.250" alignInline="start">
               <Text as="p" color="color.text.subtle">
                 <FormattedMessage id="app.fatalRecovery" />

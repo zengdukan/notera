@@ -9,9 +9,11 @@ import Form, {
 import { Stack, Text } from '@atlaskit/primitives';
 import SectionMessage from '@atlaskit/section-message';
 import Textfield from '@atlaskit/textfield';
+import { useIntl } from 'react-intl';
 
 import {
   fieldErrorForProfileOperation,
+  localizedProfileFormMessages,
   systemErrorForProfileOperation,
   validatePassword,
   type ProfileFormError,
@@ -22,14 +24,39 @@ import type { ProfileListItem } from './ProfileList';
 export function UnlockProfileForm({
   profile,
   onUnlock,
+  isDisabled = false,
 }: {
   readonly profile: ProfileListItem;
   readonly onUnlock: (value: {
     readonly localProfileId: string;
     readonly password: string;
   }) => Promise<void> | void;
+  readonly isDisabled?: boolean;
 }) {
   const [systemError, setSystemError] = useState<ProfileFormError>();
+  const intl = useIntl();
+  const messages = localizedProfileFormMessages(intl);
+
+  if (systemError) {
+    return (
+      <Stack space="space.200">
+        <SectionMessage
+          appearance="error"
+          headingLevel="h3"
+          title={systemError.title}
+        >
+          <Text as="p">{systemError.description}</Text>
+        </SectionMessage>
+        <Button
+          appearance="primary"
+          shouldFitContainer
+          onClick={() => setSystemError(undefined)}
+        >
+          {intl.formatMessage({ id: 'profile.form.retry' })}
+        </Button>
+      </Stack>
+    );
+  }
 
   return (
     <Form<{ password: string }>
@@ -42,9 +69,11 @@ export function UnlockProfileForm({
           });
           return undefined;
         } catch (error) {
-          const fieldError = fieldErrorForProfileOperation(error);
+          const fieldError = fieldErrorForProfileOperation(error, messages);
           if (fieldError) return fieldError;
-          setSystemError(systemErrorForProfileOperation(error, 'unlock'));
+          setSystemError(
+            systemErrorForProfileOperation(error, 'unlock', messages),
+          );
           return undefined;
         }
       }}
@@ -52,22 +81,13 @@ export function UnlockProfileForm({
       {({ formProps, submitting }) => (
         <form {...formProps}>
           <Stack space="space.300">
-            {systemError ? (
-              <SectionMessage
-                appearance="error"
-                headingLevel="h3"
-                title={systemError.title}
-              >
-                <Text as="p">{systemError.description}</Text>
-              </SectionMessage>
-            ) : null}
             <Field
               name="password"
-              label="Master password"
+              label={intl.formatMessage({ id: 'profile.form.passwordLabel' })}
               isRequired
-              isDisabled={submitting}
+              isDisabled={submitting || isDisabled}
               defaultValue=""
-              validate={validatePassword}
+              validate={(value) => validatePassword(value, messages)}
             >
               {({ fieldProps, error, meta }) => (
                 <>
@@ -84,8 +104,9 @@ export function UnlockProfileForm({
                       <ErrorMessage>{error}</ErrorMessage>
                     ) : (
                       <HelperMessage>
-                        Supports autofill from your system or browser password
-                        manager.
+                        {intl.formatMessage({
+                          id: 'profile.form.passwordManager',
+                        })}
                       </HelperMessage>
                     )}
                   </MessageWrapper>
@@ -95,10 +116,15 @@ export function UnlockProfileForm({
             <Button
               appearance="primary"
               type="submit"
+              isDisabled={isDisabled}
               isLoading={submitting}
               shouldFitContainer
             >
-              Unlock Profile
+              {intl.formatMessage({
+                id: submitting
+                  ? 'profile.unlock.submitting'
+                  : 'profile.unlock.submit',
+              })}
             </Button>
           </Stack>
         </form>

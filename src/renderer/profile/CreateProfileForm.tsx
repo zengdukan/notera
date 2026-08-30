@@ -4,9 +4,11 @@ import Form, { ErrorMessage, Field, MessageWrapper } from '@atlaskit/form';
 import { Stack, Text } from '@atlaskit/primitives';
 import SectionMessage from '@atlaskit/section-message';
 import Textfield from '@atlaskit/textfield';
+import { useIntl } from 'react-intl';
 
 import {
   fieldErrorForProfileOperation,
+  localizedProfileFormMessages,
   systemErrorForProfileOperation,
   validatePassword,
   validateProfileName,
@@ -15,13 +17,17 @@ import {
 
 export function CreateProfileForm({
   onCreate,
+  isDisabled = false,
 }: {
   readonly onCreate: (value: {
     readonly displayName: string;
     readonly password: string;
   }) => Promise<void> | void;
+  readonly isDisabled?: boolean;
 }) {
   const [systemError, setSystemError] = useState<ProfileFormError>();
+  const intl = useIntl();
+  const messages = localizedProfileFormMessages(intl);
 
   return (
     <Form<{ displayName: string; password: string }>
@@ -31,9 +37,11 @@ export function CreateProfileForm({
           await onCreate({ displayName: displayName.trim(), password });
           return undefined;
         } catch (error) {
-          const fieldError = fieldErrorForProfileOperation(error);
+          const fieldError = fieldErrorForProfileOperation(error, messages);
           if (fieldError) return fieldError;
-          setSystemError(systemErrorForProfileOperation(error, 'create'));
+          setSystemError(
+            systemErrorForProfileOperation(error, 'create', messages),
+          );
           return undefined;
         }
       }}
@@ -52,11 +60,11 @@ export function CreateProfileForm({
             ) : null}
             <Field
               name="displayName"
-              label="Profile name"
+              label={intl.formatMessage({ id: 'profile.form.nameLabel' })}
               isRequired
-              isDisabled={submitting}
+              isDisabled={submitting || isDisabled}
               defaultValue=""
-              validate={validateProfileName}
+              validate={(value) => validateProfileName(value, messages)}
             >
               {({ fieldProps, error, meta }) => (
                 <>
@@ -77,11 +85,11 @@ export function CreateProfileForm({
             </Field>
             <Field
               name="password"
-              label="Master password"
+              label={intl.formatMessage({ id: 'profile.form.passwordLabel' })}
               isRequired
-              isDisabled={submitting}
+              isDisabled={submitting || isDisabled}
               defaultValue=""
-              validate={validatePassword}
+              validate={(value) => validatePassword(value, messages)}
             >
               {({ fieldProps, error, meta }) => (
                 <>
@@ -96,21 +104,44 @@ export function CreateProfileForm({
                     <MessageWrapper>
                       <ErrorMessage>{error}</ErrorMessage>
                     </MessageWrapper>
-                  ) : null}
+                  ) : (
+                    <MessageWrapper>
+                      <span className="notera-profile-form__password-help">
+                        {intl.formatMessage({
+                          id: 'profile.form.passwordRules',
+                        })}
+                        <br />
+                        {intl.formatMessage({
+                          id: 'profile.form.passwordRecovery',
+                        })}
+                      </span>
+                    </MessageWrapper>
+                  )}
                 </>
               )}
             </Field>
-            <Text as="p" color="color.text.subtle">
-              Notera cannot recover or reset your master password.
-            </Text>
             <Button
               appearance="primary"
               type="submit"
+              isDisabled={isDisabled}
               isLoading={submitting}
               shouldFitContainer
             >
-              Create Profile
+              {intl.formatMessage({
+                id: submitting
+                  ? 'profile.create.submitting'
+                  : 'profile.create.submit',
+              })}
             </Button>
+            <div className="notera-profile-form__mobile-notice">
+              <SectionMessage
+                title={intl.formatMessage({ id: 'profile.form.noticeTitle' })}
+              >
+                <Text as="p">
+                  {intl.formatMessage({ id: 'profile.form.passwordRecovery' })}
+                </Text>
+              </SectionMessage>
+            </div>
           </Stack>
         </form>
       )}
