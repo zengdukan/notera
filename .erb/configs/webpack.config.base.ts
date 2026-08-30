@@ -16,7 +16,7 @@ const configuration: webpack.Configuration = {
   ignoreWarnings: [
     {
       module:
-        /[\\/]node_modules[\\/]@atlaskit[\\/](?:editor-common[\\/]dist[\\/]esm[\\/]quick-insert[\\/]assets[\\/]index|give-kudos[\\/]dist[\\/]esm[\\/]common[\\/]utils[\\/]fetch-messages-for-locale|link-datasource[\\/]dist[\\/]esm[\\/]common[\\/]utils[\\/]locale[\\/]fetch-messages-for-locale)\.js$/,
+        /[\\/]node_modules[\\/]@atlaskit[\\/](?:give-kudos[\\/]dist[\\/]esm[\\/]common[\\/]utils[\\/]fetch-messages-for-locale|link-datasource[\\/]dist[\\/]esm[\\/]common[\\/]utils[\\/]locale[\\/]fetch-messages-for-locale)\.js$/,
       message:
         /^Critical dependency: the request of a dependency is an expression$/,
     },
@@ -24,6 +24,15 @@ const configuration: webpack.Configuration = {
 
   module: {
     rules: [
+      {
+        test: /[\\/]node_modules[\\/]@atlaskit[\\/]editor-common[\\/]dist[\\/]esm[\\/]quick-insert[\\/]assets[\\/]index\.js$/,
+        use: path.join(
+          __dirname,
+          '..',
+          'loaders',
+          'fix-atlaskit-heading-icons.cjs',
+        ),
+      },
       {
         test: /\.[jt]sx?$/,
         include: [webpackPaths.srcPath, webpackPaths.packagesPath],

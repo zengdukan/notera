@@ -97,7 +97,6 @@ describe('Webpack warning filters', () => {
     'Critical dependency: the request of a dependency is an expression';
 
   it.each([
-    './node_modules/@atlaskit/editor-common/dist/esm/quick-insert/assets/index.js',
     './node_modules/@atlaskit/give-kudos/dist/esm/common/utils/fetch-messages-for-locale.js',
     './node_modules/@atlaskit/link-datasource/dist/esm/common/utils/locale/fetch-messages-for-locale.js',
   ])('ignores the known dynamic import warning from %s', (moduleName) => {
@@ -108,6 +107,15 @@ describe('Webpack warning filters', () => {
     expect(
       ignoresWarning(
         './node_modules/express/lib/view.js',
+        dynamicDependencyWarning,
+      ),
+    ).toBe(false);
+  });
+
+  it('keeps dynamic dependency warnings from the patched heading assets', () => {
+    expect(
+      ignoresWarning(
+        './node_modules/@atlaskit/editor-common/dist/esm/quick-insert/assets/index.js',
         dynamicDependencyWarning,
       ),
     ).toBe(false);
