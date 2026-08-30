@@ -69,6 +69,11 @@ export function ProfileAccessPage({
         </section>
         <section className="notera-profile-access__panel">
           <Stack space="space.300">
+            <AccessPanelHeader
+              creating={creating || selected === undefined}
+              isFirstProfile={profiles.length === 0}
+              selected={selected}
+            />
             {profiles.length > 0 ? (
               <ProfileList
                 profiles={profiles}
@@ -94,6 +99,44 @@ export function ProfileAccessPage({
         </section>
       </main>
     </div>
+  );
+}
+
+function AccessPanelHeader({
+  creating,
+  isFirstProfile,
+  selected,
+}: {
+  readonly creating: boolean;
+  readonly isFirstProfile: boolean;
+  readonly selected?: ProfileListItem;
+}) {
+  if (creating) {
+    return (
+      <Stack space="space.100">
+        <Text as="p" color="color.text.brand" weight="semibold">
+          Set up a local workspace
+        </Text>
+        <Heading size="xlarge">
+          {isFirstProfile ? 'Create your first Profile' : 'Create a Profile'}
+        </Heading>
+        <Text as="p" color="color.text.subtle">
+          Choose a name and master password for this encrypted workspace.
+        </Text>
+      </Stack>
+    );
+  }
+
+  return (
+    <Stack space="space.100">
+      <Text as="p" color="color.text.brand" weight="semibold">
+        Access a local workspace
+      </Text>
+      <Heading size="xlarge">Unlock “{selected?.displayName}”</Heading>
+      <Text as="p" color="color.text.subtle">
+        Enter the master password to access your encrypted notes.
+      </Text>
+    </Stack>
   );
 }
 

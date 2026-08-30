@@ -28,14 +28,24 @@ describe('ProfileAccessPage', () => {
       </AppProviders>,
     );
     expect(screen.getByLabelText(/Master password/)).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Create new' }));
+    expect(
+      screen.getByRole('heading', { name: 'Unlock “Personal”' }),
+    ).toBeVisible();
+    expect(screen.getByText('This device · Encrypted')).toBeVisible();
+    expect(screen.queryByText('Selected Profile')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Create Profile' }));
     expect(screen.getByLabelText(/Profile name/)).toBeVisible();
     expect(
       screen.queryByRole('button', { name: 'Cancel' }),
     ).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Personal' }));
+    await user.click(screen.getByRole('option', { name: /Personal/ }));
     expect(
       screen.getByRole('button', { name: 'Unlock Profile' }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        'Supports autofill from your system or browser password manager.',
+      ),
     ).toBeVisible();
   });
 
@@ -51,7 +61,7 @@ describe('ProfileAccessPage', () => {
     );
     expect(screen.getByLabelText(/Profile name/)).toBeVisible();
     expect(
-      screen.queryByText('Profiles on this device'),
+      screen.queryByRole('listbox', { name: 'Profiles on this device' }),
     ).not.toBeInTheDocument();
   });
 

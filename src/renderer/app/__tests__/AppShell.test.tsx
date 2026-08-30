@@ -98,7 +98,9 @@ describe('application shell', () => {
 
     expect(screen.getByText('Your notes stay on this device.')).toBeVisible();
     expect(unlockButton).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Create new' })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Create Profile' }),
+    ).toBeDisabled();
 
     unlock.resolve({
       state: 'UNLOCKED',
