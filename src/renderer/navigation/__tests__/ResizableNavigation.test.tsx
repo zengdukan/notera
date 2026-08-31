@@ -45,6 +45,8 @@ function renderNavigation() {
     onRecent: jest.fn(),
     onTrash: jest.fn(),
     onSearch: jest.fn(),
+    onCreateNote: jest.fn(),
+    onCreateFolder: jest.fn(),
     onLock: jest.fn(),
     onSettings: jest.fn(),
   };
@@ -184,6 +186,42 @@ describe('ResizableNavigation', () => {
     expect(callbacks.onFavorites).toHaveBeenCalledTimes(1);
     expect(callbacks.onRecent).toHaveBeenCalledTimes(1);
     expect(callbacks.onTrash).toHaveBeenCalledTimes(1);
+  });
+
+  it('creates notes and folders from the Notes heading menu', async () => {
+    const user = userEvent.setup();
+    const { callbacks } = renderNavigation();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Create note or folder' }),
+    );
+    await user.click(screen.getByRole('menuitem', { name: 'New Note' }));
+
+    expect(callbacks.onCreateNote).toHaveBeenCalledTimes(1);
+    expect(callbacks.onCreateFolder).not.toHaveBeenCalled();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Create note or folder' }),
+    );
+    await user.click(screen.getByRole('menuitem', { name: 'New folder' }));
+
+    expect(callbacks.onCreateFolder).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the Notes tree in its own vertical scroll region', () => {
+    renderNavigation();
+
+    const notesAreaStyles = window.getComputedStyle(
+      screen.getByTestId('notera-notes-area'),
+    );
+    expect(notesAreaStyles.display).toBe('flex');
+    expect(notesAreaStyles.flexDirection).toBe('column');
+    expect(notesAreaStyles.height).toBe('100%');
+    expect(
+      window.getComputedStyle(
+        screen.getByTestId('notera-note-tree-scroll-container'),
+      ).overflowY,
+    ).toBe('auto');
   });
 
   it('keeps compact navigation entries wired to their workspace actions', async () => {

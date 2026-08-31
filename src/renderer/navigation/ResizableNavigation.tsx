@@ -5,6 +5,7 @@ import DropdownMenu, {
   DropdownItem,
   DropdownItemGroup,
 } from '@atlaskit/dropdown-menu';
+import AddIcon from '@atlaskit/icon/core/add';
 import ChevronDownIcon from '@atlaskit/icon/core/chevron-down';
 import ClockIcon from '@atlaskit/icon/core/clock';
 import DeleteIcon from '@atlaskit/icon/core/delete';
@@ -67,6 +68,29 @@ const centralWorkspaceStyles = xcss({
   minWidth: '0',
   height: '100%',
   overflow: 'hidden',
+});
+const sideNavBodyContentStyles = xcss({
+  display: 'flex',
+  flexDirection: 'column',
+  height: '100%',
+  minHeight: '0',
+  overflow: 'hidden',
+});
+const workspaceSectionStyles = xcss({ flexShrink: 0 });
+const notesSectionStyles = xcss({
+  display: 'flex',
+  flexDirection: 'column',
+  flexGrow: 1,
+  height: '100%',
+  minHeight: '0',
+  overflow: 'hidden',
+});
+const notesHeadingStyles = xcss({ paddingInlineEnd: 'space.050' });
+const noteTreeScrollStyles = xcss({
+  flexGrow: 1,
+  minHeight: '0',
+  overflowX: 'hidden',
+  overflowY: 'auto',
 });
 const profileMenuStyles = xcss({ minWidth: '0', flexShrink: 1 });
 const profileMenuTriggerStyles = xcss({
@@ -266,6 +290,8 @@ export function ResizableNavigation({
   onFavorites,
   onRecent,
   onTrash,
+  onCreateNote,
+  onCreateFolder,
   onLock,
   onSettings,
 }: {
@@ -276,6 +302,8 @@ export function ResizableNavigation({
   readonly onFavorites: () => void;
   readonly onRecent: () => void;
   readonly onTrash: () => void;
+  readonly onCreateNote: () => void;
+  readonly onCreateFolder: () => void;
   readonly onLock: () => void;
   readonly onSettings: () => void;
 }) {
@@ -322,39 +350,84 @@ export function ResizableNavigation({
           </Inline>
         </SideNavHeader>
         <SideNavBody>
-          <MenuSection ariaLabel="Workspace">
-            <MenuList>
-              <ButtonMenuItem
-                elemBefore={<SearchIcon label="" color="currentColor" />}
-                onClick={onSearch}
+          <Box xcss={sideNavBodyContentStyles}>
+            <Box xcss={workspaceSectionStyles}>
+              <MenuSection ariaLabel="Workspace">
+                <MenuList>
+                  <ButtonMenuItem
+                    elemBefore={<SearchIcon label="" color="currentColor" />}
+                    onClick={onSearch}
+                  >
+                    Search
+                  </ButtonMenuItem>
+                  <ButtonMenuItem
+                    elemBefore={<StarIcon label="" color="currentColor" />}
+                    onClick={onFavorites}
+                  >
+                    Favorites
+                  </ButtonMenuItem>
+                  <ButtonMenuItem
+                    elemBefore={<ClockIcon label="" color="currentColor" />}
+                    onClick={onRecent}
+                  >
+                    Recent
+                  </ButtonMenuItem>
+                  <ButtonMenuItem
+                    elemBefore={<DeleteIcon label="" color="currentColor" />}
+                    onClick={onTrash}
+                  >
+                    Trash
+                  </ButtonMenuItem>
+                </MenuList>
+              </MenuSection>
+            </Box>
+            <Box testId="notera-notes-area" xcss={notesSectionStyles}>
+              <MenuSection
+                ariaLabel="Notes"
+                testId="notera-notes-menu-section"
               >
-                Search
-              </ButtonMenuItem>
-              <ButtonMenuItem
-                elemBefore={<StarIcon label="" color="currentColor" />}
-                onClick={onFavorites}
-              >
-                Favorites
-              </ButtonMenuItem>
-              <ButtonMenuItem
-                elemBefore={<ClockIcon label="" color="currentColor" />}
-                onClick={onRecent}
-              >
-                Recent
-              </ButtonMenuItem>
-              <ButtonMenuItem
-                elemBefore={<DeleteIcon label="" color="currentColor" />}
-                onClick={onTrash}
-              >
-                Trash
-              </ButtonMenuItem>
-            </MenuList>
-          </MenuSection>
-          <MenuSection ariaLabel="Notes">
-            <Divider />
-            <MenuSectionHeading headingLevel={2}>Notes</MenuSectionHeading>
-            {tree}
-          </MenuSection>
+                <Divider />
+                <Inline
+                  xcss={notesHeadingStyles}
+                  alignBlock="center"
+                  spread="space-between"
+                >
+                  <MenuSectionHeading headingLevel={2}>
+                    Notes
+                  </MenuSectionHeading>
+                  <DropdownMenu<HTMLButtonElement>
+                    shouldRenderToParent
+                    placement="bottom-start"
+                    trigger={({ triggerRef, ...triggerProps }) => (
+                      <IconButton
+                        {...triggerProps}
+                        ref={triggerRef}
+                        label="Create note or folder"
+                        icon={AddIcon}
+                        appearance="subtle"
+                        spacing="compact"
+                      />
+                    )}
+                  >
+                    <DropdownItemGroup>
+                      <DropdownItem onClick={onCreateNote}>
+                        New Note
+                      </DropdownItem>
+                      <DropdownItem onClick={onCreateFolder}>
+                        New folder
+                      </DropdownItem>
+                    </DropdownItemGroup>
+                  </DropdownMenu>
+                </Inline>
+                <Box
+                  testId="notera-note-tree-scroll-container"
+                  xcss={noteTreeScrollStyles}
+                >
+                  {tree}
+                </Box>
+              </MenuSection>
+            </Box>
+          </Box>
         </SideNavBody>
         <SideNavPanelSplitter label="Resize navigation" />
       </SideNav>

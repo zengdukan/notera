@@ -645,6 +645,13 @@ function UnlockedNavigationWorkspace({
     if (exportStore.getSnapshot()?.state !== 'RUNNING') exportStore.clear();
     setOverlay({ kind: 'export-note', note: entry });
   };
+  let createFolderParentId = profile.rootFolderId;
+  if (selection?.kind === 'folder') {
+    createFolderParentId = selection.id;
+  } else if (selection?.kind === 'note') {
+    createFolderParentId = selection.folderId;
+  }
+
   return (
     <>
       <ResizableNavigation
@@ -678,6 +685,13 @@ function UnlockedNavigationWorkspace({
         onSearch={() => setOverlay({ kind: 'search' })}
         onRecent={() => setOverlay({ kind: 'recent' })}
         onTrash={() => void openTrash()}
+        onCreateNote={() => void createNote()}
+        onCreateFolder={() =>
+          setOverlay({
+            kind: 'create-folder',
+            parentFolderId: createFolderParentId,
+          })
+        }
       >
         {children ?? (
           <NoteWorkspace
