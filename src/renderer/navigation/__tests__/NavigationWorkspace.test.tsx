@@ -31,6 +31,7 @@ jest.mock('../ResizableNavigation', () => ({
     onFavorites,
     onRecent,
     onTrash,
+    onSearch,
     onLock,
     onSettings,
   }: {
@@ -40,6 +41,7 @@ jest.mock('../ResizableNavigation', () => ({
     onFavorites(): void;
     onRecent(): void;
     onTrash(): void;
+    onSearch(): void;
     onLock(): void;
     onSettings(): void;
   }) => (
@@ -49,6 +51,9 @@ jest.mock('../ResizableNavigation', () => ({
       </button>
       <button type="button" onClick={onLock}>
         Lock profile
+      </button>
+      <button type="button" onClick={onSearch}>
+        Search
       </button>
       <button type="button" onClick={onFavorites}>
         Favorites
@@ -259,6 +264,27 @@ describe('NavigationWorkspace', () => {
     expect(
       screen.queryByRole('dialog', { name: 'Search' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('opens search from the side navigation action', async () => {
+    const user = userEvent.setup();
+    const client = {
+      request: jest.fn(),
+      subscribe: jest.fn(),
+    } as unknown as NoteraClient;
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SessionProvider>
+          <Unlock>
+            <NavigationWorkspace client={client} />
+          </Unlock>
+        </SessionProvider>
+      </QueryClientProvider>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Search' }));
+
+    expect(await screen.findByRole('dialog', { name: 'Search' })).toBeVisible();
   });
 
   it('opens settings from the current profile app logo action', async () => {

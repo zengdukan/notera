@@ -44,6 +44,7 @@ function renderNavigation() {
     onFavorites: jest.fn(),
     onRecent: jest.fn(),
     onTrash: jest.fn(),
+    onSearch: jest.fn(),
     onLock: jest.fn(),
     onSettings: jest.fn(),
   };
@@ -65,29 +66,31 @@ describe('ResizableNavigation', () => {
     mediaQueryListeners.clear();
   });
 
-  it('keeps the workspace when the side nav starts collapsed without rendering a top nav', () => {
+  it('shows the compact navigation when the side nav starts collapsed', () => {
     setDesktopViewport(false);
 
     renderNavigation();
 
     expect(screen.queryByRole('banner')).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('navigation', { name: 'Notera quick navigation' }),
-    ).not.toBeInTheDocument();
+      screen.getByRole('navigation', { name: 'Notera quick navigation' }),
+    ).toBeVisible();
+    expect(screen.queryByText('Content tree')).not.toBeInTheDocument();
     expect(screen.getByText('Central workspace')).toBeVisible();
   });
 
-  it('removes the custom compact rail when the viewport crosses the ADS breakpoint', async () => {
+  it('switches to the compact navigation when the viewport crosses the ADS breakpoint', async () => {
     renderNavigation();
     expect(screen.getByText('Content tree')).toBeVisible();
 
     act(() => setDesktopViewport(false));
 
     expect(
-      screen.queryByRole('navigation', {
+      await screen.findByRole('navigation', {
         name: 'Notera quick navigation',
       }),
-    ).not.toBeInTheDocument();
+    ).toBeVisible();
+    expect(screen.queryByText('Content tree')).not.toBeInTheDocument();
   });
 
   it('opens profile settings from the current profile menu', async () => {
@@ -144,32 +147,78 @@ describe('ResizableNavigation', () => {
 
     await user.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
 
+    const quickNavigation = await screen.findByRole('navigation', {
+      name: 'Notera quick navigation',
+    });
     expect(
       screen.queryByTestId('notera-expanded-side-nav'),
     ).not.toBeInTheDocument();
+    expect(screen.queryByText('Content tree')).not.toBeInTheDocument();
     expect(screen.getByText('Central workspace')).toBeVisible();
-    expect(
-      screen.queryByRole('navigation', { name: 'Notera quick navigation' }),
-    ).not.toBeInTheDocument();
+    for (const name of [
+      'Expand sidebar',
+      'Open Personal Notes profile menu',
+      'Search',
+      'Favorites',
+      'Recent',
+      'Trash',
+    ]) {
+      expect(within(quickNavigation).getByRole('button', { name })).toBeVisible();
+    }
 
     await user.click(
-      screen.getByRole('button', {
+      within(quickNavigation).getByRole('button', {
         name: 'Expand sidebar',
       }),
     );
     await waitFor(() => expect(screen.getByText('Content tree')).toBeVisible());
   });
 
-  it('keeps ADS side-nav primary entries wired to their workspace actions', async () => {
+  it('keeps expanded side-nav entries wired to their workspace actions', async () => {
     const user = userEvent.setup();
     const { callbacks } = renderNavigation();
 
+    await user.click(screen.getByRole('button', { name: 'Search' }));
     await user.click(screen.getByRole('button', { name: 'Favorites' }));
     await user.click(screen.getByRole('button', { name: 'Recent' }));
     await user.click(screen.getByRole('button', { name: 'Trash' }));
 
+    expect(callbacks.onSearch).toHaveBeenCalledTimes(1);
     expect(callbacks.onFavorites).toHaveBeenCalledTimes(1);
     expect(callbacks.onRecent).toHaveBeenCalledTimes(1);
     expect(callbacks.onTrash).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps compact navigation entries wired to their workspace actions', async () => {
+    const user = userEvent.setup();
+    const { callbacks } = renderNavigation();
+
+    await user.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
+    const quickNavigation = await screen.findByRole('navigation', {
+      name: 'Notera quick navigation',
+    });
+    for (const name of ['Search', 'Favorites', 'Recent', 'Trash']) {
+      await user.click(within(quickNavigation).getByRole('button', { name }));
+    }
+
+    expect(callbacks.onSearch).toHaveBeenCalledTimes(1);
+    expect(callbacks.onFavorites).toHaveBeenCalledTimes(1);
+    expect(callbacks.onRecent).toHaveBeenCalledTimes(1);
+    expect(callbacks.onTrash).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the ADS side-nav splitter to collapse on double click', async () => {
+    const user = userEvent.setup();
+    renderNavigation();
+
+    await user.dblClick(
+      screen.getByRole('slider', { name: 'Resize navigation' }),
+    );
+
+    expect(
+      await screen.findByRole('navigation', {
+        name: 'Notera quick navigation',
+      }),
+    ).toBeVisible();
   });
 });

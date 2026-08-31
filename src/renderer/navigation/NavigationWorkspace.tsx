@@ -675,6 +675,7 @@ function UnlockedNavigationWorkspace({
           />
         }
         onFavorites={() => setOverlay({ kind: 'favorites' })}
+        onSearch={() => setOverlay({ kind: 'search' })}
         onRecent={() => setOverlay({ kind: 'recent' })}
         onTrash={() => void openTrash()}
       >
