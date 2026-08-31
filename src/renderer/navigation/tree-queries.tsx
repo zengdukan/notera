@@ -79,7 +79,7 @@ function QueryLevel({
             }}
             actions={getActions(entry)}
           >
-            {expanded && entry.kind === 'folder' ? (
+            {entry.kind === 'folder' ? (
               <QueryLevel
                 client={client}
                 profileId={profileId}

@@ -154,4 +154,55 @@ describe('ContentTree', () => {
       limit: 50,
     });
   });
+
+  it('keeps a queried nested subtree mounted when its ADS folder collapses', async () => {
+    const nestedNote = {
+      ...note.entry,
+      id: 'note-nested',
+      title: 'Nested roadmap',
+      folderId: folder.entry.id,
+    };
+    const request = jest.fn(
+      async (
+        _method: string,
+        input: { readonly parentFolderId: string },
+      ) => ({
+        items:
+          input.parentFolderId === folder.entry.id
+            ? [nestedNote]
+            : [folder.entry],
+      }),
+    );
+    const queryClient = new QueryClient();
+    const tree = (expandedIds: ReadonlySet<string>) => (
+      <AppProviders locale="en" queryClient={queryClient}>
+        <QueryContentTree
+          client={{ request } as unknown as NoteraClient}
+          profileId="profile-1"
+          rootFolderId="root"
+          expandedIds={expandedIds}
+          onOpen={jest.fn()}
+          onToggle={jest.fn()}
+          onCreateNote={jest.fn()}
+          onCreateFolder={jest.fn()}
+          getActions={() => []}
+        />
+      </AppProviders>
+    );
+    const { rerender } = render(tree(new Set([folder.entry.id])));
+
+    expect(
+      await screen.findByRole('button', { name: 'Nested roadmap' }),
+    ).toBeVisible();
+
+    rerender(tree(new Set()));
+
+    expect(
+      screen.getByRole('button', { name: 'Nested roadmap', hidden: true }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Projects' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+  });
 });
