@@ -1,8 +1,15 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import Avatar, { AvatarContent } from '@atlaskit/avatar';
+import Button from '@atlaskit/button/new';
+import DropdownMenu, {
+  DropdownItem,
+  DropdownItemGroup,
+} from '@atlaskit/dropdown-menu';
+import ChevronDownIcon from '@atlaskit/icon/core/chevron-down';
 import ClockIcon from '@atlaskit/icon/core/clock';
 import DeleteIcon from '@atlaskit/icon/core/delete';
 import LockIcon from '@atlaskit/icon/core/lock-locked';
+import SettingsIcon from '@atlaskit/icon/core/settings';
 import StarIcon from '@atlaskit/icon/core/star-unstarred';
 import { Main } from '@atlaskit/navigation-system/layout/main';
 import { PanelSplitter } from '@atlaskit/navigation-system/layout/panel-splitter';
@@ -13,7 +20,6 @@ import {
   SideNavHeader,
   SideNavToggleButton,
 } from '@atlaskit/navigation-system/layout/side-nav';
-import { EndItem } from '@atlaskit/navigation-system/top-nav-items';
 import { Box, Inline, Text, xcss } from '@atlaskit/primitives';
 import { ButtonMenuItem } from '@atlaskit/side-nav-items/button-menu-item';
 import { MenuList } from '@atlaskit/side-nav-items/menu-list';
@@ -39,6 +45,13 @@ const centralWorkspaceStyles = xcss({
   minWidth: '0',
   height: '100%',
   overflow: 'hidden',
+});
+const profileMenuStyles = xcss({ minWidth: '0', flexShrink: 1 });
+const profileNameStyles = xcss({
+  minWidth: '0',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 });
 
 export function ResizableNavigation({
@@ -83,30 +96,61 @@ export function ResizableNavigation({
       >
         <SideNavHeader>
           <Inline alignBlock="center" spread="space-between">
-            <Avatar
-              name={profileName}
-              label={`Open ${profileName} settings`}
-              size="medium"
-              onClick={onSettings}
-            >
-              <AvatarContent>
-                <Text align="center" weight="semibold">
-                  {Array.from(profileName.trim())[0]}
-                </Text>
-              </AvatarContent>
-            </Avatar>
-            <Inline alignBlock="center" space="space.050">
-              <EndItem
-                icon={LockIcon}
-                label="Lock profile"
-                onClick={onLock}
-                isListItem={false}
-              />
-              <SideNavToggleButton
-                collapseLabel="Collapse sidebar"
-                expandLabel="Expand sidebar"
-              />
-            </Inline>
+            <Box xcss={profileMenuStyles}>
+              <DropdownMenu<HTMLButtonElement>
+                placement="bottom-start"
+                menuLabel="Profile actions"
+                trigger={({ triggerRef, ...triggerProps }) => (
+                  <Button
+                    {...triggerProps}
+                    ref={triggerRef}
+                    appearance="subtle"
+                    spacing="compact"
+                    aria-label={`Open ${profileName} profile menu`}
+                  >
+                    <Inline
+                      as="span"
+                      alignBlock="center"
+                      space="space.075"
+                      shouldWrap={false}
+                    >
+                      <Avatar name={profileName} size="medium" as="span">
+                        <AvatarContent>
+                          <Text align="center" weight="semibold">
+                            {Array.from(profileName.trim())[0]}
+                          </Text>
+                        </AvatarContent>
+                      </Avatar>
+                      <Box as="span" xcss={profileNameStyles}>
+                        <Text weight="semibold">{profileName}</Text>
+                      </Box>
+                      <ChevronDownIcon label="" color="currentColor" />
+                    </Inline>
+                  </Button>
+                )}
+              >
+                <DropdownItemGroup>
+                  <DropdownItem
+                    elemBefore={<LockIcon label="" color="currentColor" />}
+                    onClick={onLock}
+                  >
+                    Lock profile
+                  </DropdownItem>
+                  <DropdownItem
+                    elemBefore={
+                      <SettingsIcon label="" color="currentColor" />
+                    }
+                    onClick={onSettings}
+                  >
+                    Settings
+                  </DropdownItem>
+                </DropdownItemGroup>
+              </DropdownMenu>
+            </Box>
+            <SideNavToggleButton
+              collapseLabel="Collapse sidebar"
+              expandLabel="Expand sidebar"
+            />
           </Inline>
         </SideNavHeader>
         <SideNavBody>

@@ -90,28 +90,40 @@ describe('ResizableNavigation', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('shows the current profile initial in a settings avatar', async () => {
+  it('opens profile settings from the current profile menu', async () => {
     const user = userEvent.setup();
     const { callbacks } = renderNavigation();
 
     const sideNav = screen.getByRole('navigation', {
       name: 'Notera navigation',
     });
-    const avatar = within(sideNav).getByRole('button', {
-      name: 'Open Personal Notes settings',
+    const profileMenu = within(sideNav).getByRole('button', {
+      name: 'Open Personal Notes profile menu',
     });
-    expect(within(avatar).getByText('P')).toBeVisible();
+    expect(within(profileMenu).getByText('P')).toBeVisible();
+    expect(
+      within(profileMenu)
+        .getAllByText('Personal Notes')
+        .some((element) => !element.hidden),
+    ).toBe(true);
+    expect(screen.queryByRole('menuitem', { name: 'Settings' })).toBeNull();
 
-    await user.click(avatar);
+    await user.click(profileMenu);
+    await user.click(screen.getByRole('menuitem', { name: 'Settings' }));
 
     expect(callbacks.onSettings).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps the lock action wired in the side nav header', async () => {
+  it('locks the current profile from the profile menu', async () => {
     const user = userEvent.setup();
     const { callbacks } = renderNavigation();
 
-    await user.click(screen.getByRole('button', { name: 'Lock profile' }));
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Open Personal Notes profile menu',
+      }),
+    );
+    await user.click(screen.getByRole('menuitem', { name: 'Lock profile' }));
 
     expect(callbacks.onLock).toHaveBeenCalledTimes(1);
   });
