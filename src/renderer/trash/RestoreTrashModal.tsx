@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Button from '@atlaskit/button/new';
-import { Inline, Stack, Text } from '@atlaskit/primitives';
+import { Stack, Text } from '@atlaskit/primitives';
 
 import { FolderPicker, type FolderPickerItem } from '../notes/FolderPicker';
 
@@ -18,22 +18,39 @@ export function RestoreTrashModal({
   readonly onCancel: () => void;
 }) {
   const [target, setTarget] = useState(rootFolderId);
+  const [restoring, setRestoring] = useState(false);
+  const restore = async () => {
+    setRestoring(true);
+    try {
+      await onRestore(target);
+    } finally {
+      setRestoring(false);
+    }
+  };
   return (
-    <Stack space="space.200">
-      <Text>Choose where to restore {name || 'Untitled'}.</Text>
-      <FolderPicker
-        rootFolderId={rootFolderId}
-        folders={folders}
-        disabledIds={new Set()}
-        value={target}
-        onChange={setTarget}
-      />
-      <Inline space="space.100">
-        <Button onClick={onCancel}>Cancel</Button>
-        <Button appearance="primary" onClick={() => void onRestore(target)}>
-          Restore to selected folder
-        </Button>
-      </Inline>
-    </Stack>
+    <div className="notera-trash-restore">
+      <Stack space="space.200">
+        <Text>Choose where to restore {name || 'Untitled'}.</Text>
+        <FolderPicker
+          rootFolderId={rootFolderId}
+          folders={folders}
+          disabledIds={new Set()}
+          value={target}
+          onChange={setTarget}
+        />
+        <div className="notera-trash-confirm__actions">
+          <Button isDisabled={restoring} onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            appearance="primary"
+            isLoading={restoring}
+            onClick={() => void restore()}
+          >
+            Restore to selected folder
+          </Button>
+        </div>
+      </Stack>
+    </div>
   );
 }

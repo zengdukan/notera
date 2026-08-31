@@ -60,6 +60,7 @@ describe('TrashModal', () => {
       screen.getByRole('button', { name: 'Restore Deleted note' }),
     );
     expect(restore).toHaveBeenCalledWith({ trashEntryId: 'trash-note' });
+    expect(await screen.findByText('Restored Deleted note')).toBeVisible();
 
     await user.click(
       screen.getByRole('button', { name: 'Restore Deleted folder' }),
@@ -79,6 +80,11 @@ describe('TrashModal', () => {
     await user.click(
       screen.getByRole('button', { name: 'Delete Deleted note permanently' }),
     );
+    expect(
+      screen.getByRole('heading', {
+        name: 'Permanently delete Deleted note?',
+      }),
+    ).toBeVisible();
     expect(screen.getByText('This cannot be undone.')).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(deletePermanent).not.toHaveBeenCalled();

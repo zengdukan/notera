@@ -23,26 +23,28 @@ export function TrashList({
     );
   }
   return (
-    <Stack space="space.150">
+    <div aria-label="Deleted items" className="notera-trash-list" role="list">
       {items.map((item) => (
-        <Inline
+        <div
+          className="notera-trash-list__item"
           key={item.trashEntryId}
-          alignBlock="center"
-          spread="space-between"
+          role="listitem"
         >
-          <Stack space="space.025">
-            <Text weight="semibold">{item.displayName || 'Untitled'}</Text>
-            <Inline space="space.100">
-              <Text>{item.kind === 'note' ? 'Note' : 'Folder'}</Text>
-              <Text color="color.text.subtle">
-                Deleted {localVersionName(new Date(item.deletedAt))}
-              </Text>
-              <Text color="color.text.subtle">
-                Expires {localVersionName(new Date(item.expiresAt))}
-              </Text>
-            </Inline>
-          </Stack>
-          <Inline space="space.050">
+          <div className="notera-trash-list__details">
+            <Stack space="space.025">
+              <Text weight="semibold">{item.displayName || 'Untitled'}</Text>
+              <Inline space="space.100" shouldWrap>
+                <Text>{item.kind === 'note' ? 'Note' : 'Folder'}</Text>
+                <Text color="color.text.subtle" size="small">
+                  Deleted {localVersionName(new Date(item.deletedAt))}
+                </Text>
+                <Text color="color.text.subtle" size="small">
+                  Expires {localVersionName(new Date(item.expiresAt))}
+                </Text>
+              </Inline>
+            </Stack>
+          </div>
+          <div className="notera-trash-list__actions">
             <Button
               appearance="subtle"
               onClick={() => onRestore(item)}
@@ -55,11 +57,13 @@ export function TrashList({
               onClick={() => onDelete(item)}
               aria-label={`Delete ${item.displayName || 'Untitled'} permanently`}
             >
-              Delete permanently
+              <span className="notera-trash-action--danger">
+                Delete permanently
+              </span>
             </Button>
-          </Inline>
-        </Inline>
+          </div>
+        </div>
       ))}
-    </Stack>
+    </div>
   );
 }

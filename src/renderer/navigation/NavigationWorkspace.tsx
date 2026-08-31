@@ -405,7 +405,7 @@ function UnlockedNavigationWorkspace({
       return {
         kind: overlay.kind,
         title: 'Trash',
-        width: 'large',
+        width: 840,
         content: (
           <TrashModal
             client={client}
