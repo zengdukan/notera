@@ -55,57 +55,65 @@ export function ExportModal({
   }
   if (saveFailed) {
     return (
-      <Stack space="space.200">
-        <SectionMessage
-          appearance="warning"
-          title="Latest changes could not be saved"
-        >
-          Export the last successfully saved version, or return to editing
-          without exporting.
-        </SectionMessage>
-        <Button
-          appearance="primary"
-          isLoading={starting}
-          onClick={() => void start('saved')}
-        >
-          Export last saved version
-        </Button>
-        <Button onClick={onReturnToEdit}>Return to editing</Button>
-      </Stack>
+      <div className="notera-export-setup">
+        <Stack space="space.200">
+          <SectionMessage
+            appearance="warning"
+            title="Latest changes could not be saved"
+          >
+            Export the last successfully saved version, or return to editing
+            without exporting.
+          </SectionMessage>
+          <div className="notera-export-actions">
+            <Button onClick={onReturnToEdit}>Return to editing</Button>
+            <Button
+              appearance="primary"
+              isLoading={starting}
+              onClick={() => void start('saved')}
+            >
+              Export last saved version
+            </Button>
+          </div>
+        </Stack>
+      </div>
     );
   }
   return (
-    <Stack space="space.200">
-      <RadioGroup
-        name="export-format"
-        value={format}
-        options={[
-          { name: 'export-format', value: 'MARKDOWN', label: 'Markdown' },
-          { name: 'export-format', value: 'PDF', label: 'PDF' },
-        ]}
-        onChange={(event) =>
-          setFormat(event.currentTarget.value as ExportFormat)
-        }
-      />
-      <SectionMessage
-        appearance="warning"
-        title="Export creates plaintext files"
-      >
-        Exported files are outside Notera encryption and must be protected
-        separately.
-      </SectionMessage>
-      {failed ? (
-        <SectionMessage appearance="error" title="Export could not start">
-          Try again without exposing any output path.
+    <div className="notera-export-setup">
+      <Stack space="space.200">
+        <RadioGroup
+          name="export-format"
+          value={format}
+          options={[
+            { name: 'export-format', value: 'MARKDOWN', label: 'Markdown' },
+            { name: 'export-format', value: 'PDF', label: 'PDF' },
+          ]}
+          onChange={(event) =>
+            setFormat(event.currentTarget.value as ExportFormat)
+          }
+        />
+        <SectionMessage
+          appearance="warning"
+          title="Export creates plaintext files"
+        >
+          Exported files are outside Notera encryption and must be protected
+          separately.
         </SectionMessage>
-      ) : null}
-      <Button
-        appearance="primary"
-        isLoading={starting}
-        onClick={() => void start('try')}
-      >
-        Export
-      </Button>
-    </Stack>
+        {failed ? (
+          <SectionMessage appearance="error" title="Export could not start">
+            Try again without exposing any output path.
+          </SectionMessage>
+        ) : null}
+        <div className="notera-export-actions">
+          <Button
+            appearance="primary"
+            isLoading={starting}
+            onClick={() => void start('try')}
+          >
+            Export
+          </Button>
+        </div>
+      </Stack>
+    </div>
   );
 }

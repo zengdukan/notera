@@ -421,6 +421,7 @@ function UnlockedNavigationWorkspace({
       return {
         kind: overlay.kind,
         title: 'Export',
+        width: 620,
         content: (
           <ExportModal
             noteId={overlay.note.id}

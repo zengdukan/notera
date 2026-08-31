@@ -47,4 +47,39 @@ describe('ExportModal', () => {
     });
     expect(document.body.textContent).not.toContain('C:\\');
   });
+
+  it('shows the current export stage, the full stage track, and cancellation', async () => {
+    const user = userEvent.setup();
+    const store = new ExportOperationStore();
+    store.track('10000000-0000-4000-8000-000000000001');
+    store.applyProgress({
+      operationId: '10000000-0000-4000-8000-000000000001',
+      kind: 'NOTE_EXPORT',
+      phase: 'RENDERING',
+      progress: 0.5,
+    });
+    const cancel = jest.fn();
+
+    render(
+      <ExportModal
+        noteId="note"
+        controller={{ cancel, start: jest.fn() } as unknown as ExportController}
+        store={store}
+        onReturnToEdit={jest.fn()}
+      />,
+    );
+
+    const progress = screen.getByRole('region', { name: 'Export progress' });
+    expect(progress).toHaveTextContent('Rendering');
+    expect(screen.getByRole('list', { name: 'Export stages' })).toHaveTextContent(
+      'Preparing → Reading → Rendering → Writing → Completing',
+    );
+    expect(screen.getByRole('listitem', { name: 'Rendering' })).toHaveAttribute(
+      'aria-current',
+      'step',
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Cancel export' }));
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
 });
