@@ -40,7 +40,10 @@ export function ContentTreeRow({
 }) {
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
+  const [pointerInside, setPointerInside] = useState(false);
+  const [keyboardFocusWithin, setKeyboardFocusWithin] = useState(false);
   const itemRef = useRef<HTMLButtonElement>(null);
+  const visualContentRef = useRef<HTMLDivElement>(null);
   const name = entry.kind === 'folder' ? entry.name : entry.title || 'Untitled';
 
   useEffect(() => {
@@ -63,6 +66,41 @@ export function ContentTreeRow({
       item.removeEventListener('keydown', openKeyboardMenu);
     };
   }, []);
+
+  useEffect(() => {
+    const visualContent = visualContentRef.current;
+    if (!visualContent) return undefined;
+    const showForPointer = () => setPointerInside(true);
+    const hideForPointer = () => {
+      setPointerInside(false);
+      const { activeElement } = document;
+      setKeyboardFocusWithin(
+        activeElement instanceof HTMLElement &&
+          visualContent.contains(activeElement) &&
+          activeElement.matches(':focus-visible'),
+      );
+    };
+    const showForFocus = () => setKeyboardFocusWithin(true);
+    const updateFocusAfterLeaving = (event: FocusEvent) => {
+      setKeyboardFocusWithin(
+        event.relatedTarget instanceof HTMLElement &&
+          visualContent.contains(event.relatedTarget),
+      );
+    };
+    visualContent.addEventListener('pointerenter', showForPointer);
+    visualContent.addEventListener('pointerleave', hideForPointer);
+    visualContent.addEventListener('focusin', showForFocus);
+    visualContent.addEventListener('focusout', updateFocusAfterLeaving);
+    return () => {
+      visualContent.removeEventListener('pointerenter', showForPointer);
+      visualContent.removeEventListener('pointerleave', hideForPointer);
+      visualContent.removeEventListener('focusin', showForFocus);
+      visualContent.removeEventListener('focusout', updateFocusAfterLeaving);
+    };
+  }, []);
+
+  const showRowActions =
+    pointerInside || keyboardFocusWithin || createMenuOpen || actionMenuOpen;
 
   const rowActions = (
     <Inline alignBlock="center" space="space.025">
@@ -150,8 +188,9 @@ export function ContentTreeRow({
       <ExpandableMenuItem isExpanded={expanded} onExpansionToggle={onToggle}>
         <ExpandableMenuItemTrigger
           ref={itemRef}
+          visualContentRef={visualContentRef}
           isSelected={selected}
-          actionsOnHover={rowActions}
+          actionsOnHover={showRowActions ? rowActions : undefined}
           onClick={onOpen}
         >
           {name}
@@ -164,8 +203,9 @@ export function ContentTreeRow({
   return (
     <ButtonMenuItem
       ref={itemRef}
+      visualContentRef={visualContentRef}
       isSelected={selected}
-      actionsOnHover={rowActions}
+      actionsOnHover={showRowActions ? rowActions : undefined}
       onClick={onOpen}
     >
       {name}

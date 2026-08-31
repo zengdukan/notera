@@ -123,6 +123,66 @@ describe('ContentTree', () => {
     expect(action).not.toHaveBeenCalled();
   });
 
+  it('removes expanded folder actions after the pointer leaves the row', async () => {
+    const user = userEvent.setup();
+    render(
+      <AppProviders locale="en">
+        <ContentTree
+          nodes={[folder]}
+          expandedIds={new Set([folder.entry.id])}
+          onOpen={jest.fn()}
+          onToggle={jest.fn()}
+          onCreateNote={jest.fn()}
+          onCreateFolder={jest.fn()}
+          getActions={() => []}
+        />
+      </AppProviders>,
+    );
+    const folderRow = screen.getByRole('button', { name: 'Projects' });
+
+    expect(
+      screen.queryByRole('button', { name: 'Create in Projects' }),
+    ).not.toBeInTheDocument();
+
+    await user.hover(folderRow);
+    expect(
+      screen.getByRole('button', { name: 'Create in Projects' }),
+    ).toBeVisible();
+
+    await user.unhover(folderRow);
+    expect(
+      screen.queryByRole('button', { name: 'Create in Projects' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows row actions for keyboard-visible focus', async () => {
+    const user = userEvent.setup();
+    render(
+      <AppProviders locale="en">
+        <ContentTree
+          nodes={[folder]}
+          expandedIds={new Set([folder.entry.id])}
+          onOpen={jest.fn()}
+          onToggle={jest.fn()}
+          onCreateNote={jest.fn()}
+          onCreateFolder={jest.fn()}
+          getActions={() => []}
+        />
+      </AppProviders>,
+    );
+    const folderRow = screen.getByRole('button', { name: 'Projects' });
+
+    expect(
+      screen.queryByRole('button', { name: 'Create in Projects' }),
+    ).not.toBeInTheDocument();
+
+    await user.tab();
+    expect(folderRow).toHaveFocus();
+    expect(
+      screen.getByRole('button', { name: 'Create in Projects' }),
+    ).toBeVisible();
+  });
+
   it('renders queried content with the same ADS side-nav item contract', async () => {
     const onOpen = jest.fn();
     const request = jest.fn(async () => ({
