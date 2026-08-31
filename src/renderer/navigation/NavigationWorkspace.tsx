@@ -668,21 +668,7 @@ function UnlockedNavigationWorkspace({
                 parentFolderId: createFolderParentId,
               })
             }
-          />
-        }
-        collapsedHeader={
-          <NavigationHeader
-            compact
-            profileName={profile.displayName}
-            onLock={() => void client.request('profile.lock', {})}
-            onSearch={() => setOverlay({ kind: 'search' })}
-            onCreateNote={() => void createNote()}
-            onCreateFolder={() =>
-              setOverlay({
-                kind: 'create-folder',
-                parentFolderId: createFolderParentId,
-              })
-            }
+            onSettings={() => void openSettings()}
           />
         }
         tree={
@@ -711,7 +697,6 @@ function UnlockedNavigationWorkspace({
         onFavorites={() => setOverlay({ kind: 'favorites' })}
         onRecent={() => setOverlay({ kind: 'recent' })}
         onTrash={() => void openTrash()}
-        onSettings={() => void openSettings()}
       >
         {children ?? (
           <NoteWorkspace

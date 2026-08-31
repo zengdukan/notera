@@ -1,5 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import Button from '@atlaskit/button/new';
+import { ButtonMenuItem } from '@atlaskit/side-nav-items/button-menu-item';
+import { MenuList } from '@atlaskit/side-nav-items/menu-list';
 
 import { treeKey } from '../app/query-keys';
 import type { NoteraClient } from '../platform/notera-client';
@@ -31,7 +32,6 @@ function QueryLevel({
   client,
   profileId,
   parentFolderId,
-  level,
   expandedIds,
   selected,
   onOpen,
@@ -43,7 +43,6 @@ function QueryLevel({
   readonly client: NoteraClient;
   readonly profileId: string;
   readonly parentFolderId: string;
-  readonly level: number;
   readonly expandedIds: ReadonlySet<string>;
   readonly selected?: { readonly kind: 'folder' | 'note'; readonly id: string };
   readonly onOpen: (entry: ContentEntry) => void;
@@ -60,73 +59,61 @@ function QueryLevel({
   const entries = query.data?.pages.flatMap((page) => page.items) ?? [];
   return (
     <>
-      {entries.map((entry, index) => {
+      {entries.map((entry) => {
         const expanded = entry.kind === 'folder' && expandedIds.has(entry.id);
         return (
-          <div key={`${entry.kind}:${entry.id}`} role="none">
-            <ContentTreeRow
-              entry={entry}
-              level={level}
-              expanded={expanded}
-              selected={
-                selected?.kind === entry.kind && selected.id === entry.id
-              }
-              tabIndex={
-                selected?.id === entry.id ||
-                (selected === undefined && level === 1 && index === 0)
-                  ? 0
-                  : -1
-              }
-              onOpen={() => onOpen(entry)}
-              onToggle={(next) => {
-                if (entry.kind === 'folder') onToggle(entry.id, next);
-              }}
-              onCreateNote={() => {
-                if (entry.kind === 'folder') onCreateNote(entry);
-              }}
-              onCreateFolder={() => {
-                if (entry.kind === 'folder') onCreateFolder(entry);
-              }}
-              actions={getActions(entry)}
-            />
+          <ContentTreeRow
+            key={`${entry.kind}:${entry.id}`}
+            entry={entry}
+            expanded={expanded}
+            selected={selected?.kind === entry.kind && selected.id === entry.id}
+            onOpen={() => onOpen(entry)}
+            onToggle={(next) => {
+              if (entry.kind === 'folder') onToggle(entry.id, next);
+            }}
+            onCreateNote={() => {
+              if (entry.kind === 'folder') onCreateNote(entry);
+            }}
+            onCreateFolder={() => {
+              if (entry.kind === 'folder') onCreateFolder(entry);
+            }}
+            actions={getActions(entry)}
+          >
             {expanded && entry.kind === 'folder' ? (
-              <div role="group">
-                <QueryLevel
-                  client={client}
-                  profileId={profileId}
-                  parentFolderId={entry.id}
-                  level={level + 1}
-                  expandedIds={expandedIds}
-                  selected={selected}
-                  onOpen={onOpen}
-                  onToggle={onToggle}
-                  onCreateNote={onCreateNote}
-                  onCreateFolder={onCreateFolder}
-                  getActions={getActions}
-                />
-              </div>
+              <QueryLevel
+                client={client}
+                profileId={profileId}
+                parentFolderId={entry.id}
+                expandedIds={expandedIds}
+                selected={selected}
+                onOpen={onOpen}
+                onToggle={onToggle}
+                onCreateNote={onCreateNote}
+                onCreateFolder={onCreateFolder}
+                getActions={getActions}
+              />
             ) : null}
-          </div>
+          </ContentTreeRow>
         );
       })}
       {query.hasNextPage ? (
-        <Button appearance="subtle" onClick={() => void query.fetchNextPage()}>
+        <ButtonMenuItem onClick={() => void query.fetchNextPage()}>
           Load more
-        </Button>
+        </ButtonMenuItem>
       ) : null}
     </>
   );
 }
 
 export function QueryContentTree(
-  props: Omit<Parameters<typeof QueryLevel>[0], 'level' | 'parentFolderId'> & {
+  props: Omit<Parameters<typeof QueryLevel>[0], 'parentFolderId'> & {
     readonly rootFolderId: string;
   },
 ) {
   const { rootFolderId, ...queryProps } = props;
   return (
-    <div role="tree" aria-label="Content">
-      <QueryLevel {...queryProps} parentFolderId={rootFolderId} level={1} />
-    </div>
+    <MenuList>
+      <QueryLevel {...queryProps} parentFolderId={rootFolderId} />
+    </MenuList>
   );
 }

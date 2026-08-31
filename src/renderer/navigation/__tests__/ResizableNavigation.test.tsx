@@ -2,7 +2,8 @@
 
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import Button from '@atlaskit/button/new';
+import { SideNavToggleButton } from '@atlaskit/navigation-system/layout/side-nav';
+import { TopNavStart } from '@atlaskit/navigation-system/layout/top-nav';
 
 import { configureFeatureFlags } from '../../atlassian-editor/feature-flags';
 import { ResizableNavigation } from '../ResizableNavigation';
@@ -45,12 +46,21 @@ function renderNavigation() {
     onFavorites: jest.fn(),
     onRecent: jest.fn(),
     onTrash: jest.fn(),
-    onSettings: jest.fn(),
   };
   render(
     <ResizableNavigation
-      header={<div>Profile and search</div>}
-      collapsedHeader={<Button>Compact profile actions</Button>}
+      header={
+        <TopNavStart
+          sideNavToggleButton={
+            <SideNavToggleButton
+              collapseLabel="Collapse navigation"
+              expandLabel="Expand navigation"
+            />
+          }
+        >
+          <div>Notera top navigation</div>
+        </TopNavStart>
+      }
       tree={<div>Content tree</div>}
       {...callbacks}
     >
@@ -66,40 +76,42 @@ describe('ResizableNavigation', () => {
     mediaQueryListeners.clear();
   });
 
-  it('shows the compact navigation immediately below the ADS desktop breakpoint', () => {
+  it('keeps the ADS top navigation and workspace when the side nav starts collapsed', () => {
     setDesktopViewport(false);
 
     renderNavigation();
 
+    expect(screen.getByText('Notera top navigation')).toBeVisible();
     expect(
-      screen.getByRole('navigation', { name: 'Notera quick navigation' }),
-    ).toBeVisible();
-    expect(screen.queryByText('Content tree')).not.toBeInTheDocument();
+      screen.queryByRole('navigation', { name: 'Notera quick navigation' }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText('Central workspace')).toBeVisible();
   });
 
-  it('switches to the compact navigation when the viewport crosses the ADS breakpoint', async () => {
+  it('removes the custom compact rail when the viewport crosses the ADS breakpoint', async () => {
     renderNavigation();
     expect(screen.getByText('Content tree')).toBeVisible();
 
     act(() => setDesktopViewport(false));
 
     expect(
-      await screen.findByRole('navigation', {
+      screen.queryByRole('navigation', {
         name: 'Notera quick navigation',
       }),
-    ).toBeVisible();
-    expect(screen.queryByText('Content tree')).not.toBeInTheDocument();
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('Notera top navigation')).toBeVisible();
   });
 
-  it('keeps the two-pane desktop layout and replaces a collapsed tree with primary icon entries', async () => {
+  it('uses ADS side-nav menu items in the two-pane desktop layout', async () => {
     const user = userEvent.setup();
     renderNavigation();
 
-    expect(
-      screen.getByRole('navigation', { name: 'Notera navigation' }),
-    ).toBeInTheDocument();
+    const sideNav = screen.getByRole('navigation', {
+      name: 'Notera navigation',
+    });
+    expect(sideNav).toBeInTheDocument();
     expect(screen.getByTestId('notera-expanded-side-nav')).toBeInTheDocument();
+    expect(within(sideNav).getByRole('list')).toBeVisible();
     expect(screen.getByText('Content tree')).toBeVisible();
     expect(screen.getByText('Central workspace')).toBeVisible();
 
@@ -107,64 +119,32 @@ describe('ResizableNavigation', () => {
       screen.getByRole('button', { name: 'Collapse navigation' }),
     );
 
-    const quickNavigation = await screen.findByRole('navigation', {
-      name: 'Notera quick navigation',
-    });
     expect(
       screen.queryByTestId('notera-expanded-side-nav'),
     ).not.toBeInTheDocument();
-    expect(screen.queryByText('Content tree')).not.toBeInTheDocument();
     expect(screen.getByText('Central workspace')).toBeVisible();
     expect(
-      within(quickNavigation).getByRole('button', {
-        name: 'Compact profile actions',
-      }),
-    ).toBeVisible();
-    expect(
-      within(quickNavigation).getByRole('button', {
-        name: 'Expand navigation',
-      }),
-    ).toBeVisible();
-    for (const name of ['Favorites', 'Recent', 'Trash', 'Settings']) {
-      expect(
-        within(quickNavigation).getByRole('button', { name }),
-      ).toBeVisible();
-    }
+      screen.queryByRole('navigation', { name: 'Notera quick navigation' }),
+    ).not.toBeInTheDocument();
 
     await user.click(
-      within(quickNavigation).getByRole('button', {
+      screen.getByRole('button', {
         name: 'Expand navigation',
       }),
     );
     await waitFor(() => expect(screen.getByText('Content tree')).toBeVisible());
   });
 
-  it('keeps collapsed primary entries wired to their workspace actions', async () => {
+  it('keeps ADS side-nav primary entries wired to their workspace actions', async () => {
     const user = userEvent.setup();
     const callbacks = renderNavigation();
-    await user.click(
-      screen.getByRole('button', { name: 'Collapse navigation' }),
-    );
-    const quickNavigation = await screen.findByRole('navigation', {
-      name: 'Notera quick navigation',
-    });
 
-    await user.click(
-      within(quickNavigation).getByRole('button', { name: 'Favorites' }),
-    );
-    await user.click(
-      within(quickNavigation).getByRole('button', { name: 'Recent' }),
-    );
-    await user.click(
-      within(quickNavigation).getByRole('button', { name: 'Trash' }),
-    );
-    await user.click(
-      within(quickNavigation).getByRole('button', { name: 'Settings' }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Favorites' }));
+    await user.click(screen.getByRole('button', { name: 'Recent' }));
+    await user.click(screen.getByRole('button', { name: 'Trash' }));
 
     expect(callbacks.onFavorites).toHaveBeenCalledTimes(1);
     expect(callbacks.onRecent).toHaveBeenCalledTimes(1);
     expect(callbacks.onTrash).toHaveBeenCalledTimes(1);
-    expect(callbacks.onSettings).toHaveBeenCalledTimes(1);
   });
 });

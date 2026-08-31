@@ -113,6 +113,7 @@
     "@atlaskit/renderer": "^136.0.0",
     "@atlaskit/section-message": "^10.1.0",
     "@atlaskit/select": "^22.10.0",
+    "@atlaskit/side-nav-items": "^2.3.12",
     "@atlaskit/skeleton": "^4.3.0",
     "@atlaskit/spinner": "^20.3.0",
     "@atlaskit/tabs": "^21.1.0",

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { MenuList } from '@atlaskit/side-nav-items/menu-list';
 
 import type { ContentEntry } from './content-controller';
 import type { ContentAction } from './content-actions';
@@ -32,49 +33,34 @@ export function ContentTree({
   ) => void;
   readonly getActions: (entry: ContentEntry) => readonly ContentAction[];
 }) {
-  let first = true;
-  const rows = (values: readonly ContentTreeNode[], level: number): ReactNode =>
+  const rows = (values: readonly ContentTreeNode[]): ReactNode =>
     values.map((node) => {
       const expanded =
         node.entry.kind === 'folder' && expandedIds.has(node.entry.id);
-      const tabIndex =
-        selected?.id === node.entry.id || (selected === undefined && first)
-          ? 0
-          : -1;
-      first = false;
       return (
-        <div key={`${node.entry.kind}:${node.entry.id}`} role="none">
-          <ContentTreeRow
-            entry={node.entry}
-            level={level}
-            expanded={expanded}
-            selected={
-              selected?.kind === node.entry.kind &&
-              selected.id === node.entry.id
-            }
-            tabIndex={tabIndex}
-            onOpen={() => onOpen(node.entry)}
-            onToggle={(next) => {
-              if (node.entry.kind === 'folder') onToggle(node.entry.id, next);
-            }}
-            onCreateNote={() => {
-              if (node.entry.kind === 'folder') onCreateNote(node.entry);
-            }}
-            onCreateFolder={() => {
-              if (node.entry.kind === 'folder') onCreateFolder(node.entry);
-            }}
-            actions={getActions(node.entry)}
-          />
-          {expanded && node.children ? (
-            <div role="group">{rows(node.children, level + 1)}</div>
-          ) : null}
-        </div>
+        <ContentTreeRow
+          key={`${node.entry.kind}:${node.entry.id}`}
+          entry={node.entry}
+          expanded={expanded}
+          selected={
+            selected?.kind === node.entry.kind && selected.id === node.entry.id
+          }
+          onOpen={() => onOpen(node.entry)}
+          onToggle={(next) => {
+            if (node.entry.kind === 'folder') onToggle(node.entry.id, next);
+          }}
+          onCreateNote={() => {
+            if (node.entry.kind === 'folder') onCreateNote(node.entry);
+          }}
+          onCreateFolder={() => {
+            if (node.entry.kind === 'folder') onCreateFolder(node.entry);
+          }}
+          actions={getActions(node.entry)}
+        >
+          {expanded && node.children ? rows(node.children) : null}
+        </ContentTreeRow>
       );
     });
 
-  return (
-    <div role="tree" aria-label="Content">
-      {rows(nodes, 1)}
-    </div>
-  );
+  return <MenuList>{rows(nodes)}</MenuList>;
 }

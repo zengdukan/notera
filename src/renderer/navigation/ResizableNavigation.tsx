@@ -1,22 +1,23 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import Button, { IconButton } from '@atlaskit/button/new';
 import ClockIcon from '@atlaskit/icon/core/clock';
 import DeleteIcon from '@atlaskit/icon/core/delete';
-import SettingsIcon from '@atlaskit/icon/core/settings';
-import SidebarExpandIcon from '@atlaskit/icon/core/sidebar-expand';
 import StarIcon from '@atlaskit/icon/core/star-unstarred';
+import { Main } from '@atlaskit/navigation-system/layout/main';
+import { PanelSplitter } from '@atlaskit/navigation-system/layout/panel-splitter';
+import { Root } from '@atlaskit/navigation-system/layout/root';
 import {
-  Main,
-  Root,
   SideNav,
   SideNavBody,
-  SideNavHeader,
-  SideNavToggleButton,
-  useToggleSideNav,
-} from '@atlaskit/navigation-system';
-import { SideNavPanelSplitter } from '@atlaskit/navigation-system/layout/side-nav';
-import { Box, Stack, xcss } from '@atlaskit/primitives';
-import Tooltip from '@atlaskit/tooltip';
+} from '@atlaskit/navigation-system/layout/side-nav';
+import { TopNav } from '@atlaskit/navigation-system/layout/top-nav';
+import { Box, xcss } from '@atlaskit/primitives';
+import { ButtonMenuItem } from '@atlaskit/side-nav-items/button-menu-item';
+import { MenuList } from '@atlaskit/side-nav-items/menu-list';
+import {
+  Divider,
+  MenuSection,
+  MenuSectionHeading,
+} from '@atlaskit/side-nav-items/menu-section';
 
 import { NAVIGATION_DEFAULT_WIDTH } from './navigation-reducer';
 import './ResizableNavigation.css';
@@ -30,109 +31,26 @@ function startsCollapsed(): boolean {
   return !window.matchMedia(DESKTOP_NAVIGATION_QUERY).matches;
 }
 
-const mainLayoutStyles = xcss({
-  display: 'flex',
-  height: '100vh',
-  minWidth: '0',
-  overflow: 'hidden',
-});
-const quickNavigationStyles = xcss({
-  width: 'space.800',
-  height: '100vh',
-  flexShrink: '0',
-  boxSizing: 'border-box',
-  paddingBlock: 'space.100',
-  backgroundColor: 'elevation.surface',
-  borderInlineEndColor: 'color.border',
-  borderInlineEndStyle: 'solid',
-  borderInlineEndWidth: 'border.width',
-});
 const centralWorkspaceStyles = xcss({
-  flexGrow: '1',
   minWidth: '0',
   height: '100%',
   overflow: 'hidden',
 });
 
-function QuickAction({
-  label,
-  icon,
-  onClick,
-}: {
-  readonly label: string;
-  readonly icon: typeof StarIcon;
-  readonly onClick: () => void;
-}) {
-  return (
-    <Tooltip content={label} position="right">
-      <IconButton
-        label={label}
-        icon={icon}
-        appearance="subtle"
-        onClick={onClick}
-      />
-    </Tooltip>
-  );
-}
-
-function QuickNavigation({
-  header,
-  onFavorites,
-  onRecent,
-  onTrash,
-  onSettings,
-}: {
-  readonly header?: ReactNode;
-  readonly onFavorites: () => void;
-  readonly onRecent: () => void;
-  readonly onTrash: () => void;
-  readonly onSettings: () => void;
-}) {
-  const toggleSideNav = useToggleSideNav({ trigger: 'toggle-button' });
-  return (
-    <Box
-      as="nav"
-      aria-label="Notera quick navigation"
-      xcss={quickNavigationStyles}
-    >
-      <Stack alignInline="center" space="space.100">
-        <QuickAction
-          label="Expand navigation"
-          icon={SidebarExpandIcon}
-          onClick={toggleSideNav}
-        />
-        {header}
-        <QuickAction label="Favorites" icon={StarIcon} onClick={onFavorites} />
-        <QuickAction label="Recent" icon={ClockIcon} onClick={onRecent} />
-        <QuickAction label="Trash" icon={DeleteIcon} onClick={onTrash} />
-        <QuickAction
-          label="Settings"
-          icon={SettingsIcon}
-          onClick={onSettings}
-        />
-      </Stack>
-    </Box>
-  );
-}
-
 export function ResizableNavigation({
   header,
-  collapsedHeader,
   tree,
   children,
   onFavorites,
   onRecent,
   onTrash,
-  onSettings,
 }: {
   readonly header: ReactNode;
-  readonly collapsedHeader?: ReactNode;
   readonly tree: ReactNode;
   readonly children: ReactNode;
   readonly onFavorites: () => void;
   readonly onRecent: () => void;
   readonly onTrash: () => void;
-  readonly onSettings: () => void;
 }) {
   const [collapsed, setCollapsed] = useState(startsCollapsed);
 
@@ -148,6 +66,7 @@ export function ResizableNavigation({
 
   return (
     <Root defaultSideNavCollapsed={collapsed} isSideNavShortcutEnabled>
+      <TopNav>{header}</TopNav>
       <SideNav
         testId={collapsed ? undefined : 'notera-expanded-side-nav'}
         label="Notera navigation"
@@ -155,71 +74,39 @@ export function ResizableNavigation({
         onCollapse={() => setCollapsed(true)}
         onExpand={() => setCollapsed(false)}
       >
-        {!collapsed ? (
-          <>
-            <SideNavHeader>
-              <Stack space="space.100">
-                <SideNavToggleButton
-                  collapseLabel="Collapse navigation"
-                  expandLabel="Expand navigation"
-                />
-                {header}
-              </Stack>
-            </SideNavHeader>
-            <SideNavBody>
-              <Stack space="space.050">
-                <Button
-                  appearance="subtle"
-                  shouldFitContainer
-                  iconBefore={StarIcon}
-                  onClick={onFavorites}
-                >
-                  Favorites
-                </Button>
-                <Button
-                  appearance="subtle"
-                  shouldFitContainer
-                  iconBefore={ClockIcon}
-                  onClick={onRecent}
-                >
-                  Recent
-                </Button>
-                <Button
-                  appearance="subtle"
-                  shouldFitContainer
-                  iconBefore={DeleteIcon}
-                  onClick={onTrash}
-                >
-                  Trash
-                </Button>
-                <Button
-                  appearance="subtle"
-                  shouldFitContainer
-                  iconBefore={SettingsIcon}
-                  onClick={onSettings}
-                >
-                  Settings
-                </Button>
-                {tree}
-              </Stack>
-            </SideNavBody>
-          </>
-        ) : null}
-        <SideNavPanelSplitter label="Resize navigation" />
+        <SideNavBody>
+          <MenuSection ariaLabel="Workspace">
+            <MenuList>
+              <ButtonMenuItem
+                elemBefore={<StarIcon label="" color="currentColor" />}
+                onClick={onFavorites}
+              >
+                Favorites
+              </ButtonMenuItem>
+              <ButtonMenuItem
+                elemBefore={<ClockIcon label="" color="currentColor" />}
+                onClick={onRecent}
+              >
+                Recent
+              </ButtonMenuItem>
+              <ButtonMenuItem
+                elemBefore={<DeleteIcon label="" color="currentColor" />}
+                onClick={onTrash}
+              >
+                Trash
+              </ButtonMenuItem>
+            </MenuList>
+          </MenuSection>
+          <MenuSection ariaLabel="Content">
+            <Divider />
+            <MenuSectionHeading headingLevel={2}>Content</MenuSectionHeading>
+            {tree}
+          </MenuSection>
+        </SideNavBody>
+        <PanelSplitter label="Resize navigation" />
       </SideNav>
       <Main>
-        <Box xcss={mainLayoutStyles}>
-          {collapsed ? (
-            <QuickNavigation
-              header={collapsedHeader}
-              onFavorites={onFavorites}
-              onRecent={onRecent}
-              onTrash={onTrash}
-              onSettings={onSettings}
-            />
-          ) : null}
-          <Box xcss={centralWorkspaceStyles}>{children}</Box>
-        </Box>
+        <Box xcss={centralWorkspaceStyles}>{children}</Box>
       </Main>
     </Root>
   );
