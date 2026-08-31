@@ -85,6 +85,7 @@
     "@atlaskit/afm-i18n-platform-elements-task-decision": "2.200.0",
     "@atlaskit/afm-i18n-platform-media-media-ui": "2.200.0",
     "@atlaskit/app-provider": "^5.4.0",
+    "@atlaskit/avatar": "^27.2.1",
     "@atlaskit/breadcrumbs": "^17.6.1",
     "@atlaskit/button": "^25.0.4",
     "@atlaskit/css-reset": "^8.1.3",

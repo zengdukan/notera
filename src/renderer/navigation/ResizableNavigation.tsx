@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import Avatar, { AvatarContent } from '@atlaskit/avatar';
 import ClockIcon from '@atlaskit/icon/core/clock';
 import DeleteIcon from '@atlaskit/icon/core/delete';
 import LockIcon from '@atlaskit/icon/core/lock-locked';
@@ -12,8 +13,8 @@ import {
   SideNavHeader,
   SideNavToggleButton,
 } from '@atlaskit/navigation-system/layout/side-nav';
-import { AppLogo, EndItem } from '@atlaskit/navigation-system/top-nav-items';
-import { Box, Inline, xcss } from '@atlaskit/primitives';
+import { EndItem } from '@atlaskit/navigation-system/top-nav-items';
+import { Box, Inline, Text, xcss } from '@atlaskit/primitives';
 import { ButtonMenuItem } from '@atlaskit/side-nav-items/button-menu-item';
 import { MenuList } from '@atlaskit/side-nav-items/menu-list';
 import {
@@ -22,7 +23,6 @@ import {
   MenuSectionHeading,
 } from '@atlaskit/side-nav-items/menu-section';
 
-import { JiraIcon } from '@atlaskit/logo';
 import { NAVIGATION_DEFAULT_WIDTH } from './navigation-reducer';
 import './ResizableNavigation.css';
 
@@ -83,16 +83,18 @@ export function ResizableNavigation({
       >
         <SideNavHeader>
           <Inline alignBlock="center" spread="space-between">
-            <AppLogo
-              href="#"
-              icon={JiraIcon}
+            <Avatar
               name={profileName}
               label={`Open ${profileName} settings`}
-              onClick={(event) => {
-                event.preventDefault();
-                onSettings();
-              }}
-            />
+              size="medium"
+              onClick={onSettings}
+            >
+              <AvatarContent>
+                <Text align="center" weight="semibold">
+                  {Array.from(profileName.trim())[0]}
+                </Text>
+              </AvatarContent>
+            </Avatar>
             <Inline alignBlock="center" space="space.050">
               <EndItem
                 icon={LockIcon}

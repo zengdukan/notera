@@ -90,25 +90,29 @@ describe('ResizableNavigation', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('shows the current profile and wires its ADS header actions', async () => {
+  it('shows the current profile initial in a settings avatar', async () => {
     const user = userEvent.setup();
     const { callbacks } = renderNavigation();
 
     const sideNav = screen.getByRole('navigation', {
       name: 'Notera navigation',
     });
-    expect(within(sideNav).getByText('Personal Notes')).toBeVisible();
+    const avatar = within(sideNav).getByRole('button', {
+      name: 'Open Personal Notes settings',
+    });
+    expect(within(avatar).getByText('P')).toBeVisible();
 
-    await user.click(
-      within(sideNav).getByRole('link', {
-        name: 'Open Personal Notes settings',
-      }),
-    );
-    await user.click(
-      within(sideNav).getByRole('button', { name: 'Lock profile' }),
-    );
+    await user.click(avatar);
 
     expect(callbacks.onSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the lock action wired in the side nav header', async () => {
+    const user = userEvent.setup();
+    const { callbacks } = renderNavigation();
+
+    await user.click(screen.getByRole('button', { name: 'Lock profile' }));
+
     expect(callbacks.onLock).toHaveBeenCalledTimes(1);
   });
 
