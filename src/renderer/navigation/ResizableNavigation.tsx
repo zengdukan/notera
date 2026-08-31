@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import ClockIcon from '@atlaskit/icon/core/clock';
 import DeleteIcon from '@atlaskit/icon/core/delete';
+import LockIcon from '@atlaskit/icon/core/lock-locked';
 import StarIcon from '@atlaskit/icon/core/star-unstarred';
 import { Main } from '@atlaskit/navigation-system/layout/main';
 import { PanelSplitter } from '@atlaskit/navigation-system/layout/panel-splitter';
@@ -8,9 +9,11 @@ import { Root } from '@atlaskit/navigation-system/layout/root';
 import {
   SideNav,
   SideNavBody,
+  SideNavHeader,
+  SideNavToggleButton,
 } from '@atlaskit/navigation-system/layout/side-nav';
-import { TopNav } from '@atlaskit/navigation-system/layout/top-nav';
-import { Box, xcss } from '@atlaskit/primitives';
+import { AppLogo, EndItem } from '@atlaskit/navigation-system/top-nav-items';
+import { Box, Inline, xcss } from '@atlaskit/primitives';
 import { ButtonMenuItem } from '@atlaskit/side-nav-items/button-menu-item';
 import { MenuList } from '@atlaskit/side-nav-items/menu-list';
 import {
@@ -19,6 +22,7 @@ import {
   MenuSectionHeading,
 } from '@atlaskit/side-nav-items/menu-section';
 
+import { JiraIcon } from '@atlaskit/logo';
 import { NAVIGATION_DEFAULT_WIDTH } from './navigation-reducer';
 import './ResizableNavigation.css';
 
@@ -38,19 +42,23 @@ const centralWorkspaceStyles = xcss({
 });
 
 export function ResizableNavigation({
-  header,
+  profileName,
   tree,
   children,
   onFavorites,
   onRecent,
   onTrash,
+  onLock,
+  onSettings,
 }: {
-  readonly header: ReactNode;
+  readonly profileName: string;
   readonly tree: ReactNode;
   readonly children: ReactNode;
   readonly onFavorites: () => void;
   readonly onRecent: () => void;
   readonly onTrash: () => void;
+  readonly onLock: () => void;
+  readonly onSettings: () => void;
 }) {
   const [collapsed, setCollapsed] = useState(startsCollapsed);
 
@@ -66,7 +74,6 @@ export function ResizableNavigation({
 
   return (
     <Root defaultSideNavCollapsed={collapsed} isSideNavShortcutEnabled>
-      <TopNav>{header}</TopNav>
       <SideNav
         testId={collapsed ? undefined : 'notera-expanded-side-nav'}
         label="Notera navigation"
@@ -74,6 +81,32 @@ export function ResizableNavigation({
         onCollapse={() => setCollapsed(true)}
         onExpand={() => setCollapsed(false)}
       >
+        <SideNavHeader>
+          <Inline alignBlock="center" spread="space-between">
+            <AppLogo
+              href="#"
+              icon={JiraIcon}
+              name={profileName}
+              label={`Open ${profileName} settings`}
+              onClick={(event) => {
+                event.preventDefault();
+                onSettings();
+              }}
+            />
+            <Inline alignBlock="center" space="space.050">
+              <EndItem
+                icon={LockIcon}
+                label="Lock profile"
+                onClick={onLock}
+                isListItem={false}
+              />
+              <SideNavToggleButton
+                collapseLabel="Collapse sidebar"
+                expandLabel="Expand sidebar"
+              />
+            </Inline>
+          </Inline>
+        </SideNavHeader>
         <SideNavBody>
           <MenuSection ariaLabel="Workspace">
             <MenuList>

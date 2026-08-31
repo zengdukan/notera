@@ -48,7 +48,6 @@ import {
   createContentController,
   type ContentEntry,
 } from './content-controller';
-import { NavigationHeader } from './NavigationHeader';
 import { ResizableNavigation } from './ResizableNavigation';
 import { QueryContentTree } from './tree-queries';
 
@@ -646,31 +645,12 @@ function UnlockedNavigationWorkspace({
     if (exportStore.getSnapshot()?.state !== 'RUNNING') exportStore.clear();
     setOverlay({ kind: 'export-note', note: entry });
   };
-  let createFolderParentId = profile.rootFolderId;
-  if (selection?.kind === 'folder') {
-    createFolderParentId = selection.id;
-  } else if (selection?.kind === 'note') {
-    createFolderParentId = selection.folderId;
-  }
-
   return (
     <>
       <ResizableNavigation
-        header={
-          <NavigationHeader
-            profileName={profile.displayName}
-            onLock={() => void client.request('profile.lock', {})}
-            onSearch={() => setOverlay({ kind: 'search' })}
-            onCreateNote={() => void createNote()}
-            onCreateFolder={() =>
-              setOverlay({
-                kind: 'create-folder',
-                parentFolderId: createFolderParentId,
-              })
-            }
-            onSettings={() => void openSettings()}
-          />
-        }
+        profileName={profile.displayName}
+        onLock={() => void client.request('profile.lock', {})}
+        onSettings={() => void openSettings()}
         tree={
           <QueryContentTree
             client={client}

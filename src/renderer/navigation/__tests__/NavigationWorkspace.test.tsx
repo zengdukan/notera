@@ -25,22 +25,31 @@ const mockFlush = jest.fn(async () => undefined);
 
 jest.mock('../ResizableNavigation', () => ({
   ResizableNavigation: ({
-    header,
+    profileName,
     tree,
     children,
     onFavorites,
     onRecent,
     onTrash,
+    onLock,
+    onSettings,
   }: {
-    header: ReactNode;
+    profileName: string;
     tree: ReactNode;
     children: ReactNode;
     onFavorites(): void;
     onRecent(): void;
     onTrash(): void;
+    onLock(): void;
+    onSettings(): void;
   }) => (
     <div>
-      {header}
+      <button type="button" onClick={onSettings}>
+        Open {profileName} settings
+      </button>
+      <button type="button" onClick={onLock}>
+        Lock profile
+      </button>
       <button type="button" onClick={onFavorites}>
         Favorites
       </button>
@@ -53,13 +62,6 @@ jest.mock('../ResizableNavigation', () => ({
       {tree}
       <main>{children}</main>
     </div>
-  ),
-}));
-jest.mock('../NavigationHeader', () => ({
-  NavigationHeader: ({ onSearch }: { onSearch(): void }) => (
-    <button type="button" onClick={onSearch}>
-      Search
-    </button>
   ),
 }));
 jest.mock('../tree-queries', () => ({
@@ -158,6 +160,9 @@ jest.mock('../../trash/TrashModal', () => ({
 jest.mock('../../export/ExportModal', () => ({
   ExportModal: () => <div>Export workspace</div>,
 }));
+jest.mock('../../settings/SettingsModal', () => ({
+  SettingsModal: () => <div>Profile settings</div>,
+}));
 jest.mock('../../shared-ui/ModalHost', () => ({
   ModalHost: ({
     modal,
@@ -254,6 +259,60 @@ describe('NavigationWorkspace', () => {
     expect(
       screen.queryByRole('dialog', { name: 'Search' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('opens settings from the current profile app logo action', async () => {
+    const user = userEvent.setup();
+    const request = jest.fn(async (key: string) => {
+      if (key === 'settings.getDevice') {
+        return { theme: 'SYSTEM', language: 'en' };
+      }
+      if (key === 'settings.getProfile') return { autoLockMinutes: 15 };
+      return {};
+    });
+    const client = { request, subscribe: jest.fn() } as unknown as NoteraClient;
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SessionProvider>
+          <Unlock>
+            <NavigationWorkspace client={client} />
+          </Unlock>
+        </SessionProvider>
+      </QueryClientProvider>,
+    );
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Open Profile settings',
+      }),
+    );
+
+    expect(
+      await screen.findByRole('dialog', { name: 'Settings' }),
+    ).toBeVisible();
+    expect(request).toHaveBeenCalledWith('settings.getDevice', {});
+    expect(request).toHaveBeenCalledWith('settings.getProfile', {});
+  });
+
+  it('locks the current profile from the side nav header action', async () => {
+    const user = userEvent.setup();
+    const request = jest.fn(async () => ({}));
+    const client = { request, subscribe: jest.fn() } as unknown as NoteraClient;
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SessionProvider>
+          <Unlock>
+            <NavigationWorkspace client={client} />
+          </Unlock>
+        </SessionProvider>
+      </QueryClientProvider>,
+    );
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Lock profile' }),
+    );
+
+    expect(request).toHaveBeenCalledWith('profile.lock', {});
   });
 
   it('opens favorites, recent, and trash product modals from the navigation', async () => {
