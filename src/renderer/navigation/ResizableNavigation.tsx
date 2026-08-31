@@ -350,9 +350,9 @@ export function ResizableNavigation({
               </ButtonMenuItem>
             </MenuList>
           </MenuSection>
-          <MenuSection ariaLabel="Content">
+          <MenuSection ariaLabel="Notes">
             <Divider />
-            <MenuSectionHeading headingLevel={2}>Content</MenuSectionHeading>
+            <MenuSectionHeading headingLevel={2}>Notes</MenuSectionHeading>
             {tree}
           </MenuSection>
         </SideNavBody>
