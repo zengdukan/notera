@@ -145,6 +145,7 @@ function ProfileMenu({
   return (
     <Box xcss={compact ? undefined : profileMenuStyles}>
       <DropdownMenu<HTMLButtonElement>
+        shouldRenderToParent
         placement="bottom-start"
         menuLabel="Profile actions"
         trigger={({ triggerRef, isSelected, onClick, ...triggerProps }) => (
@@ -382,10 +383,7 @@ export function ResizableNavigation({
               </MenuSection>
             </Box>
             <Box testId="notera-notes-area" xcss={notesSectionStyles}>
-              <MenuSection
-                ariaLabel="Notes"
-                testId="notera-notes-menu-section"
-              >
+              <MenuSection ariaLabel="Notes" testId="notera-notes-menu-section">
                 <Divider />
                 <Inline
                   xcss={notesHeadingStyles}

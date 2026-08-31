@@ -162,7 +162,9 @@ describe('ResizableNavigation', () => {
       'Recent',
       'Trash',
     ]) {
-      expect(within(quickNavigation).getByRole('button', { name })).toBeVisible();
+      expect(
+        within(quickNavigation).getByRole('button', { name }),
+      ).toBeVisible();
     }
 
     await user.click(

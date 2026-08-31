@@ -163,10 +163,7 @@ describe('ContentTree', () => {
       folderId: folder.entry.id,
     };
     const request = jest.fn(
-      async (
-        _method: string,
-        input: { readonly parentFolderId: string },
-      ) => ({
+      async (_method: string, input: { readonly parentFolderId: string }) => ({
         items:
           input.parentFolderId === folder.entry.id
             ? [nestedNote]
