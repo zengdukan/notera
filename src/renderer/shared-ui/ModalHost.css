@@ -254,6 +254,102 @@
   min-height: 260px;
 }
 
+.notera-modal-content--settings,
+.notera-settings-modal {
+  min-height: 420px;
+}
+
+.notera-settings-panel {
+  padding-top: var(--ds-space-300);
+}
+
+.notera-settings-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.notera-settings-fieldset legend,
+.notera-settings-field > label {
+  display: block;
+  margin-bottom: var(--ds-space-075);
+  color: var(--notera-modal-text-subtle);
+  font: var(--ds-font-body-small);
+  font-weight: var(--ds-font-weight-semibold);
+}
+
+.notera-theme-options {
+  width: min(500px, 100%);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ds-space-100);
+}
+
+.notera-theme-option {
+  position: relative;
+  min-width: 0;
+}
+
+.notera-theme-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.notera-theme-option label {
+  min-height: 40px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding-inline: var(--ds-space-150);
+  border: var(--ds-border-width) solid var(--notera-modal-border);
+  border-radius: var(--ds-radius-small);
+  background: var(--notera-modal-surface);
+  cursor: pointer;
+}
+
+.notera-theme-option label:hover {
+  background: var(--ds-background-neutral-subtle-hovered);
+}
+
+.notera-theme-option input:checked + label {
+  border-color: var(--ds-border-selected);
+  background: var(--notera-modal-selected);
+  color: var(--ds-text-selected);
+}
+
+.notera-theme-option input:checked + label:hover {
+  background: var(--notera-modal-selected-hovered);
+}
+
+.notera-theme-option input:focus-visible + label {
+  outline: 2px solid var(--notera-modal-focus);
+  outline-offset: 2px;
+}
+
+.notera-theme-option input:disabled + label {
+  color: var(--ds-text-disabled);
+  background: var(--ds-background-disabled);
+  cursor: not-allowed;
+}
+
+.notera-settings-field {
+  width: min(500px, 100%);
+}
+
+.notera-settings-section {
+  padding-top: var(--ds-space-200);
+  border-top: var(--ds-border-width) solid var(--notera-modal-divider);
+}
+
+.notera-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 @media (max-width: 767px) {
   .notera-modal-content--search,
   .notera-search-modal {
@@ -316,6 +412,11 @@
   .notera-trash-list__actions {
     justify-content: flex-start;
   }
+
+  .notera-modal-content--settings,
+  .notera-settings-modal {
+    min-height: 0;
+  }
 }
 
 @media (max-width: 479px) {
@@ -350,6 +451,19 @@
 
   .notera-trash-list__actions > *,
   .notera-trash-confirm__actions > * {
+    width: 100%;
+  }
+
+  .notera-theme-options {
+    gap: var(--ds-space-050);
+  }
+
+  .notera-theme-option label {
+    padding-inline: var(--ds-space-050);
+  }
+
+  .notera-settings-actions,
+  .notera-settings-actions > * {
     width: 100%;
   }
 }

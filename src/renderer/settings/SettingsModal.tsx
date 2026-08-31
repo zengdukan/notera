@@ -34,26 +34,32 @@ export function SettingsModal({
   readonly onRemove: () => Promise<unknown> | unknown;
 }) {
   return (
-    <Tabs id="notera-settings-tabs">
-      <TabList>
-        <Tab>General</Tab>
-        <Tab>Profile and security</Tab>
-      </TabList>
-      <TabPanel>
-        <GeneralSettings value={device} onUpdate={onUpdateDevice} />
-      </TabPanel>
-      <TabPanel>
-        <ProfileSecuritySettings
-          autoLockMinutes={profile.autoLockMinutes}
-          onUpdateAutoLock={(autoLockMinutes) =>
-            onUpdateProfile({ autoLockMinutes })
-          }
-          onRenameProfile={onRenameProfile}
-          onChangePassword={onChangePassword}
-          onLock={onLock}
-          onRemove={onRemove}
-        />
-      </TabPanel>
-    </Tabs>
+    <div className="notera-settings-modal">
+      <Tabs id="notera-settings-tabs">
+        <TabList>
+          <Tab>General</Tab>
+          <Tab>Profile and security</Tab>
+        </TabList>
+        <TabPanel>
+          <div className="notera-settings-panel">
+            <GeneralSettings value={device} onUpdate={onUpdateDevice} />
+          </div>
+        </TabPanel>
+        <TabPanel>
+          <div className="notera-settings-panel">
+            <ProfileSecuritySettings
+              autoLockMinutes={profile.autoLockMinutes}
+              onUpdateAutoLock={(autoLockMinutes) =>
+                onUpdateProfile({ autoLockMinutes })
+              }
+              onRenameProfile={onRenameProfile}
+              onChangePassword={onChangePassword}
+              onLock={onLock}
+              onRemove={onRemove}
+            />
+          </div>
+        </TabPanel>
+      </Tabs>
+    </div>
   );
 }

@@ -518,6 +518,7 @@ function UnlockedNavigationWorkspace({
     return {
       kind: overlay.kind,
       title: 'Settings',
+      width: 820,
       content: (
         <SettingsModal
           device={overlay.device}
