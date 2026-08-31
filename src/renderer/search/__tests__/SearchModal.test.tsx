@@ -70,12 +70,21 @@ describe('SearchModal', () => {
 
     const input = screen.getByRole('searchbox', { name: 'Search notes' });
     expect(input).toHaveFocus();
+    expect(
+      screen.getByRole('search', { name: 'Search notes' }),
+    ).toContainElement(input);
     await user.type(input, 'needle');
     expect(
       await screen.findByRole('button', { name: 'Open 😀 Needle' }),
     ).toBeVisible();
     expect(screen.getByText('Needle', { selector: 'mark' })).toBeVisible();
     expect(screen.getByText('Root / Scoped')).toBeVisible();
+    const resultsRegion = screen.getByRole('region', {
+      name: 'Search results',
+    });
+    expect(resultsRegion).toContainElement(
+      screen.getByRole('listitem', { name: /Needle$/u }),
+    );
     expect(request).toHaveBeenCalledWith(
       'search.query',
       expect.objectContaining({

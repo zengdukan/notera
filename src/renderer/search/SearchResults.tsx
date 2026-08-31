@@ -20,38 +20,50 @@ export function SearchResults({
 }) {
   if (results.length === 0) {
     return (
-      <EmptyState
-        header="No matching notes"
-        description="Try another search or folder."
-      />
+      <div className="notera-search-modal__state">
+        <EmptyState
+          header="No matching notes"
+          description="Try another search or folder."
+        />
+      </div>
     );
   }
   return (
-    <Stack space="space.150">
+    <ul className="notera-search-results">
       {results.map((result) => (
-        <Stack key={result.noteId} space="space.050">
-          <Button
-            appearance="subtle"
-            shouldFitContainer
-            onClick={() => onOpen(result)}
-            aria-label={`Open ${result.title || 'Untitled'}`}
-          >
-            <HighlightedText
-              text={result.title || 'Untitled'}
-              ranges={rangesFor(result, 'title')}
-            />
-          </Button>
-          <Text color="color.text.subtle">
-            {result.folderPath.map((item) => item.name || 'Root').join(' / ')}
-          </Text>
-          <Text>
-            <HighlightedText
-              text={result.excerpt}
-              ranges={rangesFor(result, 'excerpt')}
-            />
-          </Text>
-        </Stack>
+        <li
+          aria-label={result.title || 'Untitled'}
+          className="notera-search-results__item"
+          key={result.noteId}
+        >
+          <Stack space="space.050">
+            <div className="notera-search-results__title">
+              <Button
+                appearance="subtle"
+                shouldFitContainer
+                onClick={() => onOpen(result)}
+                aria-label={`Open ${result.title || 'Untitled'}`}
+              >
+                <HighlightedText
+                  text={result.title || 'Untitled'}
+                  ranges={rangesFor(result, 'title')}
+                />
+              </Button>
+            </div>
+            <Text color="color.text.subtle" size="small">
+              {result.folderPath
+                .map((item) => item.name || 'Root')
+                .join(' / ')}
+            </Text>
+            <Text>
+              <HighlightedText
+                text={result.excerpt}
+                ranges={rangesFor(result, 'excerpt')}
+              />
+            </Text>
+          </Stack>
+        </li>
       ))}
-    </Stack>
+    </ul>
   );
 }

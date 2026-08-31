@@ -6,11 +6,13 @@ import ModalDialog, {
   ModalTransition,
 } from '@atlaskit/modal-dialog';
 
+import './ModalHost.css';
+
 export interface HostedModal {
   readonly kind: string;
   readonly title: string;
   readonly content: ReactNode;
-  readonly width?: 'small' | 'medium' | 'large' | 'x-large';
+  readonly width?: number | 'small' | 'medium' | 'large' | 'x-large';
 }
 
 export function ModalHost({
@@ -39,7 +41,15 @@ export function ModalHost({
           <ModalHeader hasCloseButton>
             <ModalTitle>{modal.title}</ModalTitle>
           </ModalHeader>
-          <ModalBody>{modal.content}</ModalBody>
+          <ModalBody>
+            <div
+              className={`notera-modal-content notera-modal-content--${modal.kind}`}
+              data-notera-modal={modal.kind}
+              data-testid={`notera-modal-content-${modal.kind}`}
+            >
+              {modal.content}
+            </div>
+          </ModalBody>
         </ModalDialog>
       )}
     </ModalTransition>

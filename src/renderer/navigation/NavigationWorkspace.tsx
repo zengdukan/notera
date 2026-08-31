@@ -326,6 +326,7 @@ function UnlockedNavigationWorkspace({
       return {
         kind: overlay.kind,
         title: 'Search',
+        width: 720,
         content: (
           <SearchModal
             client={client}

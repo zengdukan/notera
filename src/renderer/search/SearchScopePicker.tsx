@@ -104,32 +104,34 @@ export function SearchScopePicker({
           onClick={() => setOpen((current) => !current)}
           aria-label={`Search scope: ${value?.name ?? 'All notes'}`}
         >
-          {value?.name ?? 'All notes'}
+          Scope: {value?.name ?? 'All notes'}
         </Button>
       )}
       content={() => (
-        <Stack space="space.100">
-          <Button
-            appearance="subtle"
-            onClick={() => choose(undefined)}
-            aria-label="Choose All notes"
-          >
-            All notes
-          </Button>
-          <Button
-            appearance="subtle"
-            onClick={() => choose({ id: rootFolderId, name: 'Root' })}
-            aria-label="Choose Root"
-          >
-            Root
-          </Button>
-          <FolderLevel
-            client={client}
-            profileId={profileId}
-            parentFolderId={rootFolderId}
-            onChoose={choose}
-          />
-        </Stack>
+        <div className="notera-search-scope-popup">
+          <Stack space="space.100">
+            <Button
+              appearance="subtle"
+              onClick={() => choose(undefined)}
+              aria-label="Choose All notes"
+            >
+              All notes
+            </Button>
+            <Button
+              appearance="subtle"
+              onClick={() => choose({ id: rootFolderId, name: 'Root' })}
+              aria-label="Choose Root"
+            >
+              Root
+            </Button>
+            <FolderLevel
+              client={client}
+              profileId={profileId}
+              parentFolderId={rootFolderId}
+              onChoose={choose}
+            />
+          </Stack>
+        </div>
       )}
     />
   );

@@ -3,7 +3,7 @@ import Button from '@atlaskit/button/new';
 import SectionMessage from '@atlaskit/section-message';
 import Spinner from '@atlaskit/spinner';
 import Textfield from '@atlaskit/textfield';
-import { Stack, Text } from '@atlaskit/primitives';
+import { Text } from '@atlaskit/primitives';
 
 import type { NoteraClient } from '../platform/notera-client';
 import { SearchResults } from './SearchResults';
@@ -48,58 +48,88 @@ export function SearchModal({
     }
   };
   return (
-    <Stack space="space.200">
-      <Textfield
-        autoFocus
-        type="search"
+    <div className="notera-search-modal">
+      <div
         aria-label="Search notes"
-        value={query}
-        onChange={(event) => {
-          setQuery(event.currentTarget.value);
-          setOpenFailed(false);
-        }}
-      />
-      <SearchScopePicker
-        client={client}
-        profileId={profileId}
-        rootFolderId={rootFolderId}
-        value={scope}
-        onChange={(value) => {
-          setScope(value);
-          setOpenFailed(false);
-        }}
-      />
-      {openFailed ? (
-        <SectionMessage
-          appearance="error"
-          title="This note is no longer available"
-        >
-          Refresh the results and try again.
-        </SectionMessage>
-      ) : null}
-      {query.trim().length === 0 ? (
-        <Text>Enter text to search all notes.</Text>
-      ) : null}
-      {results.isPending && query.trim().length > 0 ? (
-        <Spinner label="Searching" />
-      ) : null}
-      {results.isError ? (
-        <SectionMessage appearance="error" title="Search failed">
-          Check the search text and try again.
-        </SectionMessage>
-      ) : null}
-      {results.isSuccess ? (
-        <SearchResults results={items} onOpen={(result) => void open(result)} />
-      ) : null}
+        className="notera-search-modal__controls"
+        role="search"
+      >
+        <Textfield
+          autoFocus
+          type="search"
+          aria-label="Search notes"
+          placeholder="Search notes"
+          value={query}
+          onChange={(event) => {
+            setQuery(event.currentTarget.value);
+            setOpenFailed(false);
+          }}
+        />
+        <div className="notera-search-modal__scope">
+          <SearchScopePicker
+            client={client}
+            profileId={profileId}
+            rootFolderId={rootFolderId}
+            value={scope}
+            onChange={(value) => {
+              setScope(value);
+              setOpenFailed(false);
+            }}
+          />
+        </div>
+      </div>
+      <section
+        aria-label="Search results"
+        className="notera-search-modal__results"
+      >
+        {openFailed ? (
+          <div className="notera-search-modal__state">
+            <SectionMessage
+              appearance="error"
+              title="This note is no longer available"
+            >
+              Refresh the results and try again.
+            </SectionMessage>
+          </div>
+        ) : null}
+        {query.trim().length === 0 ? (
+          <div className="notera-search-modal__state">
+            <Text color="color.text.subtle">
+              Enter text to search all notes.
+            </Text>
+          </div>
+        ) : null}
+        {results.isPending && query.trim().length > 0 ? (
+          <div className="notera-search-modal__state">
+            <Spinner label="Searching" />
+          </div>
+        ) : null}
+        {results.isError ? (
+          <div className="notera-search-modal__state">
+            <SectionMessage appearance="error" title="Search failed">
+              Check the search text and try again.
+            </SectionMessage>
+          </div>
+        ) : null}
+        {results.isSuccess ? (
+          <SearchResults
+            results={items}
+            onOpen={(result) => void open(result)}
+          />
+        ) : null}
+      </section>
       {results.hasNextPage ? (
-        <Button
-          appearance="subtle"
-          isLoading={results.isFetchingNextPage}
-          onClick={() => void results.fetchNextPage()}
-        >
-          Load more
-        </Button>
+        <div className="notera-search-modal__more">
+          <Button
+            appearance="subtle"
+            shouldFitContainer
+            isLoading={results.isFetchingNextPage}
+            onClick={() => void results.fetchNextPage()}
+          >
+            Load more
+          </Button>
+        </div>
       ) : null}
-    </Stack>
+    </div>
   );
 }
