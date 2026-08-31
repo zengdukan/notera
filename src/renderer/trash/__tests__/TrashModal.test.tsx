@@ -67,7 +67,7 @@ describe('TrashModal', () => {
     expect(
       screen.getByRole('button', { name: 'Restore to selected folder' }),
     ).toBeVisible();
-    await user.click(screen.getByRole('radio', { name: 'Target' }));
+    await user.click(screen.getByRole('button', { name: 'Target' }));
     await user.click(
       screen.getByRole('button', { name: 'Restore to selected folder' }),
     );

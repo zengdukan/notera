@@ -57,7 +57,7 @@ describe('content operation modal bodies', () => {
         />
       </AppProviders>,
     );
-    await user.click(screen.getByRole('radio', { name: 'Target' }));
+    await user.click(screen.getByRole('button', { name: 'Target' }));
     await user.click(screen.getByRole('button', { name: 'Copy' }));
     expect(onSubmit).toHaveBeenCalledWith('target');
   });
