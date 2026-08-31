@@ -1,4 +1,4 @@
-import { Inline, Stack, Text } from '@atlaskit/primitives';
+import { Stack, Text } from '@atlaskit/primitives';
 
 import { RendererSurface } from '../editor/RendererSurface';
 import type { RequestData } from '../platform/notera-client';
@@ -11,17 +11,30 @@ export function HistoryCompare({
   readonly comparison: RequestData<'history.compare'>;
 }) {
   return (
-    <Inline space="space.300" alignBlock="start" shouldWrap={false}>
-      <Stack space="space.100" grow="fill">
-        <Text weight="semibold">Current saved version</Text>
-        <Text>{comparison.left.title || 'Untitled'}</Text>
-        <RendererSurface noteId={noteId} document={comparison.left.document} />
-      </Stack>
-      <Stack space="space.100" grow="fill">
-        <Text weight="semibold">Selected history version</Text>
-        <Text>{comparison.right.title || 'Untitled'}</Text>
-        <RendererSurface noteId={noteId} document={comparison.right.document} />
-      </Stack>
-    </Inline>
+    <section
+      aria-label="Version comparison"
+      className="notera-history-compare"
+    >
+      <article aria-label="Current saved version">
+        <Stack space="space.100">
+          <Text weight="semibold">Current saved version</Text>
+          <Text>{comparison.left.title || 'Untitled'}</Text>
+          <RendererSurface
+            noteId={noteId}
+            document={comparison.left.document}
+          />
+        </Stack>
+      </article>
+      <article aria-label="Selected history version">
+        <Stack space="space.100">
+          <Text weight="semibold">Selected history version</Text>
+          <Text>{comparison.right.title || 'Untitled'}</Text>
+          <RendererSurface
+            noteId={noteId}
+            document={comparison.right.document}
+          />
+        </Stack>
+      </article>
+    </section>
   );
 }

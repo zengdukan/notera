@@ -70,6 +70,15 @@ describe('HistoryModal', () => {
 
     expect(await screen.findByText('Milestone')).toBeVisible();
     expect(screen.getByText('Protected before history restore')).toBeVisible();
+    expect(
+      screen.getByRole('listbox', { name: 'Saved versions' }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('option', { name: 'Preview Milestone' }),
+    ).toHaveAttribute('aria-selected', 'true');
+    expect(
+      screen.getByRole('region', { name: 'Version preview' }),
+    ).toBeVisible();
     expect(await screen.findByText(/"type":"doc"/u)).toBeVisible();
     expect(
       screen.queryByRole('button', { name: /rename/iu }),

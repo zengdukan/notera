@@ -369,6 +369,7 @@ function UnlockedNavigationWorkspace({
       return {
         kind: overlay.kind,
         title: 'Create version',
+        width: 560,
         content: (
           <CreateVersionModal
             defaultName={overlay.defaultName}
@@ -387,7 +388,7 @@ function UnlockedNavigationWorkspace({
       return {
         kind: overlay.kind,
         title: 'History',
-        width: 'x-large',
+        width: 1080,
         content: (
           <HistoryModal
             client={client}

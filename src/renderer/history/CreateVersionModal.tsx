@@ -27,31 +27,42 @@ export function CreateVersionModal({
     }
   };
   return (
-    <Stack space="space.200">
-      <Field name="versionName" label="Version name">
-        {({ fieldProps }) => (
-          <Textfield
-            {...fieldProps}
-            aria-label="Version name"
-            autoFocus
-            value={name}
-            onChange={(event) => setName(event.currentTarget.value)}
-          />
-        )}
-      </Field>
-      {failed ? (
-        <SectionMessage appearance="error" title="Version was not created">
-          Your name is preserved. Try again when the note can be saved.
-        </SectionMessage>
-      ) : null}
-      <Button
-        appearance="primary"
-        isLoading={submitting}
-        isDisabled={name.trim().length === 0}
-        onClick={() => void create()}
-      >
-        Create version
-      </Button>
-    </Stack>
+    <form
+      aria-label="Create version"
+      className="notera-create-version"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (name.trim().length > 0 && !submitting) void create();
+      }}
+    >
+      <Stack space="space.200">
+        <Field name="versionName" label="Version name">
+          {({ fieldProps }) => (
+            <Textfield
+              {...fieldProps}
+              aria-label="Version name"
+              autoFocus
+              value={name}
+              onChange={(event) => setName(event.currentTarget.value)}
+            />
+          )}
+        </Field>
+        {failed ? (
+          <SectionMessage appearance="error" title="Version was not created">
+            Your name is preserved. Try again when the note can be saved.
+          </SectionMessage>
+        ) : null}
+        <div className="notera-create-version__actions">
+          <Button
+            appearance="primary"
+            type="submit"
+            isLoading={submitting}
+            isDisabled={name.trim().length === 0}
+          >
+            Create version
+          </Button>
+        </div>
+      </Stack>
+    </form>
   );
 }

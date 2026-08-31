@@ -26,7 +26,7 @@ describe('CreateVersionModal', () => {
       screen.getByRole('button', { name: 'Create version' }),
     ).toBeDisabled();
     await user.type(input, 'Milestone');
-    await user.click(screen.getByRole('button', { name: 'Create version' }));
+    await user.keyboard('{Enter}');
 
     await waitFor(() => expect(onCreate).toHaveBeenCalledWith('Milestone'));
     expect(input).toHaveValue('Milestone');

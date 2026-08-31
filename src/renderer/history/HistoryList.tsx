@@ -31,23 +31,37 @@ export function HistoryList({
     );
   }
   return (
-    <Stack space="space.100">
+    <div
+      aria-label="Saved versions"
+      className="notera-history-list"
+      role="listbox"
+    >
       {items.map((item) => (
-        <Button
+        <div
+          className={`notera-history-list__item${
+            selectedId === item.versionId
+              ? ' notera-history-list__item--selected'
+              : ''
+          }`}
           key={item.versionId}
-          appearance={selectedId === item.versionId ? 'primary' : 'subtle'}
-          shouldFitContainer
-          onClick={() => onSelect(item)}
-          aria-label={`Preview ${itemLabel(item)}`}
         >
-          <Stack space="space.025">
-            <Text weight="semibold">{itemLabel(item)}</Text>
-            <Text color="color.text.subtle">
-              {localVersionName(new Date(item.createdAt))}
-            </Text>
-          </Stack>
-        </Button>
+          <Button
+            appearance="subtle"
+            shouldFitContainer
+            onClick={() => onSelect(item)}
+            aria-label={`Preview ${itemLabel(item)}`}
+            aria-selected={selectedId === item.versionId}
+            role="option"
+          >
+            <Stack space="space.025">
+              <Text weight="semibold">{itemLabel(item)}</Text>
+              <Text color="color.text.subtle" size="small">
+                {localVersionName(new Date(item.createdAt))}
+              </Text>
+            </Stack>
+          </Button>
+        </div>
       ))}
-    </Stack>
+    </div>
   );
 }

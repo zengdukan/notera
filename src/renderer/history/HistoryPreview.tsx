@@ -16,9 +16,11 @@ export function HistoryPreview({
   if (loading) return <Spinner label="Loading version" />;
   if (!snapshot) return <Text>Select a version to preview it.</Text>;
   return (
-    <Stack space="space.150">
-      <Text weight="semibold">{snapshot.title || 'Untitled'}</Text>
-      <RendererSurface noteId={noteId} document={snapshot.document} />
-    </Stack>
+    <div className="notera-history-preview__document">
+      <Stack space="space.150">
+        <Text weight="semibold">{snapshot.title || 'Untitled'}</Text>
+        <RendererSurface noteId={noteId} document={snapshot.document} />
+      </Stack>
+    </div>
   );
 }

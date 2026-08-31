@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Button from '@atlaskit/button/new';
 import SectionMessage from '@atlaskit/section-message';
 import Spinner from '@atlaskit/spinner';
-import { Inline, Stack } from '@atlaskit/primitives';
+import { Stack } from '@atlaskit/primitives';
 
 import { FolderPicker, type FolderPickerItem } from '../notes/FolderPicker';
 import type { NoteraClient, RequestData } from '../platform/notera-client';
@@ -65,7 +65,13 @@ export function HistoryModal({
     }
   };
 
-  if (history.isPending) return <Spinner label="Loading history" />;
+  if (history.isPending) {
+    return (
+      <div className="notera-history-state">
+        <Spinner label="Loading history" />
+      </div>
+    );
+  }
   if (history.isError) {
     return (
       <SectionMessage appearance="error" title="Could not load history">
@@ -74,7 +80,7 @@ export function HistoryModal({
     );
   }
   return (
-    <Stack space="space.200">
+    <div className="notera-history-modal">
       {operationFailed ? (
         <SectionMessage appearance="error" title="History operation failed">
           The current note was not changed.
@@ -83,8 +89,11 @@ export function HistoryModal({
       {comparison ? (
         <HistoryCompare noteId={noteId} comparison={comparison} />
       ) : (
-        <Inline space="space.300" alignBlock="start" shouldWrap={false}>
-          <Stack space="space.100">
+        <div className="notera-history-workspace">
+          <aside
+            aria-label="Version list"
+            className="notera-history-workspace__list"
+          >
             <HistoryList
               items={items}
               selectedId={selected?.versionId}
@@ -102,27 +111,32 @@ export function HistoryModal({
                 Load more
               </Button>
             ) : null}
-          </Stack>
-          <Stack space="space.150" grow="fill">
-            <HistoryPreview
-              noteId={noteId}
-              snapshot={snapshot.data}
-              loading={snapshot.isPending && selected !== undefined}
-            />
-            {rootFolderId !== undefined && targetFolderId !== undefined ? (
-              <FolderPicker
-                rootFolderId={rootFolderId}
-                folders={folders}
-                disabledIds={new Set()}
-                value={targetFolderId}
-                onChange={setTargetFolderId}
+          </aside>
+          <section
+            aria-label="Version preview"
+            className="notera-history-workspace__preview"
+          >
+            <Stack space="space.150">
+              <HistoryPreview
+                noteId={noteId}
+                snapshot={snapshot.data}
+                loading={snapshot.isPending && selected !== undefined}
               />
-            ) : null}
-          </Stack>
-        </Inline>
+              {rootFolderId !== undefined && targetFolderId !== undefined ? (
+                <FolderPicker
+                  rootFolderId={rootFolderId}
+                  folders={folders}
+                  disabledIds={new Set()}
+                  value={targetFolderId}
+                  onChange={setTargetFolderId}
+                />
+              ) : null}
+            </Stack>
+          </section>
+        </div>
       )}
       {selected ? (
-        <Inline space="space.100">
+        <div className="notera-history-actions">
           {comparison ? (
             <Button onClick={() => setComparison(undefined)}>
               Back to preview
@@ -174,8 +188,8 @@ export function HistoryModal({
           >
             Restore version
           </Button>
-        </Inline>
+        </div>
       ) : null}
-    </Stack>
+    </div>
   );
 }
