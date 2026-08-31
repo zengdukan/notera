@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import Avatar, { AvatarContent } from '@atlaskit/avatar';
-import Button from '@atlaskit/button/new';
 import DropdownMenu, {
   DropdownItem,
   DropdownItemGroup,
@@ -20,7 +19,7 @@ import {
   SideNavHeader,
   SideNavToggleButton,
 } from '@atlaskit/navigation-system/layout/side-nav';
-import { Box, Inline, Text, xcss } from '@atlaskit/primitives';
+import { Box, Inline, Pressable, Text, xcss } from '@atlaskit/primitives';
 import { ButtonMenuItem } from '@atlaskit/side-nav-items/button-menu-item';
 import { MenuList } from '@atlaskit/side-nav-items/menu-list';
 import {
@@ -47,6 +46,23 @@ const centralWorkspaceStyles = xcss({
   overflow: 'hidden',
 });
 const profileMenuStyles = xcss({ minWidth: '0', flexShrink: 1 });
+const profileMenuTriggerStyles = xcss({
+  maxWidth: '100%',
+  paddingBlock: 'space.050',
+  paddingInline: 'space.075',
+  backgroundColor: 'color.background.neutral.subtle',
+  borderRadius: 'radius.small',
+  color: 'color.text.subtle',
+  ':hover': {
+    backgroundColor: 'color.background.neutral.subtle.hovered',
+  },
+  ':active': {
+    backgroundColor: 'color.background.neutral.subtle.pressed',
+  },
+});
+const selectedProfileMenuTriggerStyles = xcss({
+  backgroundColor: 'color.background.neutral.subtle.pressed',
+});
 const profileNameStyles = xcss({
   minWidth: '0',
   overflow: 'hidden',
@@ -100,13 +116,22 @@ export function ResizableNavigation({
               <DropdownMenu<HTMLButtonElement>
                 placement="bottom-start"
                 menuLabel="Profile actions"
-                trigger={({ triggerRef, ...triggerProps }) => (
-                  <Button
+                trigger={({
+                  triggerRef,
+                  isSelected,
+                  onClick,
+                  ...triggerProps
+                }) => (
+                  <Pressable
                     {...triggerProps}
                     ref={triggerRef}
-                    appearance="subtle"
-                    spacing="compact"
+                    xcss={[
+                      profileMenuTriggerStyles,
+                      isSelected && selectedProfileMenuTriggerStyles,
+                    ]}
+                    style={{ overflowY: 'visible' }}
                     aria-label={`Open ${profileName} profile menu`}
+                    onClick={(event) => onClick?.(event)}
                   >
                     <Inline
                       as="span"
@@ -126,7 +151,7 @@ export function ResizableNavigation({
                       </Box>
                       <ChevronDownIcon label="" color="currentColor" />
                     </Inline>
-                  </Button>
+                  </Pressable>
                 )}
               >
                 <DropdownItemGroup>

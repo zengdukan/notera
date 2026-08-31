@@ -100,6 +100,7 @@ describe('ResizableNavigation', () => {
     const profileMenu = within(sideNav).getByRole('button', {
       name: 'Open Personal Notes profile menu',
     });
+    expect(window.getComputedStyle(profileMenu).overflowY).toBe('visible');
     expect(within(profileMenu).getByText('P')).toBeVisible();
     expect(
       within(profileMenu)
