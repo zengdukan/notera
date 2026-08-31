@@ -33,15 +33,10 @@ const note: ContentTreeNode = {
 };
 
 describe('ContentTree', () => {
-  it('uses ADS side-nav items while keeping selection and row actions wired', async () => {
+  it('keeps folder clicks expansion-only and opens note rows', async () => {
     const user = userEvent.setup();
     const onOpen = jest.fn();
     const onToggle = jest.fn();
-    const onCreateNote = jest.fn();
-    const onCreateFolder = jest.fn();
-    const rename = jest.fn();
-    const getActions = (entry: typeof folder.entry | typeof note.entry) =>
-      createContentActions(entry, { rename });
     render(
       <AppProviders locale="en">
         <ContentTree
@@ -50,19 +45,42 @@ describe('ContentTree', () => {
           selected={undefined}
           onOpen={onOpen}
           onToggle={onToggle}
-          onCreateNote={onCreateNote}
-          onCreateFolder={onCreateFolder}
-          getActions={getActions}
+          onCreateNote={jest.fn()}
+          onCreateFolder={jest.fn()}
+          getActions={() => []}
         />
       </AppProviders>,
     );
 
     expect(screen.getByRole('list')).toBeVisible();
-    const folderRow = screen.getByRole('button', { name: 'Projects' });
-    await user.click(folderRow);
-    expect(onOpen).toHaveBeenCalledWith(folder.entry);
-    onOpen.mockClear();
+    await user.click(screen.getByRole('button', { name: 'Projects' }));
     expect(onToggle).toHaveBeenCalledWith('folder-1', true);
+    expect(onOpen).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Roadmap' }));
+    expect(onOpen).toHaveBeenCalledWith(note.entry);
+  });
+
+  it('keeps folder creation and pointer action menus wired', async () => {
+    const user = userEvent.setup();
+    const onCreateNote = jest.fn();
+    const rename = jest.fn();
+    render(
+      <AppProviders locale="en">
+        <ContentTree
+          nodes={[folder]}
+          expandedIds={new Set()}
+          selected={undefined}
+          onOpen={jest.fn()}
+          onToggle={jest.fn()}
+          onCreateNote={onCreateNote}
+          onCreateFolder={jest.fn()}
+          getActions={(entry) => createContentActions(entry, { rename })}
+        />
+      </AppProviders>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Projects' }));
     await user.click(
       screen.getByRole('button', { name: 'Create in Projects' }),
     );
@@ -75,7 +93,6 @@ describe('ContentTree', () => {
     ).not.toBeInTheDocument();
     await user.click(screen.getByRole('menuitem', { name: 'New note' }));
     expect(onCreateNote).toHaveBeenCalledWith(folder.entry);
-    expect(onOpen).not.toHaveBeenCalled();
     expect(
       screen.getByRole('button', { name: 'More actions for Projects' }),
     ).toBeVisible();
@@ -86,10 +103,31 @@ describe('ContentTree', () => {
     expect(screen.getByRole('menuitem', { name: 'Rename' })).toBeVisible();
     await user.click(screen.getByRole('menuitem', { name: 'Rename' }));
     expect(rename).toHaveBeenCalledWith(folder.entry);
+  });
+
+  it('opens note actions from the keyboard without folder-only actions', async () => {
+    const user = userEvent.setup();
+    const onOpen = jest.fn();
+    render(
+      <AppProviders locale="en">
+        <ContentTree
+          nodes={[note]}
+          expandedIds={new Set()}
+          selected={undefined}
+          onOpen={onOpen}
+          onToggle={jest.fn()}
+          onCreateNote={jest.fn()}
+          onCreateFolder={jest.fn()}
+          getActions={(entry) =>
+            createContentActions(entry, { rename: jest.fn() })
+          }
+        />
+      </AppProviders>,
+    );
 
     const noteRow = screen.getByRole('button', { name: 'Roadmap' });
     await user.click(noteRow);
-    onOpen.mockClear();
+    expect(onOpen).toHaveBeenCalledWith(note.entry);
     expect(
       screen.queryByRole('button', { name: 'Create in Roadmap' }),
     ).not.toBeInTheDocument();

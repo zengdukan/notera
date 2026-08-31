@@ -45,7 +45,9 @@ export function ContentTree({
           selected={
             selected?.kind === node.entry.kind && selected.id === node.entry.id
           }
-          onOpen={() => onOpen(node.entry)}
+          onOpen={() => {
+            if (node.entry.kind === 'note') onOpen(node.entry);
+          }}
           onToggle={(next) => {
             if (node.entry.kind === 'folder') onToggle(node.entry.id, next);
           }}
