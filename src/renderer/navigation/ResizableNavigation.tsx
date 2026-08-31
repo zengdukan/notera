@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import Avatar, { AvatarContent } from '@atlaskit/avatar';
 import { IconButton } from '@atlaskit/button/new';
 import DropdownMenu, {
@@ -31,6 +31,7 @@ import {
   Text,
   xcss,
 } from '@atlaskit/primitives';
+import { Show } from '@atlaskit/primitives/responsive';
 import { ButtonMenuItem } from '@atlaskit/side-nav-items/button-menu-item';
 import { MenuList } from '@atlaskit/side-nav-items/menu-list';
 import {
@@ -43,15 +44,6 @@ import Tooltip from '@atlaskit/tooltip';
 
 import { NAVIGATION_DEFAULT_WIDTH } from './navigation-reducer';
 import './ResizableNavigation.css';
-
-const DESKTOP_NAVIGATION_QUERY = '(min-width: 64rem)';
-
-function startsCollapsed(): boolean {
-  if (typeof window === 'undefined' || window.matchMedia === undefined) {
-    return false;
-  }
-  return !window.matchMedia(DESKTOP_NAVIGATION_QUERY).matches;
-}
 
 const mainLayoutStyles = xcss({
   display: 'flex',
@@ -242,6 +234,7 @@ function QuickNavigation({
     <Box
       as="nav"
       aria-label="Notera quick navigation"
+      testId="notera-quick-navigation"
       xcss={quickNavigationStyles}
     >
       <Stack alignInline="center" space="space.100">
@@ -286,96 +279,92 @@ export function ResizableNavigation({
   readonly onLock: () => void;
   readonly onSettings: () => void;
 }) {
-  const [collapsed, setCollapsed] = useState(startsCollapsed);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia(DESKTOP_NAVIGATION_QUERY);
-    const syncWithViewport = (event?: MediaQueryListEvent) => {
-      setCollapsed(!(event?.matches ?? mediaQuery.matches));
-    };
-    syncWithViewport();
-    mediaQuery.addEventListener('change', syncWithViewport);
-    return () => mediaQuery.removeEventListener('change', syncWithViewport);
-  }, []);
+  const [isSideNavCollapsedOnDesktop, setIsSideNavCollapsedOnDesktop] =
+    useState(false);
+  const quickNavigation = (
+    <QuickNavigation
+      profileName={profileName}
+      onSearch={onSearch}
+      onFavorites={onFavorites}
+      onRecent={onRecent}
+      onTrash={onTrash}
+      onLock={onLock}
+      onSettings={onSettings}
+    />
+  );
 
   return (
-    <Root defaultSideNavCollapsed={collapsed} isSideNavShortcutEnabled>
+    <Root defaultSideNavCollapsed={false} isSideNavShortcutEnabled>
       <SideNav
-        testId={collapsed ? undefined : 'notera-expanded-side-nav'}
+        testId={
+          isSideNavCollapsedOnDesktop ? undefined : 'notera-expanded-side-nav'
+        }
         label="Notera navigation"
         defaultWidth={NAVIGATION_DEFAULT_WIDTH}
-        onCollapse={() => setCollapsed(true)}
-        onExpand={() => setCollapsed(false)}
+        onCollapse={({ screen }) => {
+          if (screen === 'desktop') setIsSideNavCollapsedOnDesktop(true);
+        }}
+        onExpand={({ screen }) => {
+          if (screen === 'desktop') setIsSideNavCollapsedOnDesktop(false);
+        }}
       >
-        {collapsed ? null : (
-          <>
-            <SideNavHeader>
-              <Inline alignBlock="center" spread="space-between">
-                <ProfileMenu
-                  profileName={profileName}
-                  onLock={onLock}
-                  onSettings={onSettings}
-                />
-                <SideNavToggleButton
-                  collapseLabel="Collapse sidebar"
-                  expandLabel="Expand sidebar"
-                />
-              </Inline>
-            </SideNavHeader>
-            <SideNavBody>
-              <MenuSection ariaLabel="Workspace">
-                <MenuList>
-                  <ButtonMenuItem
-                    elemBefore={<SearchIcon label="" color="currentColor" />}
-                    onClick={onSearch}
-                  >
-                    Search
-                  </ButtonMenuItem>
-                  <ButtonMenuItem
-                    elemBefore={<StarIcon label="" color="currentColor" />}
-                    onClick={onFavorites}
-                  >
-                    Favorites
-                  </ButtonMenuItem>
-                  <ButtonMenuItem
-                    elemBefore={<ClockIcon label="" color="currentColor" />}
-                    onClick={onRecent}
-                  >
-                    Recent
-                  </ButtonMenuItem>
-                  <ButtonMenuItem
-                    elemBefore={<DeleteIcon label="" color="currentColor" />}
-                    onClick={onTrash}
-                  >
-                    Trash
-                  </ButtonMenuItem>
-                </MenuList>
-              </MenuSection>
-              <MenuSection ariaLabel="Content">
-                <Divider />
-                <MenuSectionHeading headingLevel={2}>
-                  Content
-                </MenuSectionHeading>
-                {tree}
-              </MenuSection>
-            </SideNavBody>
-          </>
-        )}
+        <SideNavHeader>
+          <Inline alignBlock="center" spread="space-between">
+            <ProfileMenu
+              profileName={profileName}
+              onLock={onLock}
+              onSettings={onSettings}
+            />
+            <SideNavToggleButton
+              collapseLabel="Collapse sidebar"
+              expandLabel="Expand sidebar"
+            />
+          </Inline>
+        </SideNavHeader>
+        <SideNavBody>
+          <MenuSection ariaLabel="Workspace">
+            <MenuList>
+              <ButtonMenuItem
+                elemBefore={<SearchIcon label="" color="currentColor" />}
+                onClick={onSearch}
+              >
+                Search
+              </ButtonMenuItem>
+              <ButtonMenuItem
+                elemBefore={<StarIcon label="" color="currentColor" />}
+                onClick={onFavorites}
+              >
+                Favorites
+              </ButtonMenuItem>
+              <ButtonMenuItem
+                elemBefore={<ClockIcon label="" color="currentColor" />}
+                onClick={onRecent}
+              >
+                Recent
+              </ButtonMenuItem>
+              <ButtonMenuItem
+                elemBefore={<DeleteIcon label="" color="currentColor" />}
+                onClick={onTrash}
+              >
+                Trash
+              </ButtonMenuItem>
+            </MenuList>
+          </MenuSection>
+          <MenuSection ariaLabel="Content">
+            <Divider />
+            <MenuSectionHeading headingLevel={2}>Content</MenuSectionHeading>
+            {tree}
+          </MenuSection>
+        </SideNavBody>
         <SideNavPanelSplitter label="Resize navigation" />
       </SideNav>
       <Main>
         <Box xcss={mainLayoutStyles}>
-          {collapsed ? (
-            <QuickNavigation
-              profileName={profileName}
-              onSearch={onSearch}
-              onFavorites={onFavorites}
-              onRecent={onRecent}
-              onTrash={onTrash}
-              onLock={onLock}
-              onSettings={onSettings}
-            />
-          ) : null}
+          {isSideNavCollapsedOnDesktop ? (
+            quickNavigation
+          ) : (
+            <Show below="md">{quickNavigation}</Show>
+          )}
           <Box xcss={centralWorkspaceStyles}>{children}</Box>
         </Box>
       </Main>

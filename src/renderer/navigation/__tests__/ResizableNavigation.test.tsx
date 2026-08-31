@@ -66,31 +66,28 @@ describe('ResizableNavigation', () => {
     mediaQueryListeners.clear();
   });
 
-  it('shows the compact navigation when the side nav starts collapsed', () => {
+  it('renders the compact navigation for the ADS narrow viewport layout', () => {
     setDesktopViewport(false);
 
     renderNavigation();
 
     expect(screen.queryByRole('banner')).not.toBeInTheDocument();
-    expect(
-      screen.getByRole('navigation', { name: 'Notera quick navigation' }),
-    ).toBeVisible();
-    expect(screen.queryByText('Content tree')).not.toBeInTheDocument();
+    expect(screen.getByTestId('notera-quick-navigation')).toBeInTheDocument();
+    expect(screen.getByText('Content tree')).toBeInTheDocument();
     expect(screen.getByText('Central workspace')).toBeVisible();
   });
 
-  it('switches to the compact navigation when the viewport crosses the ADS breakpoint', async () => {
+  it('keeps side nav content mounted for the ADS responsive overlay', async () => {
     renderNavigation();
     expect(screen.getByText('Content tree')).toBeVisible();
 
     act(() => setDesktopViewport(false));
 
     expect(
-      await screen.findByRole('navigation', {
-        name: 'Notera quick navigation',
-      }),
-    ).toBeVisible();
-    expect(screen.queryByText('Content tree')).not.toBeInTheDocument();
+      within(
+        screen.getByRole('navigation', { name: 'Notera navigation' }),
+      ).getByText('Content tree'),
+    ).toBeInTheDocument();
   });
 
   it('opens profile settings from the current profile menu', async () => {
@@ -153,7 +150,7 @@ describe('ResizableNavigation', () => {
     expect(
       screen.queryByTestId('notera-expanded-side-nav'),
     ).not.toBeInTheDocument();
-    expect(screen.queryByText('Content tree')).not.toBeInTheDocument();
+    expect(screen.getByText('Content tree')).toBeInTheDocument();
     expect(screen.getByText('Central workspace')).toBeVisible();
     for (const name of [
       'Expand sidebar',
