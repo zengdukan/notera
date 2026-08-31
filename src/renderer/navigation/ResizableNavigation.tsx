@@ -27,6 +27,7 @@ import {
   MenuSection,
   MenuSectionHeading,
 } from '@atlaskit/side-nav-items/menu-section';
+import { token } from '@atlaskit/tokens';
 
 import { NAVIGATION_DEFAULT_WIDTH } from './navigation-reducer';
 import './ResizableNavigation.css';
@@ -90,6 +91,7 @@ export function ResizableNavigation({
   readonly onSettings: () => void;
 }) {
   const [collapsed, setCollapsed] = useState(startsCollapsed);
+  const profileInitial = Array.from(profileName.trim())[0]?.toLocaleUpperCase();
 
   useEffect(() => {
     const mediaQuery = window.matchMedia(DESKTOP_NAVIGATION_QUERY);
@@ -139,10 +141,21 @@ export function ResizableNavigation({
                       space="space.075"
                       shouldWrap={false}
                     >
-                      <Avatar name={profileName} size="medium" as="span">
+                      <Avatar
+                        name={profileName}
+                        size="medium"
+                        as="span"
+                        borderColor={token(
+                          'color.background.accent.blue.subtlest',
+                        )}
+                      >
                         <AvatarContent>
-                          <Text align="center" weight="semibold">
-                            {Array.from(profileName.trim())[0]}
+                          <Text
+                            align="center"
+                            color="color.text.accent.blue"
+                            weight="semibold"
+                          >
+                            {profileInitial}
                           </Text>
                         </AvatarContent>
                       </Avatar>
