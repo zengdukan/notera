@@ -4,6 +4,7 @@ import ModalDialog, {
   ModalHeader,
   ModalTitle,
   ModalTransition,
+  ModalFooter,
 } from '@atlaskit/modal-dialog';
 
 import './ModalHost.css';
@@ -50,6 +51,7 @@ export function ModalHost({
               {modal.content}
             </div>
           </ModalBody>
+          <ModalFooter />
         </ModalDialog>
       )}
     </ModalTransition>

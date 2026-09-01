@@ -86,7 +86,6 @@ export const chineseMessages = Object.freeze({
   'favorites.updateErrorTitle': '无法更新收藏',
   'favorites.updateErrorDescription': '已恢复之前的收藏状态。',
   'favorites.loadMore': '加载更多',
-  'favorites.profileDisclosure': '仅显示当前本地 Profile 中仍然可用的收藏笔记',
   'modal.close': '关闭',
   'flags.label': '通知',
   'fabric.media.errorFlagTitle': '文件上传失败',

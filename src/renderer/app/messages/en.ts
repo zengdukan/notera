@@ -105,8 +105,6 @@ export const englishMessages = Object.freeze({
   'favorites.updateErrorDescription':
     'The previous favorite state was restored.',
   'favorites.loadMore': 'Load more',
-  'favorites.profileDisclosure':
-    'Only available favorites in the current local Profile are shown.',
   'modal.close': 'Close',
   'flags.label': 'Notifications',
   'fabric.media.errorFlagTitle': 'Your file failed to upload',

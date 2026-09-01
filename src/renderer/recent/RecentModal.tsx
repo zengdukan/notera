@@ -150,9 +150,6 @@ export function RecentModal({
           </Button>
         </Inline>
       ) : null}
-      <Text as="p" color="color.text.subtle" size="small">
-        仅显示当前本地 Profile 中可用的笔记
-      </Text>
     </Stack>
   );
 }

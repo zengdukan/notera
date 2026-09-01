@@ -9,6 +9,7 @@ import { createAppQueryClient } from '../../app/query-client';
 import { noteKey } from '../../app/query-keys';
 import type { AppLocale } from '../../app/i18n';
 import type { NoteraClient } from '../../platform/notera-client';
+import { formatRecentTimestamp } from '../../recent/recent-format';
 import { FavoritesModal } from '../FavoritesModal';
 
 const profileId = '10000000-0000-4000-8000-000000000001';
@@ -27,6 +28,10 @@ const secondNote = {
   title: 'Second',
   favoriteSortOrder: 1,
 };
+const folderPath = [
+  { id: profileId, name: '研究资料' },
+  { id: note.folderId, name: '产品策略' },
+];
 
 function renderFavorites({
   client,
@@ -62,7 +67,8 @@ describe('FavoritesModal', () => {
       { items: [note], nextCursor: 'next' },
       { items: [secondNote] },
     ];
-    const request = jest.fn(async () => {
+    const request = jest.fn(async (key: string) => {
+      if (key === 'contentTree.getFolderPath') return { items: folderPath };
       const page = pages[Math.min(pageIndex, pages.length - 1)];
       pageIndex += 1;
       return page;
@@ -72,14 +78,21 @@ describe('FavoritesModal', () => {
 
     expect(await screen.findByText('按收藏顺序排列')).toBeVisible();
     expect(screen.getByRole('list')).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'First' }));
-    expect(onOpen).toHaveBeenCalledWith(note);
+    expect(
+      screen.getByText(
+        `研究资料 / 产品策略 · ${formatRecentTimestamp(note.updatedAt)}`,
+      ),
+    ).toBeVisible();
+    await user.click(screen.getByRole('button', { name: /^First / }));
+    expect(onOpen).toHaveBeenCalledWith({ ...note, folderPath });
 
     await user.click(screen.getByRole('button', { name: '加载更多' }));
-    expect(await screen.findByRole('button', { name: 'Second' })).toBeVisible();
     expect(
-      screen.getByText('仅显示当前本地 Profile 中仍然可用的收藏笔记'),
+      await screen.findByRole('button', { name: /^Second / }),
     ).toBeVisible();
+    expect(
+      screen.queryByText('仅显示当前本地 Profile 中仍然可用的收藏笔记'),
+    ).not.toBeInTheDocument();
     expect(request).toHaveBeenCalledWith('favorite.list', {
       cursor: 'next',
       limit: 30,
@@ -99,13 +112,14 @@ describe('FavoritesModal', () => {
     let removed = false;
     const request = jest.fn(async (key: string) => {
       if (key === 'favorite.list') return { items: removed ? [] : [note] };
+      if (key === 'contentTree.getFolderPath') return { items: folderPath };
       if (key === 'favorite.remove') removed = true;
       return {};
     });
     const client = { request, subscribe: jest.fn() } as unknown as NoteraClient;
     const { onOpen } = renderFavorites({ client, queryClient });
 
-    const item = await screen.findByRole('button', { name: 'First' });
+    const item = await screen.findByRole('button', { name: /^First / });
     await user.hover(item);
     const remove = screen.getByRole('button', {
       name: 'Remove First from favorites',
@@ -123,7 +137,7 @@ describe('FavoritesModal', () => {
     expect(onOpen).not.toHaveBeenCalled();
     await waitFor(() =>
       expect(
-        screen.queryByRole('button', { name: 'First' }),
+        screen.queryByRole('button', { name: /^First / }),
       ).not.toBeInTheDocument(),
     );
     expect(
@@ -193,6 +207,7 @@ describe('FavoritesModal', () => {
     });
     const request = jest.fn(async (key: string) => {
       if (key === 'favorite.list') return { items: [note] };
+      if (key === 'contentTree.getFolderPath') return { items: folderPath };
       if (key === 'favorite.remove') throw new Error('remove failed');
       return {};
     });
@@ -207,7 +222,7 @@ describe('FavoritesModal', () => {
       }),
     );
     expect(await screen.findByText('Could not update favorite')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'First' })).toBeVisible();
+    expect(screen.getByRole('button', { name: /^First / })).toBeVisible();
     expect(
       queryClient.getQueryData<{ isFavorite: boolean }>(
         noteKey(profileId, note.id),

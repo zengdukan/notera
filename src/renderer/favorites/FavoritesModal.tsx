@@ -14,9 +14,11 @@ import {
   type InfiniteData,
 } from '@tanstack/react-query';
 import { useIntl } from 'react-intl';
+import { Divider } from '@atlaskit/side-nav-items/menu-section';
 
 import { favoritesKey, noteKey } from '../app/query-keys';
 import type { NoteraClient, RequestData } from '../platform/notera-client';
+import { formatRecentTimestamp } from '../recent/recent-format';
 import {
   uniqueFavorites,
   useFavorites,
@@ -24,7 +26,9 @@ import {
 } from './favorite-queries';
 
 type FavoritePages = InfiniteData<
-  RequestData<'favorite.list'>,
+  Omit<RequestData<'favorite.list'>, 'items'> & {
+    readonly items: readonly FavoriteNote[];
+  },
   string | undefined
 >;
 
@@ -187,31 +191,35 @@ export function FavoritesModal({
           const title =
             note.title || intl.formatMessage({ id: 'favorites.untitled' });
           return (
-            <ButtonMenuItem
-              key={note.id}
-              elemBefore={<NoteIcon label="" color="currentColor" />}
-              actionsOnHover={
-                <IconButton
-                  label={intl.formatMessage(
-                    { id: 'favorites.removeLabel' },
-                    { title },
-                  )}
-                  icon={StarUnstarredIcon}
-                  appearance="subtle"
-                  spacing="compact"
-                  isLoading={
-                    mutation.isPending && mutation.variables?.id === note.id
-                  }
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    mutation.mutate(note);
-                  }}
-                />
-              }
-              onClick={() => void onOpen(note)}
-            >
-              {title}
-            </ButtonMenuItem>
+            <>
+              <ButtonMenuItem
+                key={note.id}
+                description={`${note.folderPath.map((item) => item.name).join(' / ')} · ${formatRecentTimestamp(note.updatedAt)}`}
+                elemBefore={<NoteIcon label="" color="currentColor" />}
+                actionsOnHover={
+                  <IconButton
+                    label={intl.formatMessage(
+                      { id: 'favorites.removeLabel' },
+                      { title },
+                    )}
+                    icon={StarUnstarredIcon}
+                    appearance="subtle"
+                    spacing="compact"
+                    isLoading={
+                      mutation.isPending && mutation.variables?.id === note.id
+                    }
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      mutation.mutate(note);
+                    }}
+                  />
+                }
+                onClick={() => void onOpen(note)}
+              >
+                {title}
+              </ButtonMenuItem>
+              <Divider />
+            </>
           );
         })}
       </MenuList>
@@ -225,9 +233,6 @@ export function FavoritesModal({
           </Button>
         </Inline>
       ) : null}
-      <Text as="p" color="color.text.subtle" size="small">
-        {intl.formatMessage({ id: 'favorites.profileDisclosure' })}
-      </Text>
     </Stack>
   );
 }
