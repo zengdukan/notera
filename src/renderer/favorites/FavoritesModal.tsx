@@ -1,8 +1,10 @@
+import { Fragment } from 'react';
 import Button, { IconButton } from '@atlaskit/button/new';
 import EmptyState from '@atlaskit/empty-state';
 import NoteIcon from '@atlaskit/icon/core/note';
 import StarUnstarredIcon from '@atlaskit/icon/core/star-unstarred';
-import { Inline, Stack, Text } from '@atlaskit/primitives';
+import { ModalBody } from '@atlaskit/modal-dialog';
+import { Box, Inline, Stack, Text } from '@atlaskit/primitives';
 import SectionMessage from '@atlaskit/section-message';
 import { ButtonMenuItem } from '@atlaskit/side-nav-items/button-menu-item';
 import { MenuList } from '@atlaskit/side-nav-items/menu-list';
@@ -165,74 +167,102 @@ export function FavoritesModal({
   });
   const items = uniqueFavorites(favorites.data?.pages);
 
-  if (favorites.isPending) return <FavoritesLoadingState />;
-  if (favorites.isError) {
-    return <FavoritesErrorState onRetry={() => void favorites.refetch()} />;
+  if (favorites.isPending) {
+    return (
+      <ModalBody>
+        <Box paddingBlockEnd="space.300">
+          <FavoritesLoadingState />
+        </Box>
+      </ModalBody>
+    );
   }
-  if (items.length === 0) return <FavoritesEmptyState onClose={onClose} />;
+  if (favorites.isError) {
+    return (
+      <ModalBody>
+        <Box paddingBlockEnd="space.300">
+          <FavoritesErrorState onRetry={() => void favorites.refetch()} />
+        </Box>
+      </ModalBody>
+    );
+  }
+  if (items.length === 0) {
+    return (
+      <ModalBody>
+        <Box paddingBlockEnd="space.300">
+          <FavoritesEmptyState onClose={onClose} />
+        </Box>
+      </ModalBody>
+    );
+  }
   return (
-    <Stack space="space.200">
-      <Text as="p" color="color.text.subtle" size="small">
-        {intl.formatMessage({ id: 'favorites.sortDescription' })}
-      </Text>
-      {mutation.isError ? (
-        <SectionMessage
-          appearance="error"
-          headingLevel="h2"
-          title={intl.formatMessage({ id: 'favorites.updateErrorTitle' })}
-        >
-          <Text as="p">
-            {intl.formatMessage({ id: 'favorites.updateErrorDescription' })}
+    <ModalBody>
+      <Box paddingBlockEnd="space.300">
+        <Stack space="space.200">
+          <Text as="p" color="color.text.subtle" size="small">
+            {intl.formatMessage({ id: 'favorites.sortDescription' })}
           </Text>
-        </SectionMessage>
-      ) : null}
-      <MenuList>
-        {items.map((note) => {
-          const title =
-            note.title || intl.formatMessage({ id: 'favorites.untitled' });
-          return (
-            <>
-              <ButtonMenuItem
-                key={note.id}
-                description={`${note.folderPath.map((item) => item.name).join(' / ')} · ${formatRecentTimestamp(note.updatedAt)}`}
-                elemBefore={<NoteIcon label="" color="currentColor" />}
-                actionsOnHover={
-                  <IconButton
-                    label={intl.formatMessage(
-                      { id: 'favorites.removeLabel' },
-                      { title },
-                    )}
-                    icon={StarUnstarredIcon}
-                    appearance="subtle"
-                    spacing="compact"
-                    isLoading={
-                      mutation.isPending && mutation.variables?.id === note.id
+          {mutation.isError ? (
+            <SectionMessage
+              appearance="error"
+              headingLevel="h2"
+              title={intl.formatMessage({ id: 'favorites.updateErrorTitle' })}
+            >
+              <Text as="p">
+                {intl.formatMessage({
+                  id: 'favorites.updateErrorDescription',
+                })}
+              </Text>
+            </SectionMessage>
+          ) : null}
+          <MenuList>
+            {items.map((note) => {
+              const title =
+                note.title || intl.formatMessage({ id: 'favorites.untitled' });
+              return (
+                <Fragment key={note.id}>
+                  <ButtonMenuItem
+                    description={`${note.folderPath.map((item) => item.name).join(' / ')} · ${formatRecentTimestamp(note.updatedAt)}`}
+                    elemBefore={<NoteIcon label="" color="currentColor" />}
+                    actionsOnHover={
+                      <IconButton
+                        label={intl.formatMessage(
+                          { id: 'favorites.removeLabel' },
+                          { title },
+                        )}
+                        icon={StarUnstarredIcon}
+                        appearance="subtle"
+                        spacing="compact"
+                        isLoading={
+                          mutation.isPending &&
+                          mutation.variables?.id === note.id
+                        }
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          mutation.mutate(note);
+                        }}
+                      />
                     }
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      mutation.mutate(note);
-                    }}
-                  />
-                }
-                onClick={() => void onOpen(note)}
+                    onClick={() => void onOpen(note)}
+                  >
+                    {title}
+                  </ButtonMenuItem>
+                  <Divider />
+                </Fragment>
+              );
+            })}
+          </MenuList>
+          {favorites.hasNextPage ? (
+            <Inline alignInline="center">
+              <Button
+                isLoading={favorites.isFetchingNextPage}
+                onClick={() => void favorites.fetchNextPage()}
               >
-                {title}
-              </ButtonMenuItem>
-              <Divider />
-            </>
-          );
-        })}
-      </MenuList>
-      {favorites.hasNextPage ? (
-        <Inline alignInline="center">
-          <Button
-            isLoading={favorites.isFetchingNextPage}
-            onClick={() => void favorites.fetchNextPage()}
-          >
-            {intl.formatMessage({ id: 'favorites.loadMore' })}
-          </Button>
-        </Inline>
-      ) : null}
-    </Stack>
+                {intl.formatMessage({ id: 'favorites.loadMore' })}
+              </Button>
+            </Inline>
+          ) : null}
+        </Stack>
+      </Box>
+    </ModalBody>
   );
 }

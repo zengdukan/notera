@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import Button from '@atlaskit/button/new';
 import EmptyState from '@atlaskit/empty-state';
 import NoteIcon from '@atlaskit/icon/core/note';
 import { ButtonItem, MenuGroup, Section, SkeletonItem } from '@atlaskit/menu';
-import { Inline, Stack, Text } from '@atlaskit/primitives';
+import { Box, Inline, Stack, Text } from '@atlaskit/primitives';
 import SectionMessage from '@atlaskit/section-message';
 import Spinner from '@atlaskit/spinner';
+import { ModalBody } from '@atlaskit/modal-dialog';
 
 import { Divider } from '@atlaskit/side-nav-items/menu-section';
 import type { NoteraClient } from '../platform/notera-client';
@@ -98,11 +99,33 @@ export function RecentModal({
   const items = uniqueRecentNotes(recent.data?.pages);
   const [openingId, setOpeningId] = useState<string>();
 
-  if (recent.isPending) return <RecentLoadingState />;
-  if (recent.isError) {
-    return <RecentErrorState onRetry={() => void recent.refetch()} />;
+  if (recent.isPending) {
+    return (
+      <ModalBody>
+        <Box paddingBlockEnd="space.300">
+          <RecentLoadingState />
+        </Box>
+      </ModalBody>
+    );
   }
-  if (items.length === 0) return <RecentEmptyState onClose={onClose} />;
+  if (recent.isError) {
+    return (
+      <ModalBody>
+        <Box paddingBlockEnd="space.300">
+          <RecentErrorState onRetry={() => void recent.refetch()} />
+        </Box>
+      </ModalBody>
+    );
+  }
+  if (items.length === 0) {
+    return (
+      <ModalBody>
+        <Box paddingBlockEnd="space.300">
+          <RecentEmptyState onClose={onClose} />
+        </Box>
+      </ModalBody>
+    );
+  }
 
   const open = async (note: RecentNote) => {
     setOpeningId(note.id);
@@ -114,42 +137,45 @@ export function RecentModal({
   };
 
   return (
-    <Stack space="space.200">
-      <Text as="p" color="color.text.subtle" size="small">
-        按最近浏览时间排序
-      </Text>
-      <MenuGroup menuLabel="最近浏览笔记" role="list">
-        <Section isList>
-          {items.map((note) => {
-            const title = note.title || '无标题';
-            return (
-              <>
-                <ButtonItem
-                  description={`${note.folderPath.map((item) => item.name).join(' / ')} · ${formatRecentTimestamp(note.updatedAt)}`}
-                  iconBefore={<NoteIcon label="" />}
-                  isDisabled={openingId !== undefined}
-                  key={note.id}
-                  onClick={() => void open(note)}
-                  role="menuitem"
-                >
-                  {title}
-                </ButtonItem>
-                <Divider />
-              </>
-            );
-          })}
-        </Section>
-      </MenuGroup>
-      {recent.hasNextPage ? (
-        <Inline alignInline="center">
-          <Button
-            isLoading={recent.isFetchingNextPage}
-            onClick={() => void recent.fetchNextPage()}
-          >
-            加载更多
-          </Button>
-        </Inline>
-      ) : null}
-    </Stack>
+    <ModalBody>
+      <Box paddingBlockEnd="space.300">
+        <Stack space="space.200">
+          <Text as="p" color="color.text.subtle" size="small">
+            按最近浏览时间排序
+          </Text>
+          <MenuGroup menuLabel="最近浏览笔记" role="list">
+            <Section isList>
+              {items.map((note) => {
+                const title = note.title || '无标题';
+                return (
+                  <Fragment key={note.id}>
+                    <ButtonItem
+                      description={`${note.folderPath.map((item) => item.name).join(' / ')} · ${formatRecentTimestamp(note.updatedAt)}`}
+                      iconBefore={<NoteIcon label="" />}
+                      isDisabled={openingId !== undefined}
+                      onClick={() => void open(note)}
+                      role="menuitem"
+                    >
+                      {title}
+                    </ButtonItem>
+                    <Divider />
+                  </Fragment>
+                );
+              })}
+            </Section>
+          </MenuGroup>
+          {recent.hasNextPage ? (
+            <Inline alignInline="center">
+              <Button
+                isLoading={recent.isFetchingNextPage}
+                onClick={() => void recent.fetchNextPage()}
+              >
+                加载更多
+              </Button>
+            </Inline>
+          ) : null}
+        </Stack>
+      </Box>
+    </ModalBody>
   );
 }

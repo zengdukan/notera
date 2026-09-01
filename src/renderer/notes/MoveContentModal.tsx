@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import Button from '@atlaskit/button/new';
-import { ButtonGroup } from '@atlaskit/button';
-import { Stack } from '@atlaskit/primitives';
+import { ModalBody, ModalFooter } from '@atlaskit/modal-dialog';
 
 import { FolderPicker, type FolderPickerItem } from './FolderPicker';
 
@@ -22,22 +21,22 @@ export function MoveContentModal({
 }) {
   const [target, setTarget] = useState(rootFolderId);
   return (
-    <Stack space="space.200">
-      <FolderPicker
-        rootFolderId={rootFolderId}
-        folders={folders}
-        disabledIds={disabledIds}
-        value={target}
-        onChange={setTarget}
-      />
-      <ButtonGroup
-        label={`${operation === 'move' ? 'Move' : 'Copy'} content actions`}
-      >
+    <>
+      <ModalBody>
+        <FolderPicker
+          rootFolderId={rootFolderId}
+          folders={folders}
+          disabledIds={disabledIds}
+          value={target}
+          onChange={setTarget}
+        />
+      </ModalBody>
+      <ModalFooter>
         <Button onClick={onCancel}>Cancel</Button>
         <Button appearance="primary" onClick={() => void onSubmit(target)}>
           {operation === 'move' ? 'Move' : 'Copy'}
         </Button>
-      </ButtonGroup>
-    </Stack>
+      </ModalFooter>
+    </>
   );
 }

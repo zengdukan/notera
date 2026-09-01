@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import EmptyState from '@atlaskit/empty-state';
 import NoteIcon from '@atlaskit/icon/core/note';
 import { ButtonItem, MenuGroup, Section } from '@atlaskit/menu';
@@ -43,7 +44,7 @@ export function SearchResults({
             rangesFor(result, 'excerpt'),
           );
           return (
-            <>
+            <Fragment key={result.noteId}>
               <ButtonItem
                 description={
                   <Stack space="space.025">
@@ -63,7 +64,6 @@ export function SearchResults({
                   </Stack>
                 }
                 iconBefore={<NoteIcon label="" />}
-                key={result.noteId}
                 onClick={() => onOpen(result)}
                 shouldDescriptionWrap
               >
@@ -75,7 +75,7 @@ export function SearchResults({
                 </Text>
               </ButtonItem>
               <Divider />
-            </>
+            </Fragment>
           );
         })}
       </Section>

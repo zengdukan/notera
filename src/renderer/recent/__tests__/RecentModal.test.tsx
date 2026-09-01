@@ -1,11 +1,13 @@
 /** @jest-environment jsdom */
 
+import type { ReactNode } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { AppProviders } from '../../app/AppProviders';
 import { createAppQueryClient } from '../../app/query-client';
 import type { NoteraClient } from '../../platform/notera-client';
+import { ModalHost } from '../../shared-ui/ModalHost';
 import { RecentModal } from '../RecentModal';
 
 const folderId = '10000000-0000-4000-8000-000000000003';
@@ -26,6 +28,12 @@ const folderPath = [
   { id: '10000000-0000-4000-8000-000000000001', name: '研究资料' },
   { id: folderId, name: '产品策略' },
 ];
+
+jest.mock('react-scrolllock', () => ({
+  __esModule: true,
+  default: ({ children }: { children: ReactNode }) => children,
+  TouchScrollable: ({ children }: { children: ReactNode }) => children,
+}));
 
 function clientWithPages(
   pages: readonly {
@@ -57,10 +65,19 @@ function renderRecent({
 }) {
   render(
     <AppProviders locale="zh-CN" queryClient={createAppQueryClient()}>
-      <RecentModal
-        client={client}
-        profileId="profile"
-        onOpen={onOpen}
+      <ModalHost
+        modal={{
+          kind: 'recent',
+          title: 'Recent',
+          content: (
+            <RecentModal
+              client={client}
+              profileId="profile"
+              onOpen={onOpen}
+              onClose={onClose}
+            />
+          ),
+        }}
         onClose={onClose}
       />
     </AppProviders>,
@@ -75,9 +92,13 @@ describe('RecentModal', () => {
     const { onOpen } = renderRecent({ client });
 
     expect(await screen.findByText('Recent note')).toBeVisible();
+    expect(screen.getByTestId('notera-modal-recent--body')).toBeVisible();
+    expect(
+      screen.queryByTestId('notera-modal-recent--footer'),
+    ).not.toBeInTheDocument();
     expect(screen.getByText(/^研究资料 \/ 产品策略 · /)).toBeVisible();
     expect(screen.getByText('按最近浏览时间排序')).toBeVisible();
-    expect(screen.getByRole('menu', { name: '最近浏览笔记' })).toBeVisible();
+    expect(screen.getByRole('list', { name: '最近浏览笔记' })).toBeVisible();
     expect(screen.queryByText('打开笔记 →')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('menuitem', { name: /Recent note/ }));
@@ -133,7 +154,7 @@ describe('RecentModal', () => {
     expect(request).toHaveBeenCalledTimes(2);
   });
 
-  it('loads the next page once and keeps the local-profile disclosure', async () => {
+  it('loads the next page once', async () => {
     const user = userEvent.setup();
     const { client, request } = clientWithPages([
       { items: [note], nextCursor: 'next' },
@@ -145,9 +166,6 @@ describe('RecentModal', () => {
     await user.click(screen.getByRole('button', { name: '加载更多' }));
 
     expect(await screen.findByText('Second note')).toBeVisible();
-    expect(
-      screen.getByText('仅显示当前本地 Profile 中可用的笔记'),
-    ).toBeVisible();
     await waitFor(() =>
       expect(request).toHaveBeenCalledWith('note.listRecent', {
         cursor: 'next',

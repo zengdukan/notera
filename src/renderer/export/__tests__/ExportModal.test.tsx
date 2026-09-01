@@ -1,14 +1,38 @@
 /** @jest-environment jsdom */
 
-import { render, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { AppProviders } from '../../app/AppProviders';
 import { configureFeatureFlags } from '../../atlassian-editor/feature-flags';
+import { ModalHost } from '../../shared-ui/ModalHost';
 import type { ExportController } from '../export-controller';
 import { ExportModal } from '../ExportModal';
 import { ExportOperationStore } from '../export-operation';
 
 configureFeatureFlags();
+
+jest.mock('react-scrolllock', () => ({
+  __esModule: true,
+  default: ({ children }: { children: ReactNode }) => children,
+  TouchScrollable: ({ children }: { children: ReactNode }) => children,
+}));
+
+function renderExportModal(content: ReactNode) {
+  render(
+    <AppProviders locale="en">
+      <ModalHost
+        modal={{
+          kind: 'export-note',
+          title: 'Export',
+          content,
+        }}
+        onClose={jest.fn()}
+      />
+    </AppProviders>,
+  );
+}
 
 describe('ExportModal', () => {
   it('selects a format, warns about plaintext, and offers saved-version fallback', async () => {
@@ -21,7 +45,7 @@ describe('ExportModal', () => {
       start,
       cancel: jest.fn(),
     } as unknown as ExportController;
-    render(
+    renderExportModal(
       <ExportModal
         noteId="note"
         controller={controller}
@@ -32,10 +56,22 @@ describe('ExportModal', () => {
 
     expect(screen.getByRole('radio', { name: 'Markdown' })).toBeChecked();
     expect(screen.getByText(/outside Notera encryption/iu)).toBeVisible();
+    expect(
+      within(screen.getByTestId('notera-modal-export-note--footer')).getByRole(
+        'button',
+        { name: 'Export' },
+      ),
+    ).toBeVisible();
     await user.click(screen.getByRole('radio', { name: 'PDF' }));
     await user.click(screen.getByRole('button', { name: 'Export' }));
     expect(
       await screen.findByRole('button', { name: 'Export last saved version' }),
+    ).toBeVisible();
+    expect(
+      within(screen.getByTestId('notera-modal-export-note--footer')).getByRole(
+        'button',
+        { name: 'Return to editing' },
+      ),
     ).toBeVisible();
     await user.click(
       screen.getByRole('button', { name: 'Export last saved version' }),
@@ -60,7 +96,7 @@ describe('ExportModal', () => {
     });
     const cancel = jest.fn();
 
-    render(
+    renderExportModal(
       <ExportModal
         noteId="note"
         controller={{ cancel, start: jest.fn() } as unknown as ExportController}
@@ -80,6 +116,12 @@ describe('ExportModal', () => {
       'aria-current',
       'step',
     );
+    expect(
+      within(screen.getByTestId('notera-modal-export-note--footer')).getByRole(
+        'button',
+        { name: 'Cancel export' },
+      ),
+    ).toBeVisible();
 
     await user.click(screen.getByRole('button', { name: 'Cancel export' }));
     expect(cancel).toHaveBeenCalledTimes(1);

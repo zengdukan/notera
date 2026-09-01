@@ -1,11 +1,13 @@
 /** @jest-environment jsdom */
 
+import type { ReactNode } from 'react';
 import { QueryClient } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { AppProviders } from '../../app/AppProviders';
 import type { NoteraClient } from '../../platform/notera-client';
+import { ModalHost } from '../../shared-ui/ModalHost';
 import type { TrashController } from '../trash-controller';
 import { TrashModal } from '../TrashModal';
 
@@ -28,6 +30,12 @@ const folderItem = {
   originalParentAvailable: false,
 };
 
+jest.mock('react-scrolllock', () => ({
+  __esModule: true,
+  default: ({ children }: { children: ReactNode }) => children,
+  TouchScrollable: ({ children }: { children: ReactNode }) => children,
+}));
+
 describe('TrashModal', () => {
   it('restores single items and requires confirmation for one permanent delete', async () => {
     const user = userEvent.setup();
@@ -43,12 +51,23 @@ describe('TrashModal', () => {
 
     render(
       <AppProviders locale="en" queryClient={new QueryClient()}>
-        <TrashModal
-          client={{ request, subscribe: jest.fn() } as unknown as NoteraClient}
-          profileId="profile"
-          rootFolderId="root"
-          folders={[{ id: 'target', name: 'Target', depth: 0 }]}
-          controller={controller}
+        <ModalHost
+          modal={{
+            kind: 'trash-bin',
+            title: 'Trash',
+            content: (
+              <TrashModal
+                client={
+                  { request, subscribe: jest.fn() } as unknown as NoteraClient
+                }
+                profileId="profile"
+                rootFolderId="root"
+                folders={[{ id: 'target', name: 'Target', depth: 0 }]}
+                controller={controller}
+              />
+            ),
+          }}
+          onClose={jest.fn()}
         />
       </AppProviders>,
     );
@@ -68,6 +87,12 @@ describe('TrashModal', () => {
     expect(
       screen.getByRole('button', { name: 'Restore to selected folder' }),
     ).toBeVisible();
+    expect(
+      within(screen.getByTestId('notera-modal-trash-bin--footer')).getByRole(
+        'button',
+        { name: 'Restore to selected folder' },
+      ),
+    ).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Target' }));
     await user.click(
       screen.getByRole('button', { name: 'Restore to selected folder' }),
@@ -86,6 +111,12 @@ describe('TrashModal', () => {
       }),
     ).toBeVisible();
     expect(screen.getByText('This cannot be undone.')).toBeVisible();
+    expect(
+      within(screen.getByTestId('notera-modal-trash-bin--footer')).getByRole(
+        'button',
+        { name: 'Delete permanently' },
+      ),
+    ).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(deletePermanent).not.toHaveBeenCalled();
     await user.click(

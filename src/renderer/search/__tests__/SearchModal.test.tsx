@@ -7,6 +7,7 @@ import { QueryClient } from '@tanstack/react-query';
 
 import { AppProviders } from '../../app/AppProviders';
 import type { NoteraClient } from '../../platform/notera-client';
+import { ModalHost } from '../../shared-ui/ModalHost';
 import { SearchModal } from '../SearchModal';
 
 jest.mock('react-scrolllock', () => ({
@@ -59,11 +60,20 @@ describe('SearchModal', () => {
 
     render(
       <AppProviders locale="en" queryClient={new QueryClient()}>
-        <SearchModal
-          client={client}
-          profileId={ids.profile}
-          rootFolderId={ids.root}
-          onOpen={onOpen}
+        <ModalHost
+          modal={{
+            kind: 'search',
+            title: 'Search',
+            content: (
+              <SearchModal
+                client={client}
+                profileId={ids.profile}
+                rootFolderId={ids.root}
+                onOpen={onOpen}
+              />
+            ),
+          }}
+          onClose={jest.fn()}
         />
       </AppProviders>,
     );

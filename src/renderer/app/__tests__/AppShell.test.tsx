@@ -3,6 +3,7 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
+import { ModalBody } from '@atlaskit/modal-dialog';
 import { AppProviders } from '../AppProviders';
 import { AppShell } from '../AppShell';
 import { ModalHost } from '../../shared-ui/ModalHost';
@@ -194,7 +195,11 @@ describe('application shell', () => {
             modal={{
               kind: 'settings',
               title: 'Settings',
-              content: <p>Settings content</p>,
+              content: (
+                <ModalBody>
+                  <p>Settings content</p>
+                </ModalBody>
+              ),
             }}
             onClose={jest.fn()}
           />

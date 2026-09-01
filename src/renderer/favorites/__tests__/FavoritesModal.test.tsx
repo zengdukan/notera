@@ -1,5 +1,6 @@
 /** @jest-environment jsdom */
 
+import type { ReactNode } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient } from '@tanstack/react-query';
@@ -10,6 +11,7 @@ import { noteKey } from '../../app/query-keys';
 import type { AppLocale } from '../../app/i18n';
 import type { NoteraClient } from '../../platform/notera-client';
 import { formatRecentTimestamp } from '../../recent/recent-format';
+import { ModalHost } from '../../shared-ui/ModalHost';
 import { FavoritesModal } from '../FavoritesModal';
 
 const profileId = '10000000-0000-4000-8000-000000000001';
@@ -33,6 +35,12 @@ const folderPath = [
   { id: note.folderId, name: '产品策略' },
 ];
 
+jest.mock('react-scrolllock', () => ({
+  __esModule: true,
+  default: ({ children }: { children: ReactNode }) => children,
+  TouchScrollable: ({ children }: { children: ReactNode }) => children,
+}));
+
 function renderFavorites({
   client,
   locale = 'en',
@@ -48,10 +56,19 @@ function renderFavorites({
 }) {
   render(
     <AppProviders locale={locale} queryClient={queryClient}>
-      <FavoritesModal
-        client={client}
-        profileId={profileId}
-        onOpen={onOpen}
+      <ModalHost
+        modal={{
+          kind: 'favorites',
+          title: 'Favorites',
+          content: (
+            <FavoritesModal
+              client={client}
+              profileId={profileId}
+              onOpen={onOpen}
+              onClose={onClose}
+            />
+          ),
+        }}
         onClose={onClose}
       />
     </AppProviders>,
@@ -78,6 +95,10 @@ describe('FavoritesModal', () => {
 
     expect(await screen.findByText('按收藏顺序排列')).toBeVisible();
     expect(screen.getByRole('list')).toBeVisible();
+    expect(screen.getByTestId('notera-modal-favorites--body')).toBeVisible();
+    expect(
+      screen.queryByTestId('notera-modal-favorites--footer'),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByText(
         `研究资料 / 产品策略 · ${formatRecentTimestamp(note.updatedAt)}`,

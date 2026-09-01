@@ -1,10 +1,8 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import ModalDialog, {
-  ModalBody,
   ModalHeader,
   ModalTitle,
   ModalTransition,
-  ModalFooter,
 } from '@atlaskit/modal-dialog';
 
 import './ModalHost.css';
@@ -12,6 +10,7 @@ import './ModalHost.css';
 export interface HostedModal {
   readonly kind: string;
   readonly title: string;
+  /** Complete ADS modal sections, including ModalBody and optional ModalFooter. */
   readonly content: ReactNode;
   readonly width?: number | 'small' | 'medium' | 'large' | 'x-large';
 }
@@ -32,6 +31,7 @@ export function ModalHost({
     <ModalTransition>
       {open && (
         <ModalDialog
+          testId={`notera-modal-${modal.kind}`}
           width={modal.width}
           onClose={() => {
             setOpen(false);
@@ -42,16 +42,7 @@ export function ModalHost({
           <ModalHeader hasCloseButton>
             <ModalTitle>{modal.title}</ModalTitle>
           </ModalHeader>
-          <ModalBody>
-            <div
-              className={`notera-modal-content notera-modal-content--${modal.kind}`}
-              data-notera-modal={modal.kind}
-              data-testid={`notera-modal-content-${modal.kind}`}
-            >
-              {modal.content}
-            </div>
-          </ModalBody>
-          <ModalFooter />
+          {modal.content}
         </ModalDialog>
       )}
     </ModalTransition>

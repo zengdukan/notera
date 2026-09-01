@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import Button from '@atlaskit/button/new';
 import Heading from '@atlaskit/heading';
+import { ModalBody, ModalFooter } from '@atlaskit/modal-dialog';
 import SectionMessage from '@atlaskit/section-message';
-import { Inline, Stack } from '@atlaskit/primitives';
+import { Stack } from '@atlaskit/primitives';
 
 export function DeleteTrashModal({
   name,
@@ -23,14 +24,20 @@ export function DeleteTrashModal({
     }
   };
   return (
-    <div className="notera-trash-confirm">
-      <Stack space="space.200">
-        <Heading size="small">Permanently delete {name || 'Untitled'}?</Heading>
-        <SectionMessage appearance="error" title="This cannot be undone.">
-          Notera will remove this item and any data only referenced by it.
-        </SectionMessage>
-      </Stack>
-      <Inline space="space.100" spread="space-between">
+    <>
+      <ModalBody>
+        <div className="notera-trash-confirm">
+          <Stack space="space.200">
+            <Heading size="small">
+              Permanently delete {name || 'Untitled'}?
+            </Heading>
+            <SectionMessage appearance="error" title="This cannot be undone.">
+              Notera will remove this item and any data only referenced by it.
+            </SectionMessage>
+          </Stack>
+        </div>
+      </ModalBody>
+      <ModalFooter>
         <Button isDisabled={deleting} onClick={onCancel}>
           Cancel
         </Button>
@@ -41,7 +48,7 @@ export function DeleteTrashModal({
         >
           Delete permanently
         </Button>
-      </Inline>
-    </div>
+      </ModalFooter>
+    </>
   );
 }

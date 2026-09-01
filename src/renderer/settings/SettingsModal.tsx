@@ -1,4 +1,6 @@
 import Tabs, { Tab, TabList, TabPanel } from '@atlaskit/tabs';
+import { ModalBody } from '@atlaskit/modal-dialog';
+import { Box } from '@atlaskit/primitives';
 
 import {
   GeneralSettings,
@@ -34,32 +36,36 @@ export function SettingsModal({
   readonly onRemove: () => Promise<unknown> | unknown;
 }) {
   return (
-    <div className="notera-settings-modal">
-      <Tabs id="notera-settings-tabs">
-        <TabList>
-          <Tab>General</Tab>
-          <Tab>Profile and security</Tab>
-        </TabList>
-        <TabPanel>
-          <div className="notera-settings-panel">
-            <GeneralSettings value={device} onUpdate={onUpdateDevice} />
-          </div>
-        </TabPanel>
-        <TabPanel>
-          <div className="notera-settings-panel">
-            <ProfileSecuritySettings
-              autoLockMinutes={profile.autoLockMinutes}
-              onUpdateAutoLock={(autoLockMinutes) =>
-                onUpdateProfile({ autoLockMinutes })
-              }
-              onRenameProfile={onRenameProfile}
-              onChangePassword={onChangePassword}
-              onLock={onLock}
-              onRemove={onRemove}
-            />
-          </div>
-        </TabPanel>
-      </Tabs>
-    </div>
+    <ModalBody>
+      <Box paddingBlockEnd="space.300">
+        <div className="notera-settings-modal">
+          <Tabs id="notera-settings-tabs">
+            <TabList>
+              <Tab>General</Tab>
+              <Tab>Profile and security</Tab>
+            </TabList>
+            <TabPanel>
+              <div className="notera-settings-panel">
+                <GeneralSettings value={device} onUpdate={onUpdateDevice} />
+              </div>
+            </TabPanel>
+            <TabPanel>
+              <div className="notera-settings-panel">
+                <ProfileSecuritySettings
+                  autoLockMinutes={profile.autoLockMinutes}
+                  onUpdateAutoLock={(autoLockMinutes) =>
+                    onUpdateProfile({ autoLockMinutes })
+                  }
+                  onRenameProfile={onRenameProfile}
+                  onChangePassword={onChangePassword}
+                  onLock={onLock}
+                  onRemove={onRemove}
+                />
+              </div>
+            </TabPanel>
+          </Tabs>
+        </div>
+      </Box>
+    </ModalBody>
   );
 }

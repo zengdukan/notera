@@ -1,6 +1,9 @@
 import Button from '@atlaskit/button/new';
-import Form, { ErrorMessage, Field, FormFooter } from '@atlaskit/form';
+import Form, { ErrorMessage, Field } from '@atlaskit/form';
+import { ModalBody, ModalFooter } from '@atlaskit/modal-dialog';
 import Textfield from '@atlaskit/textfield';
+
+const CREATE_FOLDER_FORM_ID = 'notera-create-folder-form';
 
 export function CreateFolderModal({
   onCreate,
@@ -14,31 +17,40 @@ export function CreateFolderModal({
       }}
     >
       {({ formProps, submitting }) => (
-        <form {...formProps}>
-          <Field
-            name="name"
-            label="Folder name"
-            defaultValue=""
-            isRequired
-            validate={(value) =>
-              typeof value !== 'string' || value.trim().length === 0
-                ? 'Folder name is required'
-                : undefined
-            }
-          >
-            {({ fieldProps, error }) => (
-              <>
-                <Textfield {...fieldProps} autoFocus />
-                {error ? <ErrorMessage>{error}</ErrorMessage> : null}
-              </>
-            )}
-          </Field>
-          <FormFooter>
-            <Button appearance="primary" type="submit" isLoading={submitting}>
+        <>
+          <ModalBody>
+            <form {...formProps} id={CREATE_FOLDER_FORM_ID}>
+              <Field
+                name="name"
+                label="Folder name"
+                defaultValue=""
+                isRequired
+                validate={(value) =>
+                  typeof value !== 'string' || value.trim().length === 0
+                    ? 'Folder name is required'
+                    : undefined
+                }
+              >
+                {({ fieldProps, error }) => (
+                  <>
+                    <Textfield {...fieldProps} autoFocus />
+                    {error ? <ErrorMessage>{error}</ErrorMessage> : null}
+                  </>
+                )}
+              </Field>
+            </form>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              appearance="primary"
+              type="submit"
+              form={CREATE_FOLDER_FORM_ID}
+              isLoading={submitting}
+            >
               Create folder
             </Button>
-          </FormFooter>
-        </form>
+          </ModalFooter>
+        </>
       )}
     </Form>
   );

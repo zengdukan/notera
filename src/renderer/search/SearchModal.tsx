@@ -5,6 +5,7 @@ import SectionMessage from '@atlaskit/section-message';
 import Spinner from '@atlaskit/spinner';
 import Textfield from '@atlaskit/textfield';
 import { Box, Inline, Text, xcss } from '@atlaskit/primitives';
+import { ModalBody } from '@atlaskit/modal-dialog';
 
 import type { NoteraClient } from '../platform/notera-client';
 import { SearchResults } from './SearchResults';
@@ -24,11 +25,6 @@ const searchModalStyles = xcss({
   gap: 'space.200',
   height: 'min(68vh, 516px)',
   minHeight: '0',
-});
-
-const searchInputStyles = xcss({
-  flexGrow: 1,
-  minWidth: '0',
 });
 
 const resultsStyles = xcss({
@@ -76,88 +72,94 @@ export function SearchModal({
     }
   };
   return (
-    <Box xcss={searchModalStyles}>
-      <Box aria-label="Search notes" role="search">
-        <Inline alignBlock="center" space="space.100">
-          <Textfield
-            autoFocus
-            type="search"
-            aria-label="Search notes"
-            elemBeforeInput={
-              <Box paddingInlineStart="space.100">
-                <SearchIcon label="" />
-              </Box>
-            }
-            placeholder="Search notes"
-            value={query}
-            onChange={(event) => {
-              setQuery(event.currentTarget.value);
-              setOpenFailed(false);
-            }}
-          />
-          <SearchScopePicker
-            client={client}
-            profileId={profileId}
-            rootFolderId={rootFolderId}
-            value={scope}
-            onChange={(value) => {
-              setScope(value);
-              setOpenFailed(false);
-            }}
-          />
-        </Inline>
-      </Box>
-      <Box as="section" aria-label="Search results" xcss={resultsStyles}>
-        {openFailed ? (
-          <Box paddingBlock="space.200">
-            <SectionMessage
-              appearance="error"
-              title="This note is no longer available"
-            >
-              Refresh the results and try again.
-            </SectionMessage>
-          </Box>
-        ) : null}
-        {normalizedQuery.length === 0 ? (
-          <Box paddingBlock="space.200">
-            <Text color="color.text.subtle">
-              Enter text to search all notes.
-            </Text>
-          </Box>
-        ) : null}
-        {normalizedQuery.length > 0 && (isDebouncing || results.isPending) ? (
-          <Box paddingBlock="space.300">
-            <Inline alignBlock="center" alignInline="center" space="space.100">
-              <Spinner label="Searching" />
-              <Text color="color.text.subtle">Searching notes</Text>
-            </Inline>
-          </Box>
-        ) : null}
-        {!isDebouncing && results.isError ? (
-          <Box paddingBlock="space.200">
-            <SectionMessage appearance="error" title="Search failed">
-              Check the search text and try again.
-            </SectionMessage>
-          </Box>
-        ) : null}
-        {!isDebouncing && results.isSuccess ? (
-          <SearchResults
-            results={items}
-            onOpen={(result) => void open(result)}
-          />
-        ) : null}
-      </Box>
-      {!isDebouncing && results.hasNextPage ? (
-        <Box paddingBlockStart="space.050">
-          <Button
-            shouldFitContainer
-            isLoading={results.isFetchingNextPage}
-            onClick={() => void results.fetchNextPage()}
-          >
-            Load more
-          </Button>
+    <ModalBody>
+      <Box paddingBlockEnd="space.300" xcss={searchModalStyles}>
+        <Box aria-label="Search notes" role="search">
+          <Inline alignBlock="center" space="space.100">
+            <Textfield
+              autoFocus
+              type="search"
+              aria-label="Search notes"
+              elemBeforeInput={
+                <Box paddingInlineStart="space.100">
+                  <SearchIcon label="" />
+                </Box>
+              }
+              placeholder="Search notes"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.currentTarget.value);
+                setOpenFailed(false);
+              }}
+            />
+            <SearchScopePicker
+              client={client}
+              profileId={profileId}
+              rootFolderId={rootFolderId}
+              value={scope}
+              onChange={(value) => {
+                setScope(value);
+                setOpenFailed(false);
+              }}
+            />
+          </Inline>
         </Box>
-      ) : null}
-    </Box>
+        <Box as="section" aria-label="Search results" xcss={resultsStyles}>
+          {openFailed ? (
+            <Box paddingBlock="space.200">
+              <SectionMessage
+                appearance="error"
+                title="This note is no longer available"
+              >
+                Refresh the results and try again.
+              </SectionMessage>
+            </Box>
+          ) : null}
+          {normalizedQuery.length === 0 ? (
+            <Box paddingBlock="space.200">
+              <Text color="color.text.subtle">
+                Enter text to search all notes.
+              </Text>
+            </Box>
+          ) : null}
+          {normalizedQuery.length > 0 && (isDebouncing || results.isPending) ? (
+            <Box paddingBlock="space.300">
+              <Inline
+                alignBlock="center"
+                alignInline="center"
+                space="space.100"
+              >
+                <Spinner label="Searching" />
+                <Text color="color.text.subtle">Searching notes</Text>
+              </Inline>
+            </Box>
+          ) : null}
+          {!isDebouncing && results.isError ? (
+            <Box paddingBlock="space.200">
+              <SectionMessage appearance="error" title="Search failed">
+                Check the search text and try again.
+              </SectionMessage>
+            </Box>
+          ) : null}
+          {!isDebouncing && results.isSuccess ? (
+            <SearchResults
+              results={items}
+              onOpen={(result) => void open(result)}
+            />
+          ) : null}
+        </Box>
+        {!isDebouncing && results.hasNextPage ? (
+          <Box paddingBlockStart="space.050">
+            <Button
+              shouldFitContainer
+              isLoading={results.isFetchingNextPage}
+              onClick={() => void results.fetchNextPage()}
+            >
+              Load more
+            </Button>
+          </Box>
+        ) : null}
+      </Box>
+    </ModalBody>
   );
 }

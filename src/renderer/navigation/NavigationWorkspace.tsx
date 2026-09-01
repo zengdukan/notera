@@ -6,7 +6,8 @@ import {
   type Dispatch,
   type ReactNode,
 } from 'react';
-import { Text } from '@atlaskit/primitives';
+import { ModalBody } from '@atlaskit/modal-dialog';
+import { Box, Text } from '@atlaskit/primitives';
 import { useQueryClient } from '@tanstack/react-query';
 import { useIntl } from 'react-intl';
 
@@ -440,7 +441,13 @@ function UnlockedNavigationWorkspace({
       return {
         kind: overlay.kind,
         title: overlay.title,
-        content: <Text>Available in this offline workspace.</Text>,
+        content: (
+          <ModalBody>
+            <Box paddingBlockEnd="space.300">
+              <Text>Available in this offline workspace.</Text>
+            </Box>
+          </ModalBody>
+        ),
       };
     }
     if (overlay.kind === 'create-folder') {

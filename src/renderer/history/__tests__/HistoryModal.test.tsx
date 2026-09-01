@@ -1,10 +1,12 @@
 /** @jest-environment jsdom */
 
+import type { ReactNode } from 'react';
 import { QueryClient } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 
 import { AppProviders } from '../../app/AppProviders';
 import type { NoteraClient } from '../../platform/notera-client';
+import { ModalHost } from '../../shared-ui/ModalHost';
 import type { HistoryController } from '../history-controller';
 import { HistoryModal } from '../HistoryModal';
 
@@ -12,6 +14,12 @@ jest.mock('../../editor/RendererSurface', () => ({
   RendererSurface: ({ document }: { document: unknown }) => (
     <output>{JSON.stringify(document)}</output>
   ),
+}));
+
+jest.mock('react-scrolllock', () => ({
+  __esModule: true,
+  default: ({ children }: { children: ReactNode }) => children,
+  TouchScrollable: ({ children }: { children: ReactNode }) => children,
 }));
 
 const userVersion = {
@@ -59,11 +67,20 @@ describe('HistoryModal', () => {
 
     render(
       <AppProviders locale="en" queryClient={new QueryClient()}>
-        <HistoryModal
-          client={client}
-          profileId="profile"
-          noteId="note"
-          controller={controller}
+        <ModalHost
+          modal={{
+            kind: 'history',
+            title: 'History',
+            content: (
+              <HistoryModal
+                client={client}
+                profileId="profile"
+                noteId="note"
+                controller={controller}
+              />
+            ),
+          }}
+          onClose={jest.fn()}
         />
       </AppProviders>,
     );
@@ -86,5 +103,12 @@ describe('HistoryModal', () => {
     expect(
       screen.queryByRole('button', { name: /delete/iu }),
     ).not.toBeInTheDocument();
+    const footer = screen.getByTestId('notera-modal-history--footer');
+    expect(
+      within(footer).getByRole('button', { name: 'Compare' }),
+    ).toBeVisible();
+    expect(
+      within(footer).getByRole('button', { name: 'Restore version' }),
+    ).toBeVisible();
   });
 });

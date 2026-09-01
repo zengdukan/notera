@@ -4,6 +4,9 @@ import { Field } from '@atlaskit/form';
 import SectionMessage from '@atlaskit/section-message';
 import Textfield from '@atlaskit/textfield';
 import { Stack } from '@atlaskit/primitives';
+import { ModalBody, ModalFooter } from '@atlaskit/modal-dialog';
+
+const CREATE_VERSION_FORM_ID = 'notera-create-version-form';
 
 export function CreateVersionModal({
   defaultName,
@@ -27,42 +30,51 @@ export function CreateVersionModal({
     }
   };
   return (
-    <form
-      aria-label="Create version"
-      className="notera-create-version"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (name.trim().length > 0 && !submitting) void create();
-      }}
-    >
-      <Stack space="space.200">
-        <Field name="versionName" label="Version name">
-          {({ fieldProps }) => (
-            <Textfield
-              {...fieldProps}
-              aria-label="Version name"
-              autoFocus
-              value={name}
-              onChange={(event) => setName(event.currentTarget.value)}
-            />
-          )}
-        </Field>
-        {failed ? (
-          <SectionMessage appearance="error" title="Version was not created">
-            Your name is preserved. Try again when the note can be saved.
-          </SectionMessage>
-        ) : null}
-        <div className="notera-create-version__actions">
-          <Button
-            appearance="primary"
-            type="submit"
-            isLoading={submitting}
-            isDisabled={name.trim().length === 0}
-          >
-            Create version
-          </Button>
-        </div>
-      </Stack>
-    </form>
+    <>
+      <ModalBody>
+        <form
+          id={CREATE_VERSION_FORM_ID}
+          aria-label="Create version"
+          className="notera-create-version"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (name.trim().length > 0 && !submitting) void create();
+          }}
+        >
+          <Stack space="space.200">
+            <Field name="versionName" label="Version name">
+              {({ fieldProps }) => (
+                <Textfield
+                  {...fieldProps}
+                  aria-label="Version name"
+                  autoFocus
+                  value={name}
+                  onChange={(event) => setName(event.currentTarget.value)}
+                />
+              )}
+            </Field>
+            {failed ? (
+              <SectionMessage
+                appearance="error"
+                title="Version was not created"
+              >
+                Your name is preserved. Try again when the note can be saved.
+              </SectionMessage>
+            ) : null}
+          </Stack>
+        </form>
+      </ModalBody>
+      <ModalFooter>
+        <Button
+          appearance="primary"
+          type="submit"
+          form={CREATE_VERSION_FORM_ID}
+          isLoading={submitting}
+          isDisabled={name.trim().length === 0}
+        >
+          Create version
+        </Button>
+      </ModalFooter>
+    </>
   );
 }

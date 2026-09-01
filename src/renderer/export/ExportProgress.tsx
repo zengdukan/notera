@@ -1,4 +1,3 @@
-import Button from '@atlaskit/button/new';
 import ProgressBar from '@atlaskit/progress-bar';
 import { Stack, Text } from '@atlaskit/primitives';
 
@@ -32,10 +31,8 @@ const stageForPhase = {
 
 export function ExportProgress({
   operation,
-  onCancel,
 }: {
   readonly operation: Extract<ExportOperation, { state: 'RUNNING' }>;
-  readonly onCancel: () => void;
 }) {
   const currentStage = stageForPhase[operation.phase];
   return (
@@ -65,9 +62,6 @@ export function ExportProgress({
           ))}
         </ol>
       </Stack>
-      <div className="notera-export-progress__actions">
-        <Button onClick={onCancel}>Cancel export</Button>
-      </div>
     </section>
   );
 }

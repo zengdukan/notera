@@ -12,13 +12,7 @@
   --notera-modal-radius: 4px;
 }
 
-.notera-modal-content {
-  min-width: 0;
-  box-sizing: border-box;
-  color: var(--notera-modal-text);
-}
-
-.notera-modal-content--search {
+[data-testid='notera-modal-search--body'] {
   min-height: 516px;
 }
 
@@ -27,15 +21,7 @@
   text-align: left;
 }
 
-.notera-create-version__actions,
-.notera-history-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--ds-space-100);
-}
-
-.notera-modal-content--history {
+[data-testid='notera-modal-history--body'] {
   min-height: 500px;
 }
 
@@ -129,20 +115,6 @@
   min-height: 240px;
 }
 
-.notera-export-actions,
-.notera-export-progress__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--ds-space-100);
-}
-
-.notera-export-progress {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: var(--ds-space-400);
-}
-
 .notera-export-stages {
   display: flex;
   flex-wrap: wrap;
@@ -161,7 +133,7 @@
   color: var(--notera-modal-text);
 }
 
-.notera-modal-content--trash-bin,
+[data-testid='notera-modal-trash-bin--body'],
 .notera-trash-modal {
   min-height: 360px;
 }
@@ -191,8 +163,7 @@
   min-width: 0;
 }
 
-.notera-trash-list__actions,
-.notera-trash-confirm__actions {
+.notera-trash-list__actions {
   display: flex;
   justify-content: flex-end;
   gap: var(--ds-space-050);
@@ -204,17 +175,13 @@
 
 .notera-trash-confirm {
   min-height: 280px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: var(--ds-space-300);
 }
 
 .notera-trash-restore {
   min-height: 260px;
 }
 
-.notera-modal-content--settings,
+[data-testid='notera-modal-settings--body'],
 .notera-settings-modal {
   min-height: 420px;
 }
@@ -314,16 +281,16 @@
 }
 
 @media (max-width: 768px) {
-  section[role='dialog']:has(.notera-modal-content) {
+  section[role='dialog'][data-testid^='notera-modal-'] {
     max-width: calc(100vw - 32px);
     margin-inline: auto;
   }
 
-  .notera-modal-content--search {
+  [data-testid='notera-modal-search--body'] {
     min-height: 0;
   }
 
-  .notera-modal-content--history,
+  [data-testid='notera-modal-history--body'],
   .notera-history-modal {
     min-height: 0;
   }
@@ -363,7 +330,7 @@
     min-height: 0;
   }
 
-  .notera-modal-content--trash-bin,
+  [data-testid='notera-modal-trash-bin--body'],
   .notera-trash-modal {
     min-height: 0;
   }
@@ -376,7 +343,7 @@
     justify-content: flex-start;
   }
 
-  .notera-modal-content--settings,
+  [data-testid='notera-modal-settings--body'],
   .notera-settings-modal {
     min-height: 0;
   }
@@ -388,28 +355,11 @@
 }
 
 @media (max-width: 479px) {
-  .notera-create-version__actions > *,
-  .notera-history-actions > * {
-    flex: 1 1 100%;
-  }
-
-  .notera-export-actions,
-  .notera-export-progress__actions {
-    flex-direction: column-reverse;
-  }
-
-  .notera-export-actions > *,
-  .notera-export-progress__actions > * {
-    width: 100%;
-  }
-
-  .notera-trash-list__actions,
-  .notera-trash-confirm__actions {
+  .notera-trash-list__actions {
     flex-direction: column;
   }
 
-  .notera-trash-list__actions > *,
-  .notera-trash-confirm__actions > * {
+  .notera-trash-list__actions > * {
     width: 100%;
   }
 

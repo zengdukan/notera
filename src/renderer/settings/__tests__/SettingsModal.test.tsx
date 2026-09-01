@@ -1,27 +1,44 @@
 /** @jest-environment jsdom */
 
+import type { ReactNode } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AppProviders } from '../../app/AppProviders';
+import { ModalHost } from '../../shared-ui/ModalHost';
 import { SettingsModal } from '../SettingsModal';
+
+jest.mock('react-scrolllock', () => ({
+  __esModule: true,
+  default: ({ children }: { children: ReactNode }) => children,
+  TouchScrollable: ({ children }: { children: ReactNode }) => children,
+}));
+
+function renderSettingsModal(content: ReactNode) {
+  render(
+    <AppProviders locale="en">
+      <ModalHost
+        modal={{ kind: 'settings', title: 'Settings', content }}
+        onClose={jest.fn()}
+      />
+    </AppProviders>,
+  );
+}
 
 describe('SettingsModal', () => {
   it('offers only supported themes, languages, and automatic lock values', async () => {
     const user = userEvent.setup();
     const onUpdateDevice = jest.fn();
-    render(
-      <AppProviders locale="en">
-        <SettingsModal
-          device={{ theme: 'SYSTEM', language: 'en' }}
-          profile={{ autoLockMinutes: 15 }}
-          onUpdateDevice={onUpdateDevice}
-          onUpdateProfile={jest.fn()}
-          onRenameProfile={jest.fn()}
-          onChangePassword={jest.fn()}
-          onLock={jest.fn()}
-          onRemove={jest.fn()}
-        />
-      </AppProviders>,
+    renderSettingsModal(
+      <SettingsModal
+        device={{ theme: 'SYSTEM', language: 'en' }}
+        profile={{ autoLockMinutes: 15 }}
+        onUpdateDevice={onUpdateDevice}
+        onUpdateProfile={jest.fn()}
+        onRenameProfile={jest.fn()}
+        onChangePassword={jest.fn()}
+        onLock={jest.fn()}
+        onRemove={jest.fn()}
+      />,
     );
 
     const themeGroup = screen.getByRole('radiogroup', { name: 'Theme' });
@@ -33,7 +50,7 @@ describe('SettingsModal', () => {
     expect(onUpdateDevice).toHaveBeenCalledWith({ theme: 'LIGHT' });
     await user.click(screen.getByRole('combobox', { name: 'Language' }));
     expect(screen.getByRole('option', { name: 'English' })).toBeInTheDocument();
-    await user.keyboard('{Escape}');
+    await user.click(screen.getByRole('option', { name: 'English' }));
     await user.click(screen.getByRole('tab', { name: 'Profile and security' }));
     await user.click(screen.getByRole('combobox', { name: 'Automatic lock' }));
     expect(
@@ -45,19 +62,17 @@ describe('SettingsModal', () => {
 
   it('keeps the selected theme and shows inline feedback when updating fails', async () => {
     const user = userEvent.setup();
-    render(
-      <AppProviders locale="en">
-        <SettingsModal
-          device={{ theme: 'DARK', language: 'en' }}
-          profile={{ autoLockMinutes: 15 }}
-          onUpdateDevice={jest.fn().mockRejectedValue(new Error('failed'))}
-          onUpdateProfile={jest.fn()}
-          onRenameProfile={jest.fn()}
-          onChangePassword={jest.fn()}
-          onLock={jest.fn()}
-          onRemove={jest.fn()}
-        />
-      </AppProviders>,
+    renderSettingsModal(
+      <SettingsModal
+        device={{ theme: 'DARK', language: 'en' }}
+        profile={{ autoLockMinutes: 15 }}
+        onUpdateDevice={jest.fn().mockRejectedValue(new Error('failed'))}
+        onUpdateProfile={jest.fn()}
+        onRenameProfile={jest.fn()}
+        onChangePassword={jest.fn()}
+        onLock={jest.fn()}
+        onRemove={jest.fn()}
+      />,
     );
 
     expect(screen.getByRole('radio', { name: 'Dark' })).toBeChecked();
@@ -72,19 +87,17 @@ describe('SettingsModal', () => {
     const update = new Promise<void>((resolve) => {
       finishUpdate = resolve;
     });
-    render(
-      <AppProviders locale="en">
-        <SettingsModal
-          device={{ theme: 'SYSTEM', language: 'en' }}
-          profile={{ autoLockMinutes: 15 }}
-          onUpdateDevice={() => update}
-          onUpdateProfile={jest.fn()}
-          onRenameProfile={jest.fn()}
-          onChangePassword={jest.fn()}
-          onLock={jest.fn()}
-          onRemove={jest.fn()}
-        />
-      </AppProviders>,
+    renderSettingsModal(
+      <SettingsModal
+        device={{ theme: 'SYSTEM', language: 'en' }}
+        profile={{ autoLockMinutes: 15 }}
+        onUpdateDevice={() => update}
+        onUpdateProfile={jest.fn()}
+        onRenameProfile={jest.fn()}
+        onChangePassword={jest.fn()}
+        onLock={jest.fn()}
+        onRemove={jest.fn()}
+      />,
     );
 
     await user.click(screen.getByRole('radio', { name: 'Light' }));
@@ -100,19 +113,17 @@ describe('SettingsModal', () => {
 
   it('shows inline feedback when a profile preference update fails', async () => {
     const user = userEvent.setup();
-    render(
-      <AppProviders locale="en">
-        <SettingsModal
-          device={{ theme: 'SYSTEM', language: 'en' }}
-          profile={{ autoLockMinutes: 15 }}
-          onUpdateDevice={jest.fn()}
-          onUpdateProfile={jest.fn().mockRejectedValue(new Error('failed'))}
-          onRenameProfile={jest.fn()}
-          onChangePassword={jest.fn()}
-          onLock={jest.fn()}
-          onRemove={jest.fn()}
-        />
-      </AppProviders>,
+    renderSettingsModal(
+      <SettingsModal
+        device={{ theme: 'SYSTEM', language: 'en' }}
+        profile={{ autoLockMinutes: 15 }}
+        onUpdateDevice={jest.fn()}
+        onUpdateProfile={jest.fn().mockRejectedValue(new Error('failed'))}
+        onRenameProfile={jest.fn()}
+        onChangePassword={jest.fn()}
+        onLock={jest.fn()}
+        onRemove={jest.fn()}
+      />,
     );
 
     await user.click(screen.getByRole('tab', { name: 'Profile and security' }));
