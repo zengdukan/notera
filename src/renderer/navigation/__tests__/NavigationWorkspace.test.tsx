@@ -3,7 +3,7 @@
 import { useEffect, type ReactNode } from 'react';
 import Button from '@atlaskit/button/new';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render as testingRender, screen } from '@testing-library/react';
+import { act, render as testingRender, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { IntlProvider } from 'react-intl';
 
@@ -33,6 +33,23 @@ const secondNote = {
   isFavorite: true,
 };
 const mockFlush = jest.fn(async () => undefined);
+let mockSettingsModalProps:
+  | {
+      readonly profile: { autoLockMinutes: number; displayName: string };
+      readonly onUpdateDevice: (value: {
+        theme: 'SYSTEM' | 'LIGHT' | 'DARK';
+      }) => Promise<void>;
+      readonly onRenameProfile: (displayName: string) => Promise<string>;
+      readonly onRemove: () => Promise<'removed' | 'cancelled'>;
+    }
+  | undefined;
+
+function settingsModalProps() {
+  if (mockSettingsModalProps === undefined) {
+    throw new Error('Settings modal props are unavailable.');
+  }
+  return mockSettingsModalProps;
+}
 
 jest.mock('../ResizableNavigation', () => ({
   ResizableNavigation: ({
@@ -213,7 +230,10 @@ jest.mock('../../export/ExportModal', () => ({
   ExportModal: () => <div>Export workspace</div>,
 }));
 jest.mock('../../settings/SettingsModal', () => ({
-  SettingsModal: () => <div>Profile settings</div>,
+  SettingsModal: (props: typeof mockSettingsModalProps) => {
+    mockSettingsModalProps = props;
+    return <div>Profile settings</div>;
+  },
 }));
 jest.mock('../../shared-ui/ModalHost', () => ({
   ModalHost: ({
@@ -382,12 +402,16 @@ describe('NavigationWorkspace', () => {
   });
 
   it('opens settings from the current profile app logo action', async () => {
+    mockSettingsModalProps = undefined;
     const user = userEvent.setup();
     const request = jest.fn(async (key: string) => {
       if (key === 'settings.getDevice') {
         return { theme: 'SYSTEM', language: 'en' };
       }
       if (key === 'settings.getProfile') return { autoLockMinutes: 15 };
+      if (key === 'settings.updateDevice') {
+        return { theme: 'DARK', language: 'en' };
+      }
       return {};
     });
     const client = { request, subscribe: jest.fn() } as unknown as NoteraClient;
@@ -417,6 +441,131 @@ describe('NavigationWorkspace', () => {
       theme: 'SYSTEM',
       language: 'en',
     });
+    expect(settingsModalProps().profile).toEqual({
+      autoLockMinutes: 15,
+      displayName: 'Profile',
+    });
+    await act(async () => {
+      await settingsModalProps().onUpdateDevice({ theme: 'DARK' });
+    });
+    expect(queryClient.getQueryData(deviceSettingsKey())).toEqual({
+      theme: 'DARK',
+      language: 'en',
+    });
+  });
+
+  it('localizes the settings modal title', async () => {
+    const user = userEvent.setup();
+    mockSettingsModalProps = undefined;
+    const request = jest.fn(async (key: string) => {
+      if (key === 'settings.getDevice') {
+        return { theme: 'SYSTEM', language: 'zh-CN' };
+      }
+      if (key === 'settings.getProfile') return { autoLockMinutes: 15 };
+      return {};
+    });
+    const client = { request, subscribe: jest.fn() } as unknown as NoteraClient;
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SessionProvider>
+          <Unlock>
+            <NavigationWorkspace client={client} />
+          </Unlock>
+        </SessionProvider>
+      </QueryClientProvider>,
+      'zh-CN',
+    );
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Open Profile settings' }),
+    );
+    expect(await screen.findByRole('dialog', { name: '设置' })).toBeVisible();
+  });
+
+  it('keeps settings open after cancelled removal and closes after removal', async () => {
+    const user = userEvent.setup();
+    mockSettingsModalProps = undefined;
+    let removalStatus: 'removed' | 'cancelled' = 'cancelled';
+    const request = jest.fn(async (key: string) => {
+      if (key === 'settings.getDevice') {
+        return { theme: 'SYSTEM', language: 'en' };
+      }
+      if (key === 'settings.getProfile') return { autoLockMinutes: 15 };
+      if (key === 'profile.removeFromDevice') {
+        return { status: removalStatus };
+      }
+      return {};
+    });
+    const client = { request, subscribe: jest.fn() } as unknown as NoteraClient;
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SessionProvider>
+          <Unlock>
+            <NavigationWorkspace client={client} />
+          </Unlock>
+        </SessionProvider>
+      </QueryClientProvider>,
+    );
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Open Profile settings' }),
+    );
+    expect(
+      await screen.findByRole('dialog', { name: 'Settings' }),
+    ).toBeVisible();
+
+    await act(async () => {
+      await settingsModalProps().onRemove();
+    });
+    expect(screen.getByRole('dialog', { name: 'Settings' })).toBeVisible();
+
+    removalStatus = 'removed';
+    await act(async () => {
+      await settingsModalProps().onRemove();
+    });
+    expect(
+      screen.queryByRole('dialog', { name: 'Settings' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('synchronizes a renamed profile with the session and settings state', async () => {
+    const user = userEvent.setup();
+    mockSettingsModalProps = undefined;
+    const request = jest.fn(async (key: string) => {
+      if (key === 'settings.getDevice') {
+        return { theme: 'SYSTEM', language: 'en' };
+      }
+      if (key === 'settings.getProfile') return { autoLockMinutes: 15 };
+      if (key === 'profile.rename') return { displayName: 'Renamed' };
+      return {};
+    });
+    const client = { request, subscribe: jest.fn() } as unknown as NoteraClient;
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SessionProvider>
+          <Unlock>
+            <NavigationWorkspace client={client} />
+          </Unlock>
+        </SessionProvider>
+      </QueryClientProvider>,
+    );
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Open Profile settings' }),
+    );
+    let renamed: string | undefined;
+    await act(async () => {
+      renamed = await settingsModalProps().onRenameProfile('Renamed');
+    });
+
+    expect(renamed).toBe('Renamed');
+    expect(request).toHaveBeenCalledWith('profile.rename', {
+      displayName: 'Renamed',
+    });
+    expect(settingsModalProps().profile.displayName).toBe('Renamed');
+    expect(
+      screen.getByRole('button', { name: 'Open Renamed settings' }),
+    ).toBeVisible();
   });
 
   it('locks the current profile from the side nav header action', async () => {

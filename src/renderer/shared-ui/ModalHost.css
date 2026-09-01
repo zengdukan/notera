@@ -181,105 +181,6 @@
   min-height: 260px;
 }
 
-[data-testid='notera-modal-settings--body'],
-.notera-settings-modal {
-  min-height: 420px;
-}
-
-.notera-settings-panel {
-  padding-top: var(--ds-space-300);
-}
-
-.notera-settings-fieldset {
-  min-width: 0;
-  width: 500px;
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.notera-settings-fieldset legend,
-.notera-settings-field__label {
-  display: block;
-  margin-bottom: var(--ds-space-075);
-  color: var(--notera-modal-text-subtle);
-  font: var(--ds-font-body-small);
-  font-weight: var(--ds-font-weight-semibold);
-}
-
-.notera-theme-options {
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--ds-space-100);
-}
-
-.notera-theme-option {
-  position: relative;
-  min-width: 0;
-}
-
-.notera-theme-option input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  opacity: 0;
-}
-
-.notera-theme-option label {
-  min-height: 40px;
-  display: grid;
-  place-items: center;
-  box-sizing: border-box;
-  padding-inline: var(--ds-space-150);
-  border: var(--notera-modal-border-width) solid var(--notera-modal-border);
-  border-radius: var(--notera-modal-radius);
-  background: var(--notera-modal-surface);
-  cursor: pointer;
-}
-
-.notera-theme-option label:hover {
-  background: var(--ds-background-neutral-subtle-hovered);
-}
-
-.notera-theme-option input:checked + label {
-  border-color: var(--ds-border-selected);
-  background: var(--notera-modal-selected);
-  color: var(--ds-text-selected);
-}
-
-.notera-theme-option input:checked + label:hover {
-  background: var(--notera-modal-selected-hovered);
-}
-
-.notera-theme-option input:focus-visible + label {
-  outline: 2px solid var(--notera-modal-focus);
-  outline-offset: 2px;
-}
-
-.notera-theme-option input:disabled + label {
-  color: var(--ds-text-disabled);
-  background: var(--ds-background-disabled);
-  cursor: not-allowed;
-}
-
-.notera-settings-field {
-  width: 500px;
-  max-width: 100%;
-}
-
-.notera-settings-section {
-  padding-top: var(--ds-space-200);
-  border-top: var(--notera-modal-border-width) solid var(--notera-modal-divider);
-}
-
-.notera-settings-actions {
-  display: flex;
-  justify-content: flex-end;
-}
-
 @media (max-width: 768px) {
   section[role='dialog'][data-testid^='notera-modal-'] {
     max-width: calc(100vw - 32px);
@@ -343,15 +244,6 @@
     justify-content: flex-start;
   }
 
-  [data-testid='notera-modal-settings--body'],
-  .notera-settings-modal {
-    min-height: 0;
-  }
-
-  .notera-settings-fieldset,
-  .notera-settings-field {
-    width: 100%;
-  }
 }
 
 @media (max-width: 479px) {
@@ -363,16 +255,4 @@
     width: 100%;
   }
 
-  .notera-theme-options {
-    gap: var(--ds-space-050);
-  }
-
-  .notera-theme-option label {
-    padding-inline: var(--ds-space-050);
-  }
-
-  .notera-settings-actions,
-  .notera-settings-actions > * {
-    width: 100%;
-  }
 }

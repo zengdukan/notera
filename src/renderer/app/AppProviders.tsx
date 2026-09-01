@@ -93,7 +93,9 @@ export function AppProviders({
     <AppProvider defaultColorMode="auto">
       <QueryClientProvider client={queryClient ?? defaultClient}>
         {client === undefined ? (
-          <ApplicationProviders locale={locale}>{children}</ApplicationProviders>
+          <ApplicationProviders locale={locale}>
+            {children}
+          </ApplicationProviders>
         ) : (
           <RuntimePreferenceProviders client={client} fallbackLocale={locale}>
             {children}

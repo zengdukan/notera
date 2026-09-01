@@ -1,20 +1,14 @@
-import { useState } from 'react';
-import { Stack } from '@atlaskit/primitives';
+import { useMemo, useState } from 'react';
+import Form, { Field, Fieldset, FormSection } from '@atlaskit/form';
+import { Box, Stack, Text } from '@atlaskit/primitives';
+import { RadioGroup } from '@atlaskit/radio';
 import SectionMessage from '@atlaskit/section-message';
 import Select from '@atlaskit/select';
+import { useIntl } from 'react-intl';
 
-export type ThemePreference = 'SYSTEM' | 'LIGHT' | 'DARK';
-export type LanguagePreference = 'zh-CN' | 'en';
+import type { LanguagePreference, ThemePreference } from './settings-queries';
 
-const themeOptions = [
-  { label: 'System', value: 'SYSTEM' as const },
-  { label: 'Light', value: 'LIGHT' as const },
-  { label: 'Dark', value: 'DARK' as const },
-];
-const languageOptions = [
-  { label: '简体中文', value: 'zh-CN' as const },
-  { label: 'English', value: 'en' as const },
-];
+export type { LanguagePreference, ThemePreference } from './settings-queries';
 
 export function GeneralSettings({
   value,
@@ -28,8 +22,39 @@ export function GeneralSettings({
     update: Partial<{ theme: ThemePreference; language: LanguagePreference }>,
   ) => Promise<unknown> | unknown;
 }) {
+  const intl = useIntl();
   const [updating, setUpdating] = useState(false);
   const [failed, setFailed] = useState(false);
+  const themeOptions = useMemo(
+    () => [
+      {
+        label: intl.formatMessage({ id: 'settings.theme.system' }),
+        value: 'SYSTEM',
+      },
+      {
+        label: intl.formatMessage({ id: 'settings.theme.light' }),
+        value: 'LIGHT',
+      },
+      {
+        label: intl.formatMessage({ id: 'settings.theme.dark' }),
+        value: 'DARK',
+      },
+    ],
+    [intl],
+  );
+  const languageOptions = useMemo(
+    () => [
+      {
+        label: intl.formatMessage({ id: 'settings.language.chinese' }),
+        value: 'zh-CN' as const,
+      },
+      {
+        label: intl.formatMessage({ id: 'settings.language.english' }),
+        value: 'en' as const,
+      },
+    ],
+    [intl],
+  );
 
   const updateSetting = async (
     update: Partial<{
@@ -49,53 +74,93 @@ export function GeneralSettings({
   };
 
   return (
-    <Stack space="space.300">
+    <Stack space="space.100">
       {failed ? (
-        <SectionMessage appearance="error" title="Settings were not updated">
-          <p>Try again. Your previous settings are still active.</p>
+        <SectionMessage
+          appearance="error"
+          headingLevel="h3"
+          title={intl.formatMessage({ id: 'settings.updateError.title' })}
+        >
+          <Text as="p">
+            {intl.formatMessage({ id: 'settings.updateError.description' })}
+          </Text>
         </SectionMessage>
       ) : null}
-      <fieldset className="notera-settings-fieldset">
-        <legend>Theme</legend>
-        <div
-          aria-label="Theme"
-          className="notera-theme-options"
-          role="radiogroup"
-        >
-          {themeOptions.map((option) => {
-            const id = `settings-theme-${option.value.toLowerCase()}`;
-            return (
-              <div className="notera-theme-option" key={option.value}>
-                <input
-                  checked={value.theme === option.value}
-                  disabled={updating}
-                  id={id}
-                  name="settings-theme"
-                  onChange={() => void updateSetting({ theme: option.value })}
-                  type="radio"
-                  value={option.value}
+      <Form<{ language: (typeof languageOptions)[number]; theme: string }>
+        isDisabled={updating}
+        label={intl.formatMessage({ id: 'settings.generalForm.label' })}
+        onSubmit={() => undefined}
+      >
+        {({ disabled, formProps }) => (
+          <form {...formProps}>
+            <Stack space="space.100">
+              <FormSection
+                title={intl.formatMessage({
+                  id: 'settings.sections.appearance',
+                })}
+              >
+                <Fieldset
+                  legend={
+                    <Box as="span" id="settings-theme-label">
+                      {intl.formatMessage({ id: 'settings.theme.label' })}
+                    </Box>
+                  }
+                >
+                  <Field
+                    name="theme"
+                    defaultValue={value.theme}
+                    component={({ fieldProps }) => (
+                      <RadioGroup
+                        {...fieldProps}
+                        isDisabled={disabled}
+                        labelId="settings-theme-label"
+                        options={themeOptions}
+                        value={value.theme}
+                        onChange={(event) =>
+                          void updateSetting({
+                            theme: event.currentTarget.value as ThemePreference,
+                          })
+                        }
+                      />
+                    )}
+                  />
+                </Fieldset>
+              </FormSection>
+              <FormSection
+                title={intl.formatMessage({
+                  id: 'settings.sections.language',
+                })}
+              >
+                <Field<(typeof languageOptions)[number]>
+                  name="language"
+                  label={intl.formatMessage({
+                    id: 'settings.language.label',
+                  })}
+                  defaultValue={languageOptions.find(
+                    (option) => option.value === value.language,
+                  )}
+                  component={({ fieldProps }) => (
+                    <Select
+                      {...fieldProps}
+                      inputId={fieldProps.id}
+                      isDisabled={disabled}
+                      options={languageOptions}
+                      value={languageOptions.find(
+                        (option) => option.value === value.language,
+                      )}
+                      onChange={(option) => {
+                        if (option) {
+                          void updateSetting({ language: option.value });
+                        }
+                      }}
+                    />
+                  )}
                 />
-                <label htmlFor={id}>{option.label}</label>
-              </div>
-            );
-          })}
-        </div>
-      </fieldset>
-      <div className="notera-settings-field">
-        <span className="notera-settings-field__label">Language</span>
-        <Select
-          inputId="settings-language"
-          aria-label="Language"
-          isDisabled={updating}
-          options={languageOptions}
-          value={languageOptions.find(
-            (option) => option.value === value.language,
-          )}
-          onChange={(option) => {
-            if (option) void updateSetting({ language: option.value });
-          }}
-        />
-      </div>
+              </FormSection>
+            </Stack>
+          </form>
+        )}
+      </Form>
     </Stack>
   );
 }

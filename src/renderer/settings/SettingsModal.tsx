@@ -1,6 +1,5 @@
-import Tabs, { Tab, TabList, TabPanel } from '@atlaskit/tabs';
 import { ModalBody } from '@atlaskit/modal-dialog';
-import { Box } from '@atlaskit/primitives';
+import { Box, Stack, xcss } from '@atlaskit/primitives';
 
 import {
   GeneralSettings,
@@ -10,7 +9,15 @@ import {
 import {
   type AutoLockMinutes,
   ProfileSecuritySettings,
+  type RemoveProfileResult,
 } from './ProfileSecuritySettings';
+
+const settingsContentStyles = xcss({
+  width: '100%',
+  maxWidth: '600px',
+  minHeight: '420px',
+  marginInline: 'auto',
+});
 
 export function SettingsModal({
   device,
@@ -23,48 +30,38 @@ export function SettingsModal({
   onRemove,
 }: {
   readonly device: { theme: ThemePreference; language: LanguagePreference };
-  readonly profile: { autoLockMinutes: AutoLockMinutes };
+  readonly profile: {
+    autoLockMinutes: AutoLockMinutes;
+    displayName: string;
+  };
   readonly onUpdateDevice: Parameters<typeof GeneralSettings>[0]['onUpdate'];
   readonly onUpdateProfile: (value: {
     autoLockMinutes: AutoLockMinutes;
   }) => Promise<unknown> | unknown;
-  readonly onRenameProfile: (displayName: string) => Promise<void> | void;
+  readonly onRenameProfile: (displayName: string) => Promise<string> | string;
   readonly onChangePassword: Parameters<
     typeof ProfileSecuritySettings
   >[0]['onChangePassword'];
   readonly onLock: () => Promise<unknown> | unknown;
-  readonly onRemove: () => Promise<unknown> | unknown;
+  readonly onRemove: () => Promise<RemoveProfileResult> | RemoveProfileResult;
 }) {
   return (
     <ModalBody>
-      <Box paddingBlockEnd="space.300">
-        <div className="notera-settings-modal">
-          <Tabs id="notera-settings-tabs">
-            <TabList>
-              <Tab>General</Tab>
-              <Tab>Profile and security</Tab>
-            </TabList>
-            <TabPanel>
-              <div className="notera-settings-panel">
-                <GeneralSettings value={device} onUpdate={onUpdateDevice} />
-              </div>
-            </TabPanel>
-            <TabPanel>
-              <div className="notera-settings-panel">
-                <ProfileSecuritySettings
-                  autoLockMinutes={profile.autoLockMinutes}
-                  onUpdateAutoLock={(autoLockMinutes) =>
-                    onUpdateProfile({ autoLockMinutes })
-                  }
-                  onRenameProfile={onRenameProfile}
-                  onChangePassword={onChangePassword}
-                  onLock={onLock}
-                  onRemove={onRemove}
-                />
-              </div>
-            </TabPanel>
-          </Tabs>
-        </div>
+      <Box paddingBlockEnd="space.100" xcss={settingsContentStyles}>
+        <Stack space="space.100">
+          <GeneralSettings value={device} onUpdate={onUpdateDevice} />
+          <ProfileSecuritySettings
+            autoLockMinutes={profile.autoLockMinutes}
+            displayName={profile.displayName}
+            onUpdateAutoLock={(autoLockMinutes) =>
+              onUpdateProfile({ autoLockMinutes })
+            }
+            onRenameProfile={onRenameProfile}
+            onChangePassword={onChangePassword}
+            onLock={onLock}
+            onRemove={onRemove}
+          />
+        </Stack>
       </Box>
     </ModalBody>
   );

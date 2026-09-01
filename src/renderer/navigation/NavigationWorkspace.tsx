@@ -93,7 +93,10 @@ type Overlay =
         theme: 'SYSTEM' | 'LIGHT' | 'DARK';
         language: 'zh-CN' | 'en';
       };
-      readonly profile: { autoLockMinutes: 1 | 5 | 15 | 30 | 60 };
+      readonly profile: {
+        autoLockMinutes: 1 | 5 | 15 | 30 | 60;
+        displayName: string;
+      };
     };
 
 export function NavigationWorkspace({
@@ -529,7 +532,7 @@ function UnlockedNavigationWorkspace({
     }
     return {
       kind: overlay.kind,
-      title: 'Settings',
+      title: intl.formatMessage({ id: 'settings.title' }),
       width: 820,
       content: (
         <SettingsModal
@@ -545,7 +548,10 @@ function UnlockedNavigationWorkspace({
               'settings.updateProfile',
               value,
             );
-            setOverlay({ ...overlay, profile: nextProfile });
+            setOverlay({
+              ...overlay,
+              profile: { ...overlay.profile, ...nextProfile },
+            });
           }}
           onRenameProfile={async (displayName) => {
             const renamed = await client.request('profile.rename', {
@@ -555,6 +561,14 @@ function UnlockedNavigationWorkspace({
               type: 'unlocked',
               profile: { ...profile, displayName: renamed.displayName },
             });
+            setOverlay({
+              ...overlay,
+              profile: {
+                ...overlay.profile,
+                displayName: renamed.displayName,
+              },
+            });
+            return renamed.displayName;
           }}
           onChangePassword={async (value) => {
             await client.request('profile.changePassword', value);
@@ -564,10 +578,11 @@ function UnlockedNavigationWorkspace({
             setOverlay(undefined);
           }}
           onRemove={async () => {
-            await client.request('profile.removeFromDevice', {
+            const result = await client.request('profile.removeFromDevice', {
               localProfileId: profile.localProfileId,
             });
-            setOverlay(undefined);
+            if (result.status === 'removed') setOverlay(undefined);
+            return result.status;
           }}
         />
       ),
@@ -583,6 +598,7 @@ function UnlockedNavigationWorkspace({
     openListedNote,
     overlay,
     profile,
+    queryClient,
     trashController,
   ]);
 
@@ -592,7 +608,11 @@ function UnlockedNavigationWorkspace({
       client.request('settings.getProfile', {}),
     ]);
     queryClient.setQueryData(deviceSettingsKey(), device);
-    setOverlay({ kind: 'settings', device, profile: profileSettings });
+    setOverlay({
+      kind: 'settings',
+      device,
+      profile: { ...profileSettings, displayName: profile.displayName },
+    });
   };
 
   const openFolderOperation = async (
