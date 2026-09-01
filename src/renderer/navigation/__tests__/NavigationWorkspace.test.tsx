@@ -10,6 +10,7 @@ import { IntlProvider } from 'react-intl';
 import { messagesFor, type AppLocale } from '../../app/i18n';
 import { SessionProvider, useSession } from '../../app/session';
 import type { NoteraClient } from '../../platform/notera-client';
+import { deviceSettingsKey } from '../../settings/settings-queries';
 import { ActiveDocumentLifecycle } from '../../notes/document-lifecycle';
 import { NoteWriteCoordinator } from '../../notes/note-write-coordinator';
 
@@ -390,8 +391,9 @@ describe('NavigationWorkspace', () => {
       return {};
     });
     const client = { request, subscribe: jest.fn() } as unknown as NoteraClient;
+    const queryClient = new QueryClient();
     render(
-      <QueryClientProvider client={new QueryClient()}>
+      <QueryClientProvider client={queryClient}>
         <SessionProvider>
           <Unlock>
             <NavigationWorkspace client={client} />
@@ -411,6 +413,10 @@ describe('NavigationWorkspace', () => {
     ).toBeVisible();
     expect(request).toHaveBeenCalledWith('settings.getDevice', {});
     expect(request).toHaveBeenCalledWith('settings.getProfile', {});
+    expect(queryClient.getQueryData(deviceSettingsKey())).toEqual({
+      theme: 'SYSTEM',
+      language: 'en',
+    });
   });
 
   it('locks the current profile from the side nav header action', async () => {

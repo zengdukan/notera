@@ -10,7 +10,7 @@ export default function App() {
   const locale = resolveLocale(navigator.language);
 
   return (
-    <AppProviders locale={locale}>
+    <AppProviders client={client} locale={locale}>
       <AppShell client={client} />
     </AppProviders>
   );

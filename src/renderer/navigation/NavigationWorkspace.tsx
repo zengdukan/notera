@@ -44,6 +44,7 @@ import {
   type LoadedFolderPickerItem,
 } from '../notes/folder-picker-data';
 import { SettingsModal } from '../settings/SettingsModal';
+import { deviceSettingsKey } from '../settings/settings-queries';
 import { ModalHost, type HostedModal } from '../shared-ui/ModalHost';
 import { createContentActions } from './content-actions';
 import {
@@ -536,6 +537,7 @@ function UnlockedNavigationWorkspace({
           profile={overlay.profile}
           onUpdateDevice={async (value) => {
             const device = await client.request('settings.updateDevice', value);
+            queryClient.setQueryData(deviceSettingsKey(), device);
             setOverlay({ ...overlay, device });
           }}
           onUpdateProfile={async (value) => {
@@ -589,6 +591,7 @@ function UnlockedNavigationWorkspace({
       client.request('settings.getDevice', {}),
       client.request('settings.getProfile', {}),
     ]);
+    queryClient.setQueryData(deviceSettingsKey(), device);
     setOverlay({ kind: 'settings', device, profile: profileSettings });
   };
 
