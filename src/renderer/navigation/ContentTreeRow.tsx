@@ -105,19 +105,47 @@ export function ContentTreeRow({
     pointerInside || keyboardFocusWithin || createMenuOpen || actionMenuOpen;
 
   const rowActions = (
-    <Inline alignBlock="center" space="space.025">
-      {entry.kind === 'folder' ? (
+    <div role="presentation" onClick={(event) => event.stopPropagation()}>
+      <Inline alignBlock="center" space="space.025">
+        {entry.kind === 'folder' ? (
+          <DropdownMenu<HTMLButtonElement>
+            shouldRenderToParent
+            onOpenChange={({ isOpen }) => setCreateMenuOpen(isOpen)}
+            placement="bottom-end"
+            trigger={({ triggerRef, onClick, ...props }) => (
+              <IconButton
+                {...props}
+                ref={triggerRef}
+                label={`Create in ${name}`}
+                icon={AddIcon}
+                appearance="subtle"
+                spacing="compact"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onClick?.(event);
+                }}
+              />
+            )}
+          >
+            <DropdownItemGroup>
+              <DropdownItem onClick={onCreateNote}>New note</DropdownItem>
+              <DropdownItem onClick={onCreateFolder}>
+                New subfolder
+              </DropdownItem>
+            </DropdownItemGroup>
+          </DropdownMenu>
+        ) : null}
         <DropdownMenu<HTMLButtonElement>
           shouldRenderToParent
-          isOpen={createMenuOpen}
-          onOpenChange={({ isOpen }) => setCreateMenuOpen(isOpen)}
+          isOpen={actionMenuOpen}
+          onOpenChange={({ isOpen }) => setActionMenuOpen(isOpen)}
           placement="bottom-end"
           trigger={({ triggerRef, onClick, ...props }) => (
             <IconButton
               {...props}
               ref={triggerRef}
-              label={`Create in ${name}`}
-              icon={AddIcon}
+              label={`More actions for ${name}`}
+              icon={MoreIcon}
               appearance="subtle"
               spacing="compact"
               onClick={(event) => {
@@ -128,64 +156,19 @@ export function ContentTreeRow({
           )}
         >
           <DropdownItemGroup>
-            <DropdownItem
-              onClick={(event) => {
-                event.stopPropagation();
-                setCreateMenuOpen(false);
-                onCreateNote();
-              }}
-            >
-              New note
-            </DropdownItem>
-            <DropdownItem
-              onClick={(event) => {
-                event.stopPropagation();
-                setCreateMenuOpen(false);
-                onCreateFolder();
-              }}
-            >
-              New subfolder
-            </DropdownItem>
+            {actions.map((action) => (
+              <DropdownItem
+                key={action.id}
+                isDisabled={action.isDisabled}
+                onClick={() => action.run()}
+              >
+                {action.label}
+              </DropdownItem>
+            ))}
           </DropdownItemGroup>
         </DropdownMenu>
-      ) : null}
-      <DropdownMenu<HTMLButtonElement>
-        shouldRenderToParent
-        isOpen={actionMenuOpen}
-        onOpenChange={({ isOpen }) => setActionMenuOpen(isOpen)}
-        placement="bottom-end"
-        trigger={({ triggerRef, onClick, ...props }) => (
-          <IconButton
-            {...props}
-            ref={triggerRef}
-            label={`More actions for ${name}`}
-            icon={MoreIcon}
-            appearance="subtle"
-            spacing="compact"
-            onClick={(event) => {
-              event.stopPropagation();
-              onClick?.(event);
-            }}
-          />
-        )}
-      >
-        <DropdownItemGroup>
-          {actions.map((action) => (
-            <DropdownItem
-              key={action.id}
-              isDisabled={action.isDisabled}
-              onClick={(event) => {
-                event.stopPropagation();
-                setActionMenuOpen(false);
-                action.run();
-              }}
-            >
-              {action.label}
-            </DropdownItem>
-          ))}
-        </DropdownItemGroup>
-      </DropdownMenu>
-    </Inline>
+      </Inline>
+    </div>
   );
 
   if (entry.kind === 'folder') {

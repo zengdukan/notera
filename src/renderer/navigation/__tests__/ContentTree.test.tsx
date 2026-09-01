@@ -71,6 +71,7 @@ describe('ContentTree', () => {
     const user = userEvent.setup();
     const onCreateNote = jest.fn();
     const rename = jest.fn();
+    const onToggle = jest.fn();
     render(
       <AppProviders locale="en">
         <ContentTree
@@ -78,7 +79,7 @@ describe('ContentTree', () => {
           expandedIds={new Set()}
           selected={undefined}
           onOpen={jest.fn()}
-          onToggle={jest.fn()}
+          onToggle={onToggle}
           onCreateNote={onCreateNote}
           onCreateFolder={jest.fn()}
           getActions={(entry) => createContentActions(entry, { rename })}
@@ -87,6 +88,7 @@ describe('ContentTree', () => {
     );
 
     await user.click(screen.getByRole('button', { name: 'Projects' }));
+    onToggle.mockClear();
     await user.click(
       screen.getByRole('button', { name: 'Create in Projects' }),
     );
@@ -102,6 +104,7 @@ describe('ContentTree', () => {
     expect(
       screen.queryByRole('menuitem', { name: 'New note' }),
     ).not.toBeInTheDocument();
+    expect(onToggle).not.toHaveBeenCalled();
     expect(
       screen.getByRole('button', { name: 'More actions for Projects' }),
     ).toBeVisible();
@@ -115,6 +118,7 @@ describe('ContentTree', () => {
     expect(
       screen.queryByRole('menuitem', { name: 'Rename' }),
     ).not.toBeInTheDocument();
+    expect(onToggle).not.toHaveBeenCalled();
   });
 
   it('opens note actions from the keyboard without folder-only actions', async () => {
