@@ -41,9 +41,13 @@ export const noteSummarySchema = z.strictObject({
   updatedAt: timestampSchema,
 });
 
+export const treeNoteSummarySchema = noteSummarySchema.extend({
+  isFavorite: z.boolean(),
+});
+
 export const treeEntrySummarySchema = z.discriminatedUnion('kind', [
   folderSummarySchema,
-  noteSummarySchema,
+  treeNoteSummarySchema,
 ]);
 
 export const contentTreeListChildren = defineRequestContract({

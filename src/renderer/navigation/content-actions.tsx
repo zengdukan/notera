@@ -100,7 +100,7 @@ export function createContentActions(
     ),
     action(
       'toggle-favorite',
-      'Add to favorites',
+      entry.isFavorite ? 'Remove from favorites' : 'Add to favorites',
       controller.toggleFavorite
         ? () => controller.toggleFavorite?.(entry)
         : undefined,

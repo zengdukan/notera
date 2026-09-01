@@ -1,4 +1,11 @@
-import type { Favorite, Folder, Note, NoteVersion, Tag } from '@notera/domain';
+import type {
+  Favorite,
+  Folder,
+  Note,
+  NoteId,
+  NoteVersion,
+  Tag,
+} from '@notera/domain';
 import type { VaultDatabase } from '@notera/storage-sqlcipher';
 
 import { ApplicationError } from '../errors';
@@ -93,9 +100,29 @@ export function historySummary(version: NoteVersion): HistorySummary {
   });
 }
 
+export function favoriteNoteIds(database: VaultDatabase): ReadonlySet<NoteId> {
+  const noteIds = new Set<NoteId>();
+  let cursor: string | undefined;
+  do {
+    const page = database.favorites.list({
+      limit: 100,
+      ...(cursor === undefined ? {} : { cursor }),
+    });
+    page.items.forEach(({ noteId }) => noteIds.add(noteId));
+    cursor = page.nextCursor;
+  } while (cursor !== undefined);
+  return noteIds;
+}
+
 export function treeEntrySummary(
   database: VaultDatabase,
   value: Folder | Note,
+  favoriteIds: ReadonlySet<NoteId>,
 ): TreeEntrySummary {
-  return 'kind' in value ? folderSummary(database, value) : noteSummary(value);
+  return 'kind' in value
+    ? folderSummary(database, value)
+    : Object.freeze({
+        ...noteSummary(value),
+        isFavorite: favoriteIds.has(value.id),
+      });
 }

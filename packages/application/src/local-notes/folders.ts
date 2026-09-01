@@ -13,7 +13,11 @@ import type {
 } from '@notera/storage-sqlcipher';
 
 import { ApplicationError } from '../errors';
-import { folderSummary, treeEntrySummary } from './mapping';
+import {
+  favoriteNoteIds,
+  folderSummary,
+  treeEntrySummary,
+} from './mapping';
 import type {
   ContentSort,
   FolderPathItem,
@@ -60,9 +64,12 @@ export function listChildren(
     { cursor: input?.cursor, limit: input?.limit },
     checkedSort(input?.sort),
   );
+  const favoriteIds = favoriteNoteIds(database);
   return Object.freeze({
     items: Object.freeze(
-      page.items.map((value) => treeEntrySummary(database, value)),
+      page.items.map((value) =>
+        treeEntrySummary(database, value, favoriteIds),
+      ),
     ),
     ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }),
   });

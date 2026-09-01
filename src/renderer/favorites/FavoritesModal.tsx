@@ -18,7 +18,7 @@ import {
 import { useIntl } from 'react-intl';
 import { Divider } from '@atlaskit/side-nav-items/menu-section';
 
-import { favoritesKey, noteKey } from '../app/query-keys';
+import { favoritesKey, noteKey, treeKey } from '../app/query-keys';
 import type { NoteraClient, RequestData } from '../platform/notera-client';
 import { formatRecentTimestamp } from '../recent/recent-format';
 import {
@@ -163,6 +163,9 @@ export function FavoritesModal({
       await queryClient.invalidateQueries({
         queryKey: noteKey(profileId, note.id),
       });
+      await queryClient.invalidateQueries({
+        queryKey: treeKey(profileId, note.folderId),
+      });
     },
   });
   const items = uniqueFavorites(favorites.data?.pages);
@@ -230,8 +233,6 @@ export function FavoritesModal({
                           { title },
                         )}
                         icon={StarUnstarredIcon}
-                        appearance="subtle"
-                        spacing="compact"
                         isLoading={
                           mutation.isPending &&
                           mutation.variables?.id === note.id
@@ -240,6 +241,7 @@ export function FavoritesModal({
                           event.stopPropagation();
                           mutation.mutate(note);
                         }}
+                        isTooltipDisabled={false}
                       />
                     }
                     onClick={() => void onOpen(note)}

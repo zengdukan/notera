@@ -68,6 +68,10 @@ export interface FavoriteNoteSummary extends NoteSummary {
   readonly favoriteSortOrder: SortOrder;
 }
 
+export interface TreeNoteSummary extends NoteSummary {
+  readonly isFavorite: boolean;
+}
+
 export type SystemProtectionReason =
   | 'BEFORE_HISTORY_RESTORE'
   | 'BEFORE_MIGRATION';
@@ -130,7 +134,7 @@ export interface SearchResult {
   readonly highlights: readonly SearchHighlight[];
 }
 
-export type TreeEntrySummary = FolderSummary | NoteSummary;
+export type TreeEntrySummary = FolderSummary | TreeNoteSummary;
 export type EntryRef =
   | Readonly<{ kind: 'folder'; id: FolderId }>
   | Readonly<{ kind: 'note'; id: NoteId }>;

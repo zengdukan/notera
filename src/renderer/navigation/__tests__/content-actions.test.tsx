@@ -15,6 +15,7 @@ const note = {
   folderId: 'root',
   contentVersion: 1,
   updatedAt: 1,
+  isFavorite: false,
 };
 
 describe('content actions', () => {
@@ -42,5 +43,25 @@ describe('content actions', () => {
     ).toEqual(
       actionIdsFor(createContentActions(folder, controller, 'overflow')),
     );
+  });
+
+  it('labels the favorite action from the note favorite state', () => {
+    const toggleFavorite = jest.fn();
+    const addAction = createContentActions(note, { toggleFavorite }).find(
+      ({ id }) => id === 'toggle-favorite',
+    );
+    const removeAction = createContentActions(
+      { ...note, isFavorite: true },
+      { toggleFavorite },
+    ).find(({ id }) => id === 'toggle-favorite');
+
+    expect(addAction).toMatchObject({
+      label: 'Add to favorites',
+      isDisabled: false,
+    });
+    expect(removeAction).toMatchObject({
+      label: 'Remove from favorites',
+      isDisabled: false,
+    });
   });
 });

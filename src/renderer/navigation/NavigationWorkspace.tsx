@@ -623,7 +623,7 @@ function UnlockedNavigationWorkspace({
       rename: (value) => setOverlay({ kind: 'rename', entry: value }),
       openMove: (value) => void openFolderOperation('move', value),
       openCopy: (value) => void openFolderOperation('copy', value),
-      toggleFavorite: (value) => void controller.addFavorite(value),
+      toggleFavorite: (value) => void controller.toggleFavorite(value),
       export: (value) => {
         if (value.kind === 'note') {
           if (exportStore.getSnapshot()?.state !== 'RUNNING')

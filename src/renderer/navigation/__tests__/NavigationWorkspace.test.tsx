@@ -23,8 +23,14 @@ const firstNote = {
   folderId: 'root',
   contentVersion: 1,
   updatedAt: 1,
+  isFavorite: false,
 };
-const secondNote = { ...firstNote, id: 'second', title: 'Second' };
+const secondNote = {
+  ...firstNote,
+  id: 'second',
+  title: 'Second',
+  isFavorite: true,
+};
 const mockFlush = jest.fn(async () => undefined);
 
 jest.mock('../ResizableNavigation', () => ({
@@ -81,9 +87,12 @@ jest.mock('../tree-queries', () => ({
     onOpen(entry: typeof firstNote): void;
     getActions(entry: typeof firstNote): readonly ContentAction[];
   }) => {
-    const favorite = getActions(firstNote).find(
-      (action) => action.id === 'toggle-favorite',
-    );
+    const favoriteActions = [firstNote, secondNote].map((note) => ({
+      noteId: note.id,
+      action: getActions(note).find(
+        (candidate) => candidate.id === 'toggle-favorite',
+      ),
+    }));
     return (
       <div>
         <button type="button" onClick={() => onOpen(firstNote)}>
@@ -92,13 +101,16 @@ jest.mock('../tree-queries', () => ({
         <button type="button" onClick={() => onOpen(secondNote)}>
           Open second
         </button>
-        <button
-          type="button"
-          disabled={favorite?.isDisabled}
-          onClick={() => favorite?.run()}
-        >
-          {favorite?.label}
-        </button>
+        {favoriteActions.map(({ noteId, action }) => (
+          <button
+            key={noteId}
+            type="button"
+            disabled={action?.isDisabled}
+            onClick={() => action?.run()}
+          >
+            {action?.label}
+          </button>
+        ))}
       </div>
     );
   },
@@ -244,7 +256,7 @@ function render(ui: ReactNode, locale: AppLocale = 'en') {
 }
 
 describe('NavigationWorkspace', () => {
-  it('adds a tree note to favorites from its content menu', async () => {
+  it('toggles tree note favorites from their content menus', async () => {
     const user = userEvent.setup();
     const request = jest.fn(async () => ({}));
     const client = { request, subscribe: jest.fn() } as unknown as NoteraClient;
@@ -266,6 +278,16 @@ describe('NavigationWorkspace', () => {
 
     expect(request).toHaveBeenCalledWith('favorite.add', {
       noteId: firstNote.id,
+    });
+
+    const removeFavorite = screen.getByRole('button', {
+      name: 'Remove from favorites',
+    });
+    expect(removeFavorite).toBeEnabled();
+    await user.click(removeFavorite);
+
+    expect(request).toHaveBeenCalledWith('favorite.remove', {
+      noteId: secondNote.id,
     });
   });
 

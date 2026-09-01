@@ -7,7 +7,7 @@ import { QueryClient } from '@tanstack/react-query';
 
 import { AppProviders } from '../../app/AppProviders';
 import { createAppQueryClient } from '../../app/query-client';
-import { noteKey } from '../../app/query-keys';
+import { noteKey, treeKey } from '../../app/query-keys';
 import type { AppLocale } from '../../app/i18n';
 import type { NoteraClient } from '../../platform/notera-client';
 import { formatRecentTimestamp } from '../../recent/recent-format';
@@ -130,6 +130,7 @@ describe('FavoritesModal', () => {
       isFavorite: true,
       tags: [],
     });
+    const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
     let removed = false;
     const request = jest.fn(async (key: string) => {
       if (key === 'favorite.list') return { items: removed ? [] : [note] };
@@ -166,6 +167,9 @@ describe('FavoritesModal', () => {
         noteKey(profileId, note.id),
       )?.isFavorite,
     ).toBe(false);
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: treeKey(profileId, note.folderId),
+    });
   });
 
   it('shows ADS skeleton menu items and a localized loading announcement', () => {

@@ -11,6 +11,7 @@ const note = {
   folderId: 'root',
   contentVersion: 1,
   updatedAt: 1,
+  isFavorite: false,
 };
 
 describe('content controller', () => {
@@ -61,7 +62,7 @@ describe('content controller', () => {
     expect(request).not.toHaveBeenCalled();
   });
 
-  it('adds a note to favorites and synchronizes related caches', async () => {
+  it('toggles a note favorite and synchronizes related caches', async () => {
     const request = jest.fn(async () => ({}));
     const queryClient = new QueryClient();
     queryClient.setQueryData(['profile', 'profile', 'note', note.id], {
@@ -82,7 +83,7 @@ describe('content controller', () => {
       beginEditing: jest.fn(),
     });
 
-    await controller.addFavorite(note);
+    await controller.toggleFavorite(note);
 
     expect(request).toHaveBeenCalledWith('favorite.add', {
       noteId: note.id,
@@ -93,6 +94,18 @@ describe('content controller', () => {
     expect(invalidate).toHaveBeenCalledWith({
       queryKey: ['profile', 'profile', 'favorites'],
     });
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ['profile', 'profile', 'tree', 'root'],
+    });
+
+    await controller.toggleFavorite({ ...note, isFavorite: true });
+
+    expect(request).toHaveBeenCalledWith('favorite.remove', {
+      noteId: note.id,
+    });
+    expect(
+      queryClient.getQueryData(['profile', 'profile', 'note', note.id]),
+    ).toMatchObject({ isFavorite: false });
   });
 
   it('updates the current selection and invalidates only related caches after note mutations', async () => {

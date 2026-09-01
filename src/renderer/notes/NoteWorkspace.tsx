@@ -237,7 +237,12 @@ export function NoteWorkspace({
       noteKey(profileId, note.id),
       (current) => (current ? { ...current, isFavorite: next } : current),
     );
-    await queryClient.invalidateQueries({ queryKey: favoritesKey(profileId) });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: favoritesKey(profileId) }),
+      queryClient.invalidateQueries({
+        queryKey: treeKey(profileId, note.folderId),
+      }),
+    ]);
   };
 
   const runMore = async (action: NoteMoreAction) => {

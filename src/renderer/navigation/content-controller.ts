@@ -36,6 +36,7 @@ export type ContentEntry =
       readonly folderId: string;
       readonly contentVersion: number;
       readonly updatedAt: number;
+      readonly isFavorite: boolean;
     };
 
 function noteSummary(
@@ -48,6 +49,7 @@ function noteSummary(
     folderId: value.folderId,
     contentVersion: value.contentVersion,
     updatedAt: value.updatedAt,
+    isFavorite: value.isFavorite,
   };
 }
 
@@ -155,7 +157,7 @@ export function createContentController(input: {
         const renamed = input.writeCoordinator
           ? await input.writeCoordinator.run(entry.id, rename)
           : await rename();
-        syncSelection(entry, renamed);
+        syncSelection(entry, { ...renamed, isFavorite: entry.isFavorite });
         await Promise.all([
           invalidateTree(entry.folderId),
           invalidateNoteViews(entry.id),
@@ -183,7 +185,7 @@ export function createContentController(input: {
           noteId: entry.id,
           targetFolderId,
         });
-        syncSelection(entry, moved);
+        syncSelection(entry, { ...moved, isFavorite: entry.isFavorite });
         await Promise.all([
           invalidateTree(entry.folderId),
           invalidateTree(targetFolderId),
@@ -212,16 +214,23 @@ export function createContentController(input: {
       ]);
       return 'ready';
     },
-    async addFavorite(entry: ContentEntry): Promise<void> {
+    async toggleFavorite(entry: ContentEntry): Promise<void> {
       if (entry.kind !== 'note') return;
-      await input.client.request('favorite.add', { noteId: entry.id });
+      const next = !entry.isFavorite;
+      await input.client.request(next ? 'favorite.add' : 'favorite.remove', {
+        noteId: entry.id,
+      });
       input.queryClient.setQueryData<RequestData<'note.get'>>(
         noteKey(input.profileId, entry.id),
-        (current) => (current ? { ...current, isFavorite: true } : current),
+        (current) => (current ? { ...current, isFavorite: next } : current),
       );
-      await input.queryClient.invalidateQueries({
-        queryKey: favoritesKey(input.profileId),
-      });
+      syncSelection(entry, { ...entry, isFavorite: next });
+      await Promise.all([
+        invalidateTree(entry.folderId),
+        input.queryClient.invalidateQueries({
+          queryKey: favoritesKey(input.profileId),
+        }),
+      ]);
     },
     async trash(entry: ContentEntry): Promise<'ready' | 'blocked'> {
       if ((await ready(entry, 'trash')) === 'blocked') return 'blocked';

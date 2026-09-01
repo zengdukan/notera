@@ -160,10 +160,14 @@ describe('content tree IPC contracts', () => {
       folderId: ids.folder,
       contentVersion: 1,
       updatedAt: 1,
+      isFavorite: false,
     };
 
     expect(treeEntrySummarySchema.parse(folder)).toEqual(folder);
     expect(treeEntrySummarySchema.parse(note)).toEqual(note);
+    expect(() =>
+      treeEntrySummarySchema.parse({ ...note, isFavorite: undefined }),
+    ).toThrow();
     expect(() =>
       treeEntrySummarySchema.parse({ ...folder, title: 'mixed' }),
     ).toThrow();

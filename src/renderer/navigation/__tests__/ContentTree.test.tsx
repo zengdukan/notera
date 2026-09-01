@@ -29,6 +29,7 @@ const note: ContentTreeNode = {
     folderId: 'root',
     contentVersion: 1,
     updatedAt: 1,
+    isFavorite: false,
   },
 };
 

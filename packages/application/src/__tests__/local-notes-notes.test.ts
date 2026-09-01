@@ -46,6 +46,16 @@ describe('LocalNotesService note use cases', () => {
     });
     expect(created).not.toHaveProperty('sortOrder');
     await expect(localNotes.getNote(created.id)).resolves.toEqual(created);
+    await expect(
+      localNotes.listChildren({
+        parentFolderId: profile.rootFolderId,
+        limit: 20,
+      }),
+    ).resolves.toMatchObject({
+      items: expect.arrayContaining([
+        expect.objectContaining({ id: created.id, isFavorite: false }),
+      ]),
+    });
 
     const renamed = await localNotes.renameNote({
       noteId: created.id,
@@ -80,9 +90,29 @@ describe('LocalNotesService note use cases', () => {
     await expect(localNotes.getNote(created.id)).resolves.toMatchObject({
       isFavorite: true,
     });
+    await expect(
+      localNotes.listChildren({
+        parentFolderId: profile.rootFolderId,
+        limit: 20,
+      }),
+    ).resolves.toMatchObject({
+      items: expect.arrayContaining([
+        expect.objectContaining({ id: created.id, isFavorite: true }),
+      ]),
+    });
     await localNotes.removeFavorite(created.id);
     await expect(localNotes.getNote(created.id)).resolves.toMatchObject({
       isFavorite: false,
+    });
+    await expect(
+      localNotes.listChildren({
+        parentFolderId: profile.rootFolderId,
+        limit: 20,
+      }),
+    ).resolves.toMatchObject({
+      items: expect.arrayContaining([
+        expect.objectContaining({ id: created.id, isFavorite: false }),
+      ]),
     });
 
     const moved = await localNotes.moveNote({

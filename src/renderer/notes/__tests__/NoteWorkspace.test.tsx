@@ -55,6 +55,7 @@ const noteEntry = {
   title: 'Architecture',
   contentVersion: 3,
   updatedAt: 100,
+  isFavorite: false,
 };
 const document = {
   version: 1 as const,
@@ -180,7 +181,8 @@ describe('NoteWorkspace', () => {
 
   it('saves immediately on Ctrl+S and toggles favorites through Main', async () => {
     const user = userEvent.setup();
-    const { request } = setup({ initiallyEditing: true });
+    const { request, queryClient } = setup({ initiallyEditing: true });
+    const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
     await screen.findByLabelText('Editor surface');
     await user.click(screen.getByRole('button', { name: 'Change document' }));
 
@@ -201,6 +203,9 @@ describe('NoteWorkspace', () => {
     expect(
       screen.getByRole('button', { name: 'Remove from favorites' }),
     ).toBeVisible();
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ['profile', 'profile', 'tree', noteEntry.folderId],
+    });
   });
 
   it('reflects favorite facts changed by another product surface', async () => {
