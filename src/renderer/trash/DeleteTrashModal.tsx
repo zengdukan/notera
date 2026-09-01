@@ -25,9 +25,7 @@ export function DeleteTrashModal({
   return (
     <div className="notera-trash-confirm">
       <Stack space="space.200">
-        <Heading size="small">
-          Permanently delete {name || 'Untitled'}?
-        </Heading>
+        <Heading size="small">Permanently delete {name || 'Untitled'}?</Heading>
         <SectionMessage appearance="error" title="This cannot be undone.">
           Notera will remove this item and any data only referenced by it.
         </SectionMessage>

@@ -29,10 +29,7 @@ export function ExportReport({
   return (
     <section aria-label="Export result" className="notera-export-report">
       <Stack space="space.150">
-        <SectionMessage
-          appearance="success"
-          title="Export completed"
-        >
+        <SectionMessage appearance="success" title="Export completed">
           {report.format === 'PDF' ? 'PDF' : 'Markdown'} ·{' '}
           {report.packaging === 'ZIP' ? 'ZIP archive' : 'Single file'}
         </SectionMessage>
@@ -41,8 +38,8 @@ export function ExportReport({
             appearance="warning"
             title="Some content was simplified"
           >
-            {report.lossyNodeCount} unsupported nodes were exported with
-            reduced fidelity.
+            {report.lossyNodeCount} unsupported nodes were exported with reduced
+            fidelity.
           </SectionMessage>
         ) : null}
       </Stack>

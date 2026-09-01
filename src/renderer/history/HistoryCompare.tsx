@@ -11,10 +11,7 @@ export function HistoryCompare({
   readonly comparison: RequestData<'history.compare'>;
 }) {
   return (
-    <section
-      aria-label="Version comparison"
-      className="notera-history-compare"
-    >
+    <section aria-label="Version comparison" className="notera-history-compare">
       <article aria-label="Current saved version">
         <Stack space="space.100">
           <Text weight="semibold">Current saved version</Text>

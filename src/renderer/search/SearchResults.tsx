@@ -51,9 +51,7 @@ export function SearchResults({
               </Button>
             </div>
             <Text color="color.text.subtle" size="small">
-              {result.folderPath
-                .map((item) => item.name || 'Root')
-                .join(' / ')}
+              {result.folderPath.map((item) => item.name || 'Root').join(' / ')}
             </Text>
             <Text>
               <HighlightedText

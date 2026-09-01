@@ -82,7 +82,7 @@ export function GeneralSettings({
         </div>
       </fieldset>
       <div className="notera-settings-field">
-        <label htmlFor="settings-language">Language</label>
+        <span className="notera-settings-field__label">Language</span>
         <Select
           inputId="settings-language"
           aria-label="Language"

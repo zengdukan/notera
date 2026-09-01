@@ -77,7 +77,7 @@ export function ProfileSecuritySettings({
         ) : null}
 
         <div className="notera-settings-field">
-          <label htmlFor="settings-auto-lock">Automatic lock</label>
+          <span className="notera-settings-field__label">Automatic lock</span>
           <Select
             inputId="settings-auto-lock"
             aria-label="Automatic lock"
@@ -130,11 +130,7 @@ export function ProfileSecuritySettings({
             >
               {({ formProps, submitting }) => (
                 <form {...formProps}>
-                  <Field
-                    name="oldPassword"
-                    label="Current password"
-                    isRequired
-                  >
+                  <Field name="oldPassword" label="Current password" isRequired>
                     {({ fieldProps }) => (
                       <Textfield {...fieldProps} type="password" />
                     )}

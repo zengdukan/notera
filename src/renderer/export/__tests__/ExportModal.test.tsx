@@ -71,7 +71,9 @@ describe('ExportModal', () => {
 
     const progress = screen.getByRole('region', { name: 'Export progress' });
     expect(progress).toHaveTextContent('Rendering');
-    expect(screen.getByRole('list', { name: 'Export stages' })).toHaveTextContent(
+    expect(
+      screen.getByRole('list', { name: 'Export stages' }),
+    ).toHaveTextContent(
       'Preparing → Reading → Rendering → Writing → Completing',
     );
     expect(screen.getByRole('listitem', { name: 'Rendering' })).toHaveAttribute(
