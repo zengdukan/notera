@@ -7,6 +7,7 @@ import { Inline, Stack, Text } from '@atlaskit/primitives';
 import SectionMessage from '@atlaskit/section-message';
 import Spinner from '@atlaskit/spinner';
 
+import { Divider } from '@atlaskit/side-nav-items/menu-section';
 import type { NoteraClient } from '../platform/notera-client';
 import { formatRecentTimestamp } from './recent-format';
 import {
@@ -18,13 +19,8 @@ import {
 function RecentLoadingState() {
   return (
     <Stack space="space.200">
-      <MenuGroup
-        isLoading
-        menuLabel="最近浏览笔记"
-        role="menu"
-        spacing="compact"
-      >
-        <Section>
+      <MenuGroup isLoading menuLabel="最近浏览笔记" role="list">
+        <Section isList>
           {Array.from({ length: 3 }, (_, index) => (
             <SkeletonItem
               hasIcon
@@ -122,25 +118,24 @@ export function RecentModal({
       <Text as="p" color="color.text.subtle" size="small">
         按最近浏览时间排序
       </Text>
-      <MenuGroup
-        menuLabel="最近浏览笔记"
-        role="menu"
-        spacing="compact"
-      >
-        <Section>
+      <MenuGroup menuLabel="最近浏览笔记" role="list">
+        <Section isList>
           {items.map((note) => {
             const title = note.title || '无标题';
             return (
-              <ButtonItem
-                description={`${note.folderPath.map((item) => item.name).join(' / ')} · ${formatRecentTimestamp(note.updatedAt)}`}
-                iconBefore={<NoteIcon label="" />}
-                isDisabled={openingId !== undefined}
-                key={note.id}
-                onClick={() => void open(note)}
-                role="menuitem"
-              >
-                {title}
-              </ButtonItem>
+              <>
+                <ButtonItem
+                  description={`${note.folderPath.map((item) => item.name).join(' / ')} · ${formatRecentTimestamp(note.updatedAt)}`}
+                  iconBefore={<NoteIcon label="" />}
+                  isDisabled={openingId !== undefined}
+                  key={note.id}
+                  onClick={() => void open(note)}
+                  role="menuitem"
+                >
+                  {title}
+                </ButtonItem>
+                <Divider />
+              </>
             );
           })}
         </Section>
