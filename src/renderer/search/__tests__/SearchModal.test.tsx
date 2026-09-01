@@ -75,7 +75,7 @@ describe('SearchModal', () => {
     ).toContainElement(input);
     await user.type(input, 'needle');
     expect(
-      await screen.findByRole('button', { name: 'Open 😀 Needle' }),
+      await screen.findByRole('button', { name: /😀 Needle/u }),
     ).toBeVisible();
     expect(screen.getByText('Needle', { selector: 'mark' })).toBeVisible();
     expect(screen.getByText('Root / Scoped')).toBeVisible();
@@ -83,7 +83,7 @@ describe('SearchModal', () => {
       name: 'Search results',
     });
     expect(resultsRegion).toContainElement(
-      screen.getByRole('listitem', { name: /Needle$/u }),
+      screen.getByRole('button', { name: /😀 Needle/u }),
     );
     expect(request).toHaveBeenCalledWith(
       'search.query',
@@ -96,9 +96,7 @@ describe('SearchModal', () => {
     await user.click(
       screen.getByRole('button', { name: 'Search scope: All notes' }),
     );
-    await user.click(
-      await screen.findByRole('button', { name: 'Choose Scoped' }),
-    );
+    await user.click(await screen.findByRole('button', { name: 'Scoped' }));
     await waitFor(() =>
       expect(request).toHaveBeenCalledWith(
         'search.query',
@@ -110,7 +108,7 @@ describe('SearchModal', () => {
       ),
     );
 
-    await user.click(screen.getByRole('button', { name: 'Open 😀 Needle' }));
+    await user.click(screen.getByRole('button', { name: /😀 Needle/u }));
     expect(onOpen).toHaveBeenCalledWith(result);
   });
 });

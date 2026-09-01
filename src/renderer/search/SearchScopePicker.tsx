@@ -1,78 +1,25 @@
 import { useState } from 'react';
 import Button from '@atlaskit/button/new';
+import FolderClosedIcon from '@atlaskit/icon/core/folder-closed';
+import SearchIcon from '@atlaskit/icon/core/search';
 import Popup from '@atlaskit/popup';
-import { Inline, Stack } from '@atlaskit/primitives';
+import { Box, Inline, Stack, Text, xcss } from '@atlaskit/primitives';
+import SectionMessage from '@atlaskit/section-message';
+import Spinner from '@atlaskit/spinner';
+import { useQuery } from '@tanstack/react-query';
 
+import { FolderPicker } from '../notes/FolderPicker';
+import { loadFolderPickerItems } from '../notes/folder-picker-data';
 import type { NoteraClient } from '../platform/notera-client';
-import { useTreeChildren } from '../navigation/tree-queries';
+
+const popupStyles = xcss({
+  boxSizing: 'border-box',
+  minWidth: '280px',
+});
 
 interface Scope {
   readonly id: string;
   readonly name: string;
-}
-
-function FolderLevel({
-  client,
-  profileId,
-  parentFolderId,
-  onChoose,
-}: {
-  readonly client: NoteraClient;
-  readonly profileId: string;
-  readonly parentFolderId: string;
-  readonly onChoose: (scope: Scope) => void;
-}) {
-  const query = useTreeChildren({ client, profileId, parentFolderId });
-  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
-  const folders = (
-    query.data?.pages.flatMap((page) => page.items) ?? []
-  ).filter((entry) => entry.kind === 'folder');
-  return (
-    <Stack space="space.050">
-      {folders.map((folder) => (
-        <Stack key={folder.id} space="space.050">
-          <Inline space="space.050" alignBlock="center">
-            {folder.hasChildren ? (
-              <Button
-                appearance="subtle"
-                onClick={() =>
-                  setExpanded((current) => {
-                    const next = new Set(current);
-                    if (next.has(folder.id)) next.delete(folder.id);
-                    else next.add(folder.id);
-                    return next;
-                  })
-                }
-                aria-label={`${expanded.has(folder.id) ? 'Collapse' : 'Expand'} ${folder.name}`}
-              >
-                {expanded.has(folder.id) ? '−' : '+'}
-              </Button>
-            ) : null}
-            <Button
-              appearance="subtle"
-              onClick={() => onChoose({ id: folder.id, name: folder.name })}
-              aria-label={`Choose ${folder.name}`}
-            >
-              {folder.name}
-            </Button>
-          </Inline>
-          {expanded.has(folder.id) ? (
-            <FolderLevel
-              client={client}
-              profileId={profileId}
-              parentFolderId={folder.id}
-              onChoose={onChoose}
-            />
-          ) : null}
-        </Stack>
-      ))}
-      {query.hasNextPage ? (
-        <Button appearance="subtle" onClick={() => void query.fetchNextPage()}>
-          Load more folders
-        </Button>
-      ) : null}
-    </Stack>
-  );
 }
 
 export function SearchScopePicker({
@@ -89,6 +36,11 @@ export function SearchScopePicker({
   readonly onChange: (value?: Scope) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const folders = useQuery({
+    queryKey: ['search-folder-picker', profileId, rootFolderId],
+    enabled: open,
+    queryFn: () => loadFolderPickerItems(client, rootFolderId),
+  });
   const choose = (scope?: Scope) => {
     onChange(scope);
     setOpen(false);
@@ -101,37 +53,65 @@ export function SearchScopePicker({
       trigger={(triggerProps) => (
         <Button
           {...triggerProps}
+          iconBefore={FolderClosedIcon}
           onClick={() => setOpen((current) => !current)}
           aria-label={`Search scope: ${value?.name ?? 'All notes'}`}
         >
-          Scope: {value?.name ?? 'All notes'}
+          {value?.name ?? 'All notes'}
         </Button>
       )}
       content={() => (
-        <div className="notera-search-scope-popup">
+        <Box padding="space.100" xcss={popupStyles}>
           <Stack space="space.100">
             <Button
               appearance="subtle"
+              iconBefore={SearchIcon}
+              isSelected={value === undefined}
+              shouldFitContainer
               onClick={() => choose(undefined)}
               aria-label="Choose All notes"
             >
               All notes
             </Button>
-            <Button
-              appearance="subtle"
-              onClick={() => choose({ id: rootFolderId, name: 'Root' })}
-              aria-label="Choose Root"
-            >
-              Root
-            </Button>
-            <FolderLevel
-              client={client}
-              profileId={profileId}
-              parentFolderId={rootFolderId}
-              onChoose={choose}
-            />
+            {folders.isPending ? (
+              <Inline
+                alignBlock="center"
+                alignInline="center"
+                space="space.100"
+              >
+                <Spinner label="Loading folders" size="small" />
+                <Text color="color.text.subtle" size="small">
+                  Loading folders
+                </Text>
+              </Inline>
+            ) : null}
+            {folders.isError ? (
+              <SectionMessage appearance="error" title="Folders unavailable">
+                Try opening the folder picker again.
+              </SectionMessage>
+            ) : null}
+            {folders.data ? (
+              <FolderPicker
+                rootFolderId={rootFolderId}
+                folders={folders.data}
+                disabledIds={new Set()}
+                value={value?.id ?? ''}
+                onChange={(folderId) => {
+                  const folder = folders.data.find(
+                    (item) => item.id === folderId,
+                  );
+                  choose({
+                    id: folderId,
+                    name:
+                      folderId === rootFolderId
+                        ? 'Root'
+                        : (folder?.name ?? 'Root'),
+                  });
+                }}
+              />
+            ) : null}
           </Stack>
-        </div>
+        </Box>
       )}
     />
   );

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import Button from '@atlaskit/button/new';
+import SearchIcon from '@atlaskit/icon/core/search';
 import SectionMessage from '@atlaskit/section-message';
 import Spinner from '@atlaskit/spinner';
 import Textfield from '@atlaskit/textfield';
-import { Text } from '@atlaskit/primitives';
+import { Box, Inline, Text, xcss } from '@atlaskit/primitives';
 
 import type { NoteraClient } from '../platform/notera-client';
 import { SearchResults } from './SearchResults';
@@ -13,6 +14,27 @@ import {
   useSearchResults,
   type SearchResult,
 } from './search-queries';
+
+const searchModalStyles = xcss({
+  display: 'grid',
+  gridTemplateRows: 'auto minmax(0, 1fr) auto',
+  gap: 'space.200',
+  height: 'min(68vh, 516px)',
+  minHeight: '0',
+});
+
+const searchInputStyles = xcss({
+  flexGrow: 1,
+  minWidth: '0',
+});
+
+const resultsStyles = xcss({
+  minHeight: '0',
+  overflowY: 'auto',
+  borderBlockStartColor: 'color.border',
+  borderBlockStartStyle: 'solid',
+  borderBlockStartWidth: 'border.width',
+});
 
 export function SearchModal({
   client,
@@ -48,24 +70,23 @@ export function SearchModal({
     }
   };
   return (
-    <div className="notera-search-modal">
-      <div
-        aria-label="Search notes"
-        className="notera-search-modal__controls"
-        role="search"
-      >
-        <Textfield
-          autoFocus
-          type="search"
-          aria-label="Search notes"
-          placeholder="Search notes"
-          value={query}
-          onChange={(event) => {
-            setQuery(event.currentTarget.value);
-            setOpenFailed(false);
-          }}
-        />
-        <div className="notera-search-modal__scope">
+    <Box xcss={searchModalStyles}>
+      <Box aria-label="Search notes" role="search">
+        <Inline alignBlock="center" space="space.100">
+          <Box xcss={searchInputStyles}>
+            <Textfield
+              autoFocus
+              type="search"
+              aria-label="Search notes"
+              elemBeforeInput={<SearchIcon label="" />}
+              placeholder="Search notes"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.currentTarget.value);
+                setOpenFailed(false);
+              }}
+            />
+          </Box>
           <SearchScopePicker
             client={client}
             profileId={profileId}
@@ -76,40 +97,40 @@ export function SearchModal({
               setOpenFailed(false);
             }}
           />
-        </div>
-      </div>
-      <section
-        aria-label="Search results"
-        className="notera-search-modal__results"
-      >
+        </Inline>
+      </Box>
+      <Box as="section" aria-label="Search results" xcss={resultsStyles}>
         {openFailed ? (
-          <div className="notera-search-modal__state">
+          <Box paddingBlock="space.200">
             <SectionMessage
               appearance="error"
               title="This note is no longer available"
             >
               Refresh the results and try again.
             </SectionMessage>
-          </div>
+          </Box>
         ) : null}
         {query.trim().length === 0 ? (
-          <div className="notera-search-modal__state">
+          <Box paddingBlock="space.200">
             <Text color="color.text.subtle">
               Enter text to search all notes.
             </Text>
-          </div>
+          </Box>
         ) : null}
         {results.isPending && query.trim().length > 0 ? (
-          <div className="notera-search-modal__state">
-            <Spinner label="Searching" />
-          </div>
+          <Box paddingBlock="space.300">
+            <Inline alignBlock="center" alignInline="center" space="space.100">
+              <Spinner label="Searching" />
+              <Text color="color.text.subtle">Searching notes</Text>
+            </Inline>
+          </Box>
         ) : null}
         {results.isError ? (
-          <div className="notera-search-modal__state">
+          <Box paddingBlock="space.200">
             <SectionMessage appearance="error" title="Search failed">
               Check the search text and try again.
             </SectionMessage>
-          </div>
+          </Box>
         ) : null}
         {results.isSuccess ? (
           <SearchResults
@@ -117,19 +138,18 @@ export function SearchModal({
             onOpen={(result) => void open(result)}
           />
         ) : null}
-      </section>
+      </Box>
       {results.hasNextPage ? (
-        <div className="notera-search-modal__more">
+        <Box paddingBlockStart="space.050">
           <Button
-            appearance="subtle"
             shouldFitContainer
             isLoading={results.isFetchingNextPage}
             onClick={() => void results.fetchNextPage()}
           >
             Load more
           </Button>
-        </div>
+        </Box>
       ) : null}
-    </div>
+    </Box>
   );
 }

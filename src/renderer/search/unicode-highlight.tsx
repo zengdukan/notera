@@ -1,4 +1,11 @@
 import type { ReactNode } from 'react';
+import { Box, xcss } from '@atlaskit/primitives';
+
+const highlightStyles = xcss({
+  borderRadius: 'radius.xsmall',
+  color: 'color.text',
+  paddingInline: 'space.025',
+});
 
 export interface HighlightRange {
   readonly start: number;
@@ -20,9 +27,14 @@ export function HighlightedText({
       nodes.push(points.slice(offset, range.start).join(''));
     }
     nodes.push(
-      <mark key={`highlight-${range.start}-${range.end}`}>
+      <Box
+        as="mark"
+        backgroundColor="color.background.accent.yellow.subtler"
+        key={`highlight-${range.start}-${range.end}`}
+        xcss={highlightStyles}
+      >
         {points.slice(range.start, range.end).join('')}
-      </mark>,
+      </Box>,
     );
     offset = range.end;
   });
