@@ -61,6 +61,40 @@ describe('content controller', () => {
     expect(request).not.toHaveBeenCalled();
   });
 
+  it('adds a note to favorites and synchronizes related caches', async () => {
+    const request = jest.fn(async () => ({}));
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(['profile', 'profile', 'note', note.id], {
+      ...note,
+      isFavorite: false,
+    });
+    const invalidate = jest
+      .spyOn(queryClient, 'invalidateQueries')
+      .mockResolvedValue(undefined);
+    const controller = createContentController({
+      client: { request } as unknown as NoteraClient,
+      queryClient,
+      profileId: 'profile',
+      rootFolderId: 'root',
+      getSelection: () => note,
+      guard: { flushBefore: jest.fn(async () => 'ready') },
+      select: jest.fn(),
+      beginEditing: jest.fn(),
+    });
+
+    await controller.addFavorite(note);
+
+    expect(request).toHaveBeenCalledWith('favorite.add', {
+      noteId: note.id,
+    });
+    expect(
+      queryClient.getQueryData(['profile', 'profile', 'note', note.id]),
+    ).toMatchObject({ isFavorite: true });
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ['profile', 'profile', 'favorites'],
+    });
+  });
+
   it('updates the current selection and invalidates only related caches after note mutations', async () => {
     const renamed = {
       ...note,

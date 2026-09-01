@@ -9,7 +9,10 @@ import {
   treeKey,
   trashKey,
 } from '../app/query-keys';
-import type { NoteraClient } from '../platform/notera-client';
+import type {
+  NoteraClient,
+  RequestData,
+} from '../platform/notera-client';
 import type { NoteMutationGuard } from '../notes/note-mutation-guard';
 import type { NoteWriteCoordinator } from '../notes/note-write-coordinator';
 import {
@@ -208,6 +211,17 @@ export function createContentController(input: {
         }),
       ]);
       return 'ready';
+    },
+    async addFavorite(entry: ContentEntry): Promise<void> {
+      if (entry.kind !== 'note') return;
+      await input.client.request('favorite.add', { noteId: entry.id });
+      input.queryClient.setQueryData<RequestData<'note.get'>>(
+        noteKey(input.profileId, entry.id),
+        (current) => (current ? { ...current, isFavorite: true } : current),
+      );
+      await input.queryClient.invalidateQueries({
+        queryKey: favoritesKey(input.profileId),
+      });
     },
     async trash(entry: ContentEntry): Promise<'ready' | 'blocked'> {
       if ((await ready(entry, 'trash')) === 'blocked') return 'blocked';

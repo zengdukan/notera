@@ -13,6 +13,7 @@ import type { NoteraClient } from '../../platform/notera-client';
 import { ActiveDocumentLifecycle } from '../../notes/document-lifecycle';
 import { NoteWriteCoordinator } from '../../notes/note-write-coordinator';
 
+import type { ContentAction } from '../content-actions';
 import { NavigationWorkspace } from '../NavigationWorkspace';
 
 const firstNote = {
@@ -73,16 +74,34 @@ jest.mock('../ResizableNavigation', () => ({
   ),
 }));
 jest.mock('../tree-queries', () => ({
-  QueryContentTree: ({ onOpen }: { onOpen(entry: typeof firstNote): void }) => (
-    <div>
-      <button type="button" onClick={() => onOpen(firstNote)}>
-        Open first
-      </button>
-      <button type="button" onClick={() => onOpen(secondNote)}>
-        Open second
-      </button>
-    </div>
-  ),
+  QueryContentTree: ({
+    onOpen,
+    getActions,
+  }: {
+    onOpen(entry: typeof firstNote): void;
+    getActions(entry: typeof firstNote): readonly ContentAction[];
+  }) => {
+    const favorite = getActions(firstNote).find(
+      (action) => action.id === 'toggle-favorite',
+    );
+    return (
+      <div>
+        <button type="button" onClick={() => onOpen(firstNote)}>
+          Open first
+        </button>
+        <button type="button" onClick={() => onOpen(secondNote)}>
+          Open second
+        </button>
+        <button
+          type="button"
+          disabled={favorite?.isDisabled}
+          onClick={() => favorite?.run()}
+        >
+          {favorite?.label}
+        </button>
+      </div>
+    );
+  },
 }));
 jest.mock('../../notes/NoteWorkspace', () => ({
   NoteWorkspace: ({
@@ -225,6 +244,31 @@ function render(ui: ReactNode, locale: AppLocale = 'en') {
 }
 
 describe('NavigationWorkspace', () => {
+  it('adds a tree note to favorites from its content menu', async () => {
+    const user = userEvent.setup();
+    const request = jest.fn(async () => ({}));
+    const client = { request, subscribe: jest.fn() } as unknown as NoteraClient;
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SessionProvider>
+          <Unlock>
+            <NavigationWorkspace client={client} />
+          </Unlock>
+        </SessionProvider>
+      </QueryClientProvider>,
+    );
+
+    const addFavorite = await screen.findByRole('button', {
+      name: 'Add to favorites',
+    });
+    expect(addFavorite).toBeEnabled();
+    await user.click(addFavorite);
+
+    expect(request).toHaveBeenCalledWith('favorite.add', {
+      noteId: firstNote.id,
+    });
+  });
+
   it('shares tree selection with the central note workspace', async () => {
     const user = userEvent.setup();
     const client = {
