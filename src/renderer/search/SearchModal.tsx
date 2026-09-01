@@ -14,6 +14,9 @@ import {
   useSearchResults,
   type SearchResult,
 } from './search-queries';
+import { useDebouncedValue } from './use-debounced-value';
+
+const SEARCH_QUERY_DEBOUNCE_MS = 300;
 
 const searchModalStyles = xcss({
   display: 'grid',
@@ -55,10 +58,13 @@ export function SearchModal({
     readonly name: string;
   }>();
   const [openFailed, setOpenFailed] = useState(false);
+  const debouncedQuery = useDebouncedValue(query, SEARCH_QUERY_DEBOUNCE_MS);
+  const normalizedQuery = query.trim();
+  const isDebouncing = normalizedQuery !== debouncedQuery.trim();
   const results = useSearchResults({
     client,
     profileId,
-    query,
+    query: debouncedQuery,
     ...(scope === undefined ? {} : { folderId: scope.id }),
   });
   const items = uniqueSearchResults(results.data?.pages);
@@ -73,20 +79,22 @@ export function SearchModal({
     <Box xcss={searchModalStyles}>
       <Box aria-label="Search notes" role="search">
         <Inline alignBlock="center" space="space.100">
-          <Box xcss={searchInputStyles}>
-            <Textfield
-              autoFocus
-              type="search"
-              aria-label="Search notes"
-              elemBeforeInput={<SearchIcon label="" />}
-              placeholder="Search notes"
-              value={query}
-              onChange={(event) => {
-                setQuery(event.currentTarget.value);
-                setOpenFailed(false);
-              }}
-            />
-          </Box>
+          <Textfield
+            autoFocus
+            type="search"
+            aria-label="Search notes"
+            elemBeforeInput={
+              <Box paddingInlineStart="space.100">
+                <SearchIcon label="" />
+              </Box>
+            }
+            placeholder="Search notes"
+            value={query}
+            onChange={(event) => {
+              setQuery(event.currentTarget.value);
+              setOpenFailed(false);
+            }}
+          />
           <SearchScopePicker
             client={client}
             profileId={profileId}
@@ -110,14 +118,14 @@ export function SearchModal({
             </SectionMessage>
           </Box>
         ) : null}
-        {query.trim().length === 0 ? (
+        {normalizedQuery.length === 0 ? (
           <Box paddingBlock="space.200">
             <Text color="color.text.subtle">
               Enter text to search all notes.
             </Text>
           </Box>
         ) : null}
-        {results.isPending && query.trim().length > 0 ? (
+        {normalizedQuery.length > 0 && (isDebouncing || results.isPending) ? (
           <Box paddingBlock="space.300">
             <Inline alignBlock="center" alignInline="center" space="space.100">
               <Spinner label="Searching" />
@@ -125,21 +133,21 @@ export function SearchModal({
             </Inline>
           </Box>
         ) : null}
-        {results.isError ? (
+        {!isDebouncing && results.isError ? (
           <Box paddingBlock="space.200">
             <SectionMessage appearance="error" title="Search failed">
               Check the search text and try again.
             </SectionMessage>
           </Box>
         ) : null}
-        {results.isSuccess ? (
+        {!isDebouncing && results.isSuccess ? (
           <SearchResults
             results={items}
             onOpen={(result) => void open(result)}
           />
         ) : null}
       </Box>
-      {results.hasNextPage ? (
+      {!isDebouncing && results.hasNextPage ? (
         <Box paddingBlockStart="space.050">
           <Button
             shouldFitContainer

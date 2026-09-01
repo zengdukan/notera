@@ -93,6 +93,9 @@ describe('SearchModal', () => {
         limit: 30,
       }),
     );
+    expect(
+      request.mock.calls.filter(([key]) => key === 'search.query'),
+    ).toHaveLength(1);
 
     await user.click(
       screen.getByRole('button', { name: 'Search scope: All notes' }),
