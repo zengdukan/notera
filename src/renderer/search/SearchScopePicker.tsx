@@ -50,6 +50,7 @@ export function SearchScopePicker({
       isOpen={open}
       onClose={() => setOpen(false)}
       placement="bottom-start"
+      shouldRenderToParent
       trigger={(triggerProps) => (
         <Button
           {...triggerProps}
@@ -61,7 +62,11 @@ export function SearchScopePicker({
         </Button>
       )}
       content={() => (
-        <Box padding="space.100" xcss={popupStyles}>
+        <Box
+          padding="space.100"
+          testId="search-scope-popup"
+          xcss={popupStyles}
+        >
           <Stack space="space.100">
             <Button
               appearance="subtle"

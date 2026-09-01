@@ -70,9 +70,10 @@ describe('SearchModal', () => {
 
     const input = screen.getByRole('searchbox', { name: 'Search notes' });
     expect(input).toHaveFocus();
-    expect(
-      screen.getByRole('search', { name: 'Search notes' }),
-    ).toContainElement(input);
+    const searchControls = screen.getByRole('search', {
+      name: 'Search notes',
+    });
+    expect(searchControls).toContainElement(input);
     await user.type(input, 'needle');
     expect(
       await screen.findByRole('button', { name: /😀 Needle/u }),
@@ -95,6 +96,9 @@ describe('SearchModal', () => {
 
     await user.click(
       screen.getByRole('button', { name: 'Search scope: All notes' }),
+    );
+    expect(searchControls).toContainElement(
+      await screen.findByTestId('search-scope-popup'),
     );
     await user.click(await screen.findByRole('button', { name: 'Scoped' }));
     await waitFor(() =>
