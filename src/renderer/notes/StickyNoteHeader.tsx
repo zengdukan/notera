@@ -5,6 +5,12 @@ import DropdownMenu, {
   DropdownItemGroup,
 } from '@atlaskit/dropdown-menu';
 import Heading from '@atlaskit/heading';
+import AddIcon from '@atlaskit/icon/core/add';
+import ArrowRightIcon from '@atlaskit/icon/core/arrow-right';
+import ClockIcon from '@atlaskit/icon/core/clock';
+import CopyIcon from '@atlaskit/icon/core/copy';
+import DeleteIcon from '@atlaskit/icon/core/delete';
+import DownloadIcon from '@atlaskit/icon/core/download';
 import { Box, Inline, Text, xcss } from '@atlaskit/primitives';
 import Textfield from '@atlaskit/textfield';
 
@@ -43,13 +49,14 @@ const saveLabel: Readonly<Record<SaveState, string>> = Object.freeze({
 const MORE_ACTIONS: readonly {
   readonly id: NoteMoreAction;
   readonly label: string;
+  readonly icon: typeof AddIcon;
 }[] = Object.freeze([
-  { id: 'create-version', label: 'Create version' },
-  { id: 'history', label: 'History' },
-  { id: 'export', label: 'Export' },
-  { id: 'move', label: 'Move' },
-  { id: 'copy', label: 'Copy' },
-  { id: 'trash', label: 'Move to trash' },
+  { id: 'create-version', label: 'Create version', icon: AddIcon },
+  { id: 'history', label: 'History', icon: ClockIcon },
+  { id: 'export', label: 'Export', icon: DownloadIcon },
+  { id: 'move', label: 'Move', icon: ArrowRightIcon },
+  { id: 'copy', label: 'Copy', icon: CopyIcon },
+  { id: 'trash', label: 'Move to trash', icon: DeleteIcon },
 ]);
 
 export function StickyNoteHeader({
@@ -142,11 +149,24 @@ export function StickyNoteHeader({
             )}
           >
             <DropdownItemGroup>
-              {MORE_ACTIONS.map((action) => (
-                <DropdownItem key={action.id} onClick={() => onMore(action.id)}>
-                  {action.label}
-                </DropdownItem>
-              ))}
+              {MORE_ACTIONS.map((action) => {
+                const ActionIcon = action.icon;
+                return (
+                  <DropdownItem
+                    key={action.id}
+                    elemBefore={
+                      <ActionIcon
+                        label=""
+                        color="currentColor"
+                        testId={`note-more-action-icon-${action.id}`}
+                      />
+                    }
+                    onClick={() => onMore(action.id)}
+                  >
+                    {action.label}
+                  </DropdownItem>
+                );
+              })}
             </DropdownItemGroup>
           </DropdownMenu>
         </Inline>

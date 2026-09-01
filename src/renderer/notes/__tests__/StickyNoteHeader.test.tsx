@@ -112,17 +112,18 @@ describe('StickyNoteHeader', () => {
     expect(screen.getByRole('button', { name: 'Preview' })).toBeVisible();
 
     await user.click(screen.getByRole('button', { name: 'More' }));
-    for (const label of [
-      'Create version',
-      'History',
-      'Export',
-      'Move',
-      'Copy',
-      'Move to trash',
+    for (const [id, label] of [
+      ['create-version', 'Create version'],
+      ['history', 'History'],
+      ['export', 'Export'],
+      ['move', 'Move'],
+      ['copy', 'Copy'],
+      ['trash', 'Move to trash'],
     ]) {
       expect(
         await screen.findByRole('menuitem', { name: label }),
       ).toBeVisible();
+      expect(screen.getByTestId(`note-more-action-icon-${id}`)).toBeVisible();
     }
     await user.click(screen.getByRole('menuitem', { name: 'History' }));
     expect(onMore).toHaveBeenCalledWith('history');
