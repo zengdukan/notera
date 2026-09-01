@@ -100,6 +100,9 @@ describe('ContentTree', () => {
     await user.click(screen.getByRole('menuitem', { name: 'New note' }));
     expect(onCreateNote).toHaveBeenCalledWith(folder.entry);
     expect(
+      screen.queryByRole('menuitem', { name: 'New note' }),
+    ).not.toBeInTheDocument();
+    expect(
       screen.getByRole('button', { name: 'More actions for Projects' }),
     ).toBeVisible();
 
@@ -109,6 +112,9 @@ describe('ContentTree', () => {
     expect(screen.getByRole('menuitem', { name: 'Rename' })).toBeVisible();
     await user.click(screen.getByRole('menuitem', { name: 'Rename' }));
     expect(rename).toHaveBeenCalledWith(folder.entry);
+    expect(
+      screen.queryByRole('menuitem', { name: 'Rename' }),
+    ).not.toBeInTheDocument();
   });
 
   it('opens note actions from the keyboard without folder-only actions', async () => {

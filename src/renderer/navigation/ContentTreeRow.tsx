@@ -131,6 +131,7 @@ export function ContentTreeRow({
             <DropdownItem
               onClick={(event) => {
                 event.stopPropagation();
+                setCreateMenuOpen(false);
                 onCreateNote();
               }}
             >
@@ -139,6 +140,7 @@ export function ContentTreeRow({
             <DropdownItem
               onClick={(event) => {
                 event.stopPropagation();
+                setCreateMenuOpen(false);
                 onCreateFolder();
               }}
             >
@@ -174,6 +176,7 @@ export function ContentTreeRow({
               isDisabled={action.isDisabled}
               onClick={(event) => {
                 event.stopPropagation();
+                setActionMenuOpen(false);
                 action.run();
               }}
             >
