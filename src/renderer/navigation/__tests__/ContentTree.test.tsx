@@ -53,11 +53,16 @@ describe('ContentTree', () => {
     );
 
     expect(screen.getByRole('list')).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Projects' }));
+    const folderRow = screen.getByRole('button', { name: 'Projects' });
+    const noteRow = screen.getByRole('button', { name: 'Roadmap' });
+    expect(screen.getByTestId('content-tree-folder-icon')).toBeVisible();
+    expect(screen.getByTestId('content-tree-note-icon')).toBeVisible();
+
+    await user.click(folderRow);
     expect(onToggle).toHaveBeenCalledWith('folder-1', true);
     expect(onOpen).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: 'Roadmap' }));
+    await user.click(noteRow);
     expect(onOpen).toHaveBeenCalledWith(note.entry);
   });
 

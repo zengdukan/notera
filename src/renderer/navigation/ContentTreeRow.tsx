@@ -5,6 +5,8 @@ import DropdownMenu, {
   DropdownItemGroup,
 } from '@atlaskit/dropdown-menu';
 import AddIcon from '@atlaskit/icon/core/add';
+import FolderClosedIcon from '@atlaskit/icon/core/folder-closed';
+import NoteIcon from '@atlaskit/icon/core/note';
 import MoreIcon from '@atlaskit/icon/core/show-more-horizontal';
 import { Inline } from '@atlaskit/primitives';
 import { ButtonMenuItem } from '@atlaskit/side-nav-items/button-menu-item';
@@ -189,6 +191,14 @@ export function ContentTreeRow({
         <ExpandableMenuItemTrigger
           ref={itemRef}
           visualContentRef={visualContentRef}
+          elemBefore={
+            <FolderClosedIcon
+              label=""
+              color="currentColor"
+              spacing="spacious"
+              testId="content-tree-folder-icon"
+            />
+          }
           isSelected={selected}
           actionsOnHover={showRowActions ? rowActions : undefined}
           onClick={onOpen}
@@ -204,6 +214,14 @@ export function ContentTreeRow({
     <ButtonMenuItem
       ref={itemRef}
       visualContentRef={visualContentRef}
+      elemBefore={
+        <NoteIcon
+          label=""
+          color="currentColor"
+          spacing="spacious"
+          testId="content-tree-note-icon"
+        />
+      }
       isSelected={selected}
       actionsOnHover={showRowActions ? rowActions : undefined}
       onClick={onOpen}
