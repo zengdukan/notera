@@ -151,7 +151,14 @@ jest.mock('../../favorites/FavoritesModal', () => ({
   FavoritesModal: () => <div>Favorite notes</div>,
 }));
 jest.mock('../../recent/RecentModal', () => ({
-  RecentModal: () => <div>Recent notes</div>,
+  RecentModal: ({ onClose }: { onClose(): void }) => (
+    <div>
+      Recent notes
+      <button type="button" onClick={onClose}>
+        Return from recent
+      </button>
+    </div>
+  ),
 }));
 jest.mock('../../history/CreateVersionModal', () => ({
   CreateVersionModal: () => <div>Create version form</div>,
@@ -172,10 +179,14 @@ jest.mock('../../shared-ui/ModalHost', () => ({
   ModalHost: ({
     modal,
   }: {
-    modal: { title: string; content: ReactNode } | null;
+    modal: { title: string; content: ReactNode; width?: number } | null;
   }) =>
     modal === null ? null : (
-      <div role="dialog" aria-label={modal.title}>
+      <div
+        role="dialog"
+        aria-label={modal.title}
+        data-modal-width={modal.width}
+      >
         {modal.content}
       </div>
     ),
@@ -362,7 +373,10 @@ describe('NavigationWorkspace', () => {
     await user.click(await screen.findByRole('button', { name: 'Favorites' }));
     expect(screen.getByText('Favorite notes')).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Recent' }));
+    const recentDialog = screen.getByRole('dialog', { name: '最近浏览' });
     expect(screen.getByText('Recent notes')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Return from recent' }));
+    expect(recentDialog).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Trash' }));
     expect(await screen.findByText('Trash workspace')).toBeVisible();
   });

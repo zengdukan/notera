@@ -355,12 +355,13 @@ function UnlockedNavigationWorkspace({
     if (overlay.kind === 'recent') {
       return {
         kind: overlay.kind,
-        title: 'Recent',
+        title: '最近浏览',
         content: (
           <RecentModal
             client={client}
             profileId={profile.localProfileId}
-            onOpen={(note) => openListedNote(note.id)}
+            onOpen={(note) => openListedNote(note.id, note.folderPath)}
+            onClose={() => setOverlay(undefined)}
           />
         ),
       };

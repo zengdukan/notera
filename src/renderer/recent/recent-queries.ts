@@ -3,7 +3,12 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { recentKey } from '../app/query-keys';
 import type { NoteraClient, RequestData } from '../platform/notera-client';
 
-export type RecentNote = RequestData<'note.listRecent'>['items'][number];
+type RecentNoteSummary = RequestData<'note.listRecent'>['items'][number];
+type FolderPath = RequestData<'contentTree.getFolderPath'>['items'];
+
+export type RecentNote = RecentNoteSummary & {
+  readonly folderPath: FolderPath;
+};
 
 export function useRecentNotes(input: {
   readonly client: NoteraClient;
@@ -12,11 +17,31 @@ export function useRecentNotes(input: {
   return useInfiniteQuery({
     queryKey: recentKey(input.profileId),
     initialPageParam: undefined as string | undefined,
-    queryFn: ({ pageParam }) =>
-      input.client.request('note.listRecent', {
+    queryFn: async ({ pageParam }) => {
+      const page = await input.client.request('note.listRecent', {
         limit: 30,
         ...(pageParam === undefined ? {} : { cursor: pageParam }),
-      }),
+      });
+      const paths = new Map<string, Promise<{ readonly items: FolderPath }>>();
+      const pathFor = (folderId: string) => {
+        const current = paths.get(folderId);
+        if (current !== undefined) return current;
+        const request = input.client.request('contentTree.getFolderPath', {
+          folderId,
+        });
+        paths.set(folderId, request);
+        return request;
+      };
+      return {
+        ...page,
+        items: await Promise.all(
+          page.items.map(async (note) => ({
+            ...note,
+            folderPath: (await pathFor(note.folderId)).items,
+          })),
+        ),
+      };
+    },
     getNextPageParam: (page) => page.nextCursor ?? undefined,
   });
 }
