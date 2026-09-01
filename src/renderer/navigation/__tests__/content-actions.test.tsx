@@ -19,6 +19,33 @@ const note = {
 };
 
 describe('content actions', () => {
+  it('assigns an Atlassian icon to every folder and note action', () => {
+    const controller = new Proxy({}, { get: () => jest.fn() }) as never;
+    const iconNames = (entry: typeof folder | typeof note) =>
+      createContentActions(entry, controller).map(({ id, icon }) => [
+        id,
+        icon.displayName,
+      ]);
+
+    expect(iconNames(folder)).toEqual([
+      ['open', 'EyeOpenIcon'],
+      ['create-note', 'NoteIcon'],
+      ['create-folder', 'FolderClosedIcon'],
+      ['rename', 'EditIcon'],
+      ['move', 'ArrowRightIcon'],
+      ['trash', 'DeleteIcon'],
+    ]);
+    expect(iconNames(note)).toEqual([
+      ['open', 'EyeOpenIcon'],
+      ['rename', 'EditIcon'],
+      ['move', 'ArrowRightIcon'],
+      ['copy', 'CopyIcon'],
+      ['toggle-favorite', 'StarUnstarredIcon'],
+      ['export', 'DownloadIcon'],
+      ['trash', 'DeleteIcon'],
+    ]);
+  });
+
   it('uses one ordered action matrix for context and overflow menus', () => {
     const controller = new Proxy({}, { get: () => jest.fn() }) as never;
     expect(actionIdsFor(createContentActions(folder, controller))).toEqual([
@@ -63,5 +90,7 @@ describe('content actions', () => {
       label: 'Remove from favorites',
       isDisabled: false,
     });
+    expect(addAction?.icon.displayName).toBe('StarUnstarredIcon');
+    expect(removeAction?.icon.displayName).toBe('StarStarredIcon');
   });
 });

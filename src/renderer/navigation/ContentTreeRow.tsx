@@ -156,15 +156,25 @@ export function ContentTreeRow({
           )}
         >
           <DropdownItemGroup>
-            {actions.map((action) => (
-              <DropdownItem
-                key={action.id}
-                isDisabled={action.isDisabled}
-                onClick={() => action.run()}
-              >
-                {action.label}
-              </DropdownItem>
-            ))}
+            {actions.map((action) => {
+              const ActionIcon = action.icon;
+              return (
+                <DropdownItem
+                  key={action.id}
+                  elemBefore={
+                    <ActionIcon
+                      label=""
+                      color="currentColor"
+                      testId={`content-action-icon-${action.id}`}
+                    />
+                  }
+                  isDisabled={action.isDisabled}
+                  onClick={() => action.run()}
+                >
+                  {action.label}
+                </DropdownItem>
+              );
+            })}
           </DropdownItemGroup>
         </DropdownMenu>
       </Inline>

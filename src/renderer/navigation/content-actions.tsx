@@ -1,3 +1,13 @@
+import ArrowRightIcon from '@atlaskit/icon/core/arrow-right';
+import CopyIcon from '@atlaskit/icon/core/copy';
+import DeleteIcon from '@atlaskit/icon/core/delete';
+import DownloadIcon from '@atlaskit/icon/core/download';
+import EditIcon from '@atlaskit/icon/core/edit';
+import FolderClosedIcon from '@atlaskit/icon/core/folder-closed';
+import NoteIcon from '@atlaskit/icon/core/note';
+import StarStarredIcon from '@atlaskit/icon/core/star-starred';
+import StarUnstarredIcon from '@atlaskit/icon/core/star-unstarred';
+
 import type { ContentEntry } from './content-controller';
 
 export type ContentActionId =
@@ -14,6 +24,7 @@ export type ContentActionId =
 export interface ContentAction {
   readonly id: ContentActionId;
   readonly label: string;
+  readonly icon: typeof EditIcon;
   readonly isDisabled: boolean;
   run(): unknown;
 }
@@ -39,40 +50,40 @@ export function createContentActions(
   const action = (
     id: ContentActionId,
     label: string,
+    icon: typeof EditIcon,
     run: (() => unknown) | undefined,
   ): ContentAction =>
     Object.freeze({
       id,
       label,
+      icon,
       run: () => run?.(),
       isDisabled: run === undefined,
     });
-  const open = action(
-    'open',
-    'Open',
-    controller.open ? () => controller.open?.(entry) : undefined,
-  );
   const rename = action(
     'rename',
     'Rename',
+    EditIcon,
     controller.rename ? () => controller.rename?.(entry) : undefined,
   );
   const move = action(
     'move',
     'Move',
+    ArrowRightIcon,
     controller.openMove ? () => controller.openMove?.(entry) : undefined,
   );
   const trash = action(
     'trash',
     'Move to trash',
+    DeleteIcon,
     controller.openTrash ? () => controller.openTrash?.(entry) : undefined,
   );
   if (entry.kind === 'folder') {
     return Object.freeze([
-      open,
       action(
         'create-note',
         'Create note',
+        NoteIcon,
         controller.createNote
           ? () => controller.createNote?.(entry.id)
           : undefined,
@@ -80,6 +91,7 @@ export function createContentActions(
       action(
         'create-folder',
         'Create subfolder',
+        FolderClosedIcon,
         controller.openCreateFolder
           ? () => controller.openCreateFolder?.(entry)
           : undefined,
@@ -90,17 +102,18 @@ export function createContentActions(
     ]);
   }
   return Object.freeze([
-    open,
     rename,
     move,
     action(
       'copy',
       'Copy',
+      CopyIcon,
       controller.openCopy ? () => controller.openCopy?.(entry) : undefined,
     ),
     action(
       'toggle-favorite',
       entry.isFavorite ? 'Remove from favorites' : 'Add to favorites',
+      entry.isFavorite ? StarStarredIcon : StarUnstarredIcon,
       controller.toggleFavorite
         ? () => controller.toggleFavorite?.(entry)
         : undefined,
@@ -108,6 +121,7 @@ export function createContentActions(
     action(
       'export',
       'Export',
+      DownloadIcon,
       controller.export ? () => controller.export?.(entry) : undefined,
     ),
     trash,

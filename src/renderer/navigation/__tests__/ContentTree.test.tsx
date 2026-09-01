@@ -113,6 +113,7 @@ describe('ContentTree', () => {
       screen.getByRole('button', { name: 'More actions for Projects' }),
     );
     expect(screen.getByRole('menuitem', { name: 'Rename' })).toBeVisible();
+    expect(screen.getByTestId('content-action-icon-rename')).toBeVisible();
     await user.click(screen.getByRole('menuitem', { name: 'Rename' }));
     expect(rename).toHaveBeenCalledWith(folder.entry);
     expect(
