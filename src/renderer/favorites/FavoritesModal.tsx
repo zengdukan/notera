@@ -1,14 +1,19 @@
 import Button, { IconButton } from '@atlaskit/button/new';
 import EmptyState from '@atlaskit/empty-state';
+import NoteIcon from '@atlaskit/icon/core/note';
 import StarUnstarredIcon from '@atlaskit/icon/core/star-unstarred';
+import { Inline, Stack, Text } from '@atlaskit/primitives';
 import SectionMessage from '@atlaskit/section-message';
+import { ButtonMenuItem } from '@atlaskit/side-nav-items/button-menu-item';
+import { MenuList } from '@atlaskit/side-nav-items/menu-list';
+import { SkeletonMenuItem } from '@atlaskit/side-nav-items/skeleton';
 import Spinner from '@atlaskit/spinner';
-import { Inline, Stack } from '@atlaskit/primitives';
 import {
   useMutation,
   useQueryClient,
   type InfiniteData,
 } from '@tanstack/react-query';
+import { useIntl } from 'react-intl';
 
 import { favoritesKey, noteKey } from '../app/query-keys';
 import type { NoteraClient, RequestData } from '../platform/notera-client';
@@ -34,17 +39,90 @@ function withoutFavorite(data: FavoritePages | undefined, noteId: string) {
   };
 }
 
+function FavoritesLoadingState() {
+  const intl = useIntl();
+  return (
+    <Stack space="space.200">
+      <MenuList>
+        {Array.from({ length: 3 }, (_, index) => (
+          <SkeletonMenuItem
+            hasElemBefore
+            key={index}
+            testId="favorite-note-skeleton"
+          />
+        ))}
+      </MenuList>
+      <Inline alignBlock="center" alignInline="center" space="space.100">
+        <Spinner
+          label={intl.formatMessage({ id: 'favorites.loadingLabel' })}
+          size="medium"
+        />
+        <Text color="color.text.subtle" size="small">
+          {intl.formatMessage({ id: 'favorites.loadingDescription' })}
+        </Text>
+      </Inline>
+    </Stack>
+  );
+}
+
+function FavoritesEmptyState({ onClose }: { readonly onClose: () => void }) {
+  const intl = useIntl();
+  return (
+    <EmptyState
+      buttonGroupLabel={intl.formatMessage({
+        id: 'favorites.emptyActionsLabel',
+      })}
+      description={intl.formatMessage({ id: 'favorites.emptyDescription' })}
+      header={intl.formatMessage({ id: 'favorites.emptyTitle' })}
+      headingLevel={2}
+      headingSize="xsmall"
+      primaryAction={
+        <Button appearance="primary" onClick={onClose}>
+          {intl.formatMessage({ id: 'favorites.returnToContent' })}
+        </Button>
+      }
+      width="narrow"
+    />
+  );
+}
+
+function FavoritesErrorState({ onRetry }: { readonly onRetry: () => void }) {
+  const intl = useIntl();
+  return (
+    <Stack space="space.300">
+      <SectionMessage
+        appearance="error"
+        headingLevel="h2"
+        title={intl.formatMessage({ id: 'favorites.loadErrorTitle' })}
+      >
+        <Text as="p">
+          {intl.formatMessage({ id: 'favorites.loadErrorDescription' })}
+        </Text>
+        <Button appearance="danger" onClick={onRetry} spacing="compact">
+          {intl.formatMessage({ id: 'favorites.retry' })}
+        </Button>
+      </SectionMessage>
+      <Text as="p" color="color.text.subtle" size="small">
+        {intl.formatMessage({ id: 'favorites.errorDisclosure' })}
+      </Text>
+    </Stack>
+  );
+}
+
 export function FavoritesModal({
   client,
   profileId,
   onOpen,
+  onClose,
 }: {
   readonly client: NoteraClient;
   readonly profileId: string;
   readonly onOpen: (
     note: FavoriteNote,
   ) => Promise<boolean | void> | boolean | void;
+  readonly onClose: () => void;
 }) {
+  const intl = useIntl();
   const queryClient = useQueryClient();
   const favorites = useFavorites({ client, profileId });
   const mutation = useMutation({
@@ -83,54 +161,73 @@ export function FavoritesModal({
   });
   const items = uniqueFavorites(favorites.data?.pages);
 
-  if (favorites.isPending) return <Spinner label="Loading favorites" />;
+  if (favorites.isPending) return <FavoritesLoadingState />;
   if (favorites.isError) {
-    return (
-      <SectionMessage appearance="error" title="Could not load favorites">
-        Close this dialog and try again.
-      </SectionMessage>
-    );
+    return <FavoritesErrorState onRetry={() => void favorites.refetch()} />;
   }
-  if (items.length === 0)
-    return (
-      <EmptyState
-        header="No favorites yet"
-        description="Favorite a note to find it here."
-      />
-    );
+  if (items.length === 0) return <FavoritesEmptyState onClose={onClose} />;
   return (
-    <Stack space="space.100">
+    <Stack space="space.200">
+      <Text as="p" color="color.text.subtle" size="small">
+        {intl.formatMessage({ id: 'favorites.sortDescription' })}
+      </Text>
       {mutation.isError ? (
-        <SectionMessage appearance="error" title="Could not update favorite">
-          The previous favorite state was restored.
+        <SectionMessage
+          appearance="error"
+          headingLevel="h2"
+          title={intl.formatMessage({ id: 'favorites.updateErrorTitle' })}
+        >
+          <Text as="p">
+            {intl.formatMessage({ id: 'favorites.updateErrorDescription' })}
+          </Text>
         </SectionMessage>
       ) : null}
-      {items.map((note) => (
-        <Inline key={note.id} alignBlock="center" spread="space-between">
-          <Button
-            appearance="subtle"
-            onClick={() => void onOpen(note)}
-            aria-label={`Open ${note.title || 'Untitled'}`}
-          >
-            {note.title || 'Untitled'}
-          </Button>
-          <IconButton
-            label={`Remove ${note.title || 'Untitled'} from favorites`}
-            icon={StarUnstarredIcon}
-            appearance="subtle"
-            onClick={() => mutation.mutate(note)}
-          />
-        </Inline>
-      ))}
+      <MenuList>
+        {items.map((note) => {
+          const title =
+            note.title || intl.formatMessage({ id: 'favorites.untitled' });
+          return (
+            <ButtonMenuItem
+              key={note.id}
+              elemBefore={<NoteIcon label="" color="currentColor" />}
+              actionsOnHover={
+                <IconButton
+                  label={intl.formatMessage(
+                    { id: 'favorites.removeLabel' },
+                    { title },
+                  )}
+                  icon={StarUnstarredIcon}
+                  appearance="subtle"
+                  spacing="compact"
+                  isLoading={
+                    mutation.isPending && mutation.variables?.id === note.id
+                  }
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    mutation.mutate(note);
+                  }}
+                />
+              }
+              onClick={() => void onOpen(note)}
+            >
+              {title}
+            </ButtonMenuItem>
+          );
+        })}
+      </MenuList>
       {favorites.hasNextPage ? (
-        <Button
-          appearance="subtle"
-          isLoading={favorites.isFetchingNextPage}
-          onClick={() => void favorites.fetchNextPage()}
-        >
-          Load more
-        </Button>
+        <Inline alignInline="center">
+          <Button
+            isLoading={favorites.isFetchingNextPage}
+            onClick={() => void favorites.fetchNextPage()}
+          >
+            {intl.formatMessage({ id: 'favorites.loadMore' })}
+          </Button>
+        </Inline>
       ) : null}
+      <Text as="p" color="color.text.subtle" size="small">
+        {intl.formatMessage({ id: 'favorites.profileDisclosure' })}
+      </Text>
     </Stack>
   );
 }

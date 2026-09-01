@@ -29,6 +29,19 @@ describe('application internationalization', () => {
     });
   });
 
+  it('defines localized favorites messages and action labels', () => {
+    expect(messagesFor('en')).toMatchObject({
+      'favorites.title': 'Favorites',
+      'favorites.removeLabel': 'Remove {title} from favorites',
+      'favorites.returnToContent': 'Return to content',
+    });
+    expect(messagesFor('zh-CN')).toMatchObject({
+      'favorites.title': '收藏',
+      'favorites.removeLabel': '取消收藏「{title}」',
+      'favorites.returnToContent': '返回内容目录',
+    });
+  });
+
   it('includes Chinese messages required by rendered editor content', () => {
     expect(messagesFor('zh-CN')).toMatchObject({
       'fabric.editor.fieldsetLabel': '操作项列表',

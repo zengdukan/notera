@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { Text } from '@atlaskit/primitives';
 import { useQueryClient } from '@tanstack/react-query';
+import { useIntl } from 'react-intl';
 
 import {
   useSession,
@@ -142,6 +143,7 @@ function UnlockedNavigationWorkspace({
   readonly lifecycle: ActiveDocumentLifecycle;
   readonly writeCoordinator: NoteWriteCoordinator;
 }) {
+  const intl = useIntl();
   const queryClient = useQueryClient();
   const [selection, setSelection] = useState<ContentEntry>();
   const [editingNoteId, setEditingNoteId] = useState<string>();
@@ -342,12 +344,13 @@ function UnlockedNavigationWorkspace({
     if (overlay.kind === 'favorites') {
       return {
         kind: overlay.kind,
-        title: 'Favorites',
+        title: intl.formatMessage({ id: 'favorites.title' }),
         content: (
           <FavoritesModal
             client={client}
             profileId={profile.localProfileId}
             onOpen={(note) => openListedNote(note.id)}
+            onClose={() => setOverlay(undefined)}
           />
         ),
       };
@@ -567,6 +570,7 @@ function UnlockedNavigationWorkspace({
     exportController,
     exportStore,
     historyController,
+    intl,
     openListedNote,
     overlay,
     profile,

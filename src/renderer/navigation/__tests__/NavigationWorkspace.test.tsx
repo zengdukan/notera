@@ -1,10 +1,13 @@
 /** @jest-environment jsdom */
 
 import { useEffect, type ReactNode } from 'react';
+import Button from '@atlaskit/button/new';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { render as testingRender, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { IntlProvider } from 'react-intl';
 
+import { messagesFor, type AppLocale } from '../../app/i18n';
 import { SessionProvider, useSession } from '../../app/session';
 import type { NoteraClient } from '../../platform/notera-client';
 import { ActiveDocumentLifecycle } from '../../notes/document-lifecycle';
@@ -148,7 +151,12 @@ jest.mock('../../search/SearchModal', () => ({
   ),
 }));
 jest.mock('../../favorites/FavoritesModal', () => ({
-  FavoritesModal: () => <div>Favorite notes</div>,
+  FavoritesModal: ({ onClose }: { onClose(): void }) => (
+    <div>
+      Favorite notes
+      <Button onClick={onClose}>Return from favorites</Button>
+    </div>
+  ),
 }));
 jest.mock('../../recent/RecentModal', () => ({
   RecentModal: ({ onClose }: { onClose(): void }) => (
@@ -206,6 +214,14 @@ function Unlock({ children }: { children: ReactNode }) {
     });
   }, [dispatch]);
   return children;
+}
+
+function render(ui: ReactNode, locale: AppLocale = 'en') {
+  return testingRender(
+    <IntlProvider locale={locale} messages={messagesFor(locale)}>
+      {ui}
+    </IntlProvider>,
+  );
 }
 
 describe('NavigationWorkspace', () => {
@@ -368,14 +384,22 @@ describe('NavigationWorkspace', () => {
           </Unlock>
         </SessionProvider>
       </QueryClientProvider>,
+      'zh-CN',
     );
 
     await user.click(await screen.findByRole('button', { name: 'Favorites' }));
+    const favoritesDialog = screen.getByRole('dialog', { name: '收藏' });
     expect(screen.getByText('Favorite notes')).toBeVisible();
+    await user.click(
+      screen.getByRole('button', { name: 'Return from favorites' }),
+    );
+    expect(favoritesDialog).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Recent' }));
     const recentDialog = screen.getByRole('dialog', { name: '最近浏览' });
     expect(screen.getByText('Recent notes')).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Return from recent' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Return from recent' }),
+    );
     expect(recentDialog).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Trash' }));
     expect(await screen.findByText('Trash workspace')).toBeVisible();

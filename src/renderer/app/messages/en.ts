@@ -86,6 +86,27 @@ export const englishMessages = Object.freeze({
     'Notera could not finish upgrading this Profile. Restart the app and try again.',
   'profile.error.missing':
     'This Profile is no longer available on this device. Select another Profile.',
+  'favorites.title': 'Favorites',
+  'favorites.sortDescription': 'Sorted by favorite order',
+  'favorites.untitled': 'Untitled',
+  'favorites.removeLabel': 'Remove {title} from favorites',
+  'favorites.loadingLabel': 'Loading favorites',
+  'favorites.loadingDescription': 'Loading favorites…',
+  'favorites.emptyActionsLabel': 'Favorite actions',
+  'favorites.emptyTitle': 'No favorites yet',
+  'favorites.emptyDescription': 'Favorite a note to find it here.',
+  'favorites.returnToContent': 'Return to content',
+  'favorites.loadErrorTitle': 'Could not load favorites',
+  'favorites.loadErrorDescription':
+    'There was a problem reading your local favorites. Check that the Profile is unlocked and try again.',
+  'favorites.retry': 'Retry',
+  'favorites.errorDisclosure': 'Your locally saved notes are not affected.',
+  'favorites.updateErrorTitle': 'Could not update favorite',
+  'favorites.updateErrorDescription':
+    'The previous favorite state was restored.',
+  'favorites.loadMore': 'Load more',
+  'favorites.profileDisclosure':
+    'Only available favorites in the current local Profile are shown.',
   'modal.close': 'Close',
   'flags.label': 'Notifications',
   'fabric.media.errorFlagTitle': 'Your file failed to upload',
