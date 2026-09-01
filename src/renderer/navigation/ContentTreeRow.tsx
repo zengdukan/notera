@@ -197,7 +197,6 @@ export function ContentTreeRow({
           }
           isSelected={selected}
           actionsOnHover={showRowActions ? rowActions : undefined}
-          onClick={onOpen}
         >
           {name}
         </ExpandableMenuItemTrigger>

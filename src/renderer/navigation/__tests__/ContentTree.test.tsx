@@ -240,9 +240,13 @@ describe('ContentTree', () => {
 
   it('renders queried content with the same ADS side-nav item contract', async () => {
     const onOpen = jest.fn();
-    const request = jest.fn(async () => ({
-      items: [folder.entry, note.entry],
-    }));
+    const onToggle = jest.fn();
+    const request = jest.fn(
+      async (_method: string, input: { readonly parentFolderId: string }) => ({
+        items:
+          input.parentFolderId === 'root' ? [folder.entry, note.entry] : [],
+      }),
+    );
     render(
       <AppProviders locale="en" queryClient={new QueryClient()}>
         <QueryContentTree
@@ -251,7 +255,7 @@ describe('ContentTree', () => {
           rootFolderId="root"
           expandedIds={new Set()}
           onOpen={onOpen}
-          onToggle={jest.fn()}
+          onToggle={onToggle}
           onCreateNote={jest.fn()}
           onCreateFolder={jest.fn()}
           getActions={() => []}
@@ -260,6 +264,11 @@ describe('ContentTree', () => {
     );
 
     expect(await screen.findByRole('list')).toBeVisible();
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Projects' }),
+    );
+    expect(onToggle).toHaveBeenCalledWith(folder.entry.id, true);
+    expect(onOpen).not.toHaveBeenCalled();
     await userEvent.click(
       await screen.findByRole('button', { name: 'Roadmap' }),
     );
