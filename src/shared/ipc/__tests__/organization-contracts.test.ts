@@ -243,10 +243,16 @@ describe('history and trash contracts', () => {
         .success,
     ).toBe(false);
     expect(
-      historyContracts.copy.request.safeParse({ ...input, title: 'x'.repeat(1001) })
-        .success,
+      historyContracts.copy.request.safeParse({
+        ...input,
+        title: 'x'.repeat(1001),
+      }).success,
     ).toBe(false);
-    const { title: _title, ...missingTitle } = input;
+    const missingTitle = {
+      noteId: input.noteId,
+      versionId: input.versionId,
+      targetFolderId: input.targetFolderId,
+    };
     expect(historyContracts.copy.request.safeParse(missingTitle).success).toBe(
       false,
     );

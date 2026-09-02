@@ -45,7 +45,9 @@ import {
 } from '../notes/folder-picker-data';
 import { SettingsModal } from '../settings/SettingsModal';
 import { deviceSettingsKey } from '../settings/settings-queries';
+import { GlobalFlagGroup } from '../shared-ui/GlobalFlagGroup';
 import { ModalHost, type HostedModal } from '../shared-ui/ModalHost';
+import type { GlobalFeedback } from '../shared-ui/feedback';
 import { createContentActions } from './content-actions';
 import {
   createContentController,
@@ -156,6 +158,7 @@ function UnlockedNavigationWorkspace({
     new Set(),
   );
   const [overlay, setOverlay] = useState<Overlay>();
+  const [feedback, setFeedback] = useState<GlobalFeedback>();
   const exportStore = useMemo(() => new ExportOperationStore(), []);
   const historyController = useMemo(
     () =>
@@ -403,9 +406,24 @@ function UnlockedNavigationWorkspace({
             client={client}
             profileId={profile.localProfileId}
             noteId={overlay.note.id}
+            noteTitle={overlay.note.title}
             controller={historyController}
             rootFolderId={profile.rootFolderId}
             folders={overlay.folders}
+            onCopySuccess={(title) => {
+              setOverlay(undefined);
+              setFeedback({
+                id: 'history-copy-success',
+                appearance: 'success',
+                title: intl.formatMessage({
+                  id: 'history.copy.successTitle',
+                }),
+                description: intl.formatMessage(
+                  { id: 'history.copy.successDescription' },
+                  { title },
+                ),
+              });
+            }}
           />
         ),
       };
@@ -749,6 +767,13 @@ function UnlockedNavigationWorkspace({
         )}
       </ResizableNavigation>
       <ModalHost modal={modal} onClose={() => setOverlay(undefined)} />
+      {feedback ? (
+        <GlobalFlagGroup
+          flags={[feedback]}
+          label={intl.formatMessage({ id: 'flags.label' })}
+          onDismissed={() => setFeedback(undefined)}
+        />
+      ) : null}
     </>
   );
 }

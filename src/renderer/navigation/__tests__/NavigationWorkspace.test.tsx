@@ -221,7 +221,20 @@ jest.mock('../../history/CreateVersionModal', () => ({
   CreateVersionModal: () => <div>Create version form</div>,
 }));
 jest.mock('../../history/HistoryModal', () => ({
-  HistoryModal: () => <div>History workspace</div>,
+  HistoryModal: ({
+    noteTitle,
+    onCopySuccess,
+  }: {
+    noteTitle: string;
+    onCopySuccess(title: string): void;
+  }) => (
+    <div>
+      History workspace for {noteTitle}
+      <button type="button" onClick={() => onCopySuccess('Copied note')}>
+        Complete history copy
+      </button>
+    </div>
+  ),
 }));
 jest.mock('../../trash/TrashModal', () => ({
   TrashModal: () => <div>Trash workspace</div>,
@@ -648,8 +661,47 @@ describe('NavigationWorkspace', () => {
     await user.click(screen.getByRole('button', { name: 'Create version' }));
     expect(screen.getByText('Create version form')).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'History' }));
-    expect(await screen.findByText('History workspace')).toBeVisible();
+    expect(
+      await screen.findByText('History workspace for First'),
+    ).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Export' }));
     expect(screen.getByText('Export workspace')).toBeVisible();
+  });
+
+  it('closes history and shows feedback after copying as new', async () => {
+    const user = userEvent.setup();
+    const request = jest.fn(async (key: string) => {
+      if (key === 'contentTree.listChildren') return { items: [] };
+      return {};
+    });
+    const client = { request, subscribe: jest.fn() } as unknown as NoteraClient;
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SessionProvider>
+          <Unlock>
+            <NavigationWorkspace client={client} />
+          </Unlock>
+        </SessionProvider>
+      </QueryClientProvider>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Open first' }));
+    await user.click(screen.getByRole('button', { name: 'History' }));
+    expect(screen.getByRole('dialog', { name: 'History' })).toBeVisible();
+    await user.click(
+      screen.getByRole('button', { name: 'Complete history copy' }),
+    );
+
+    expect(
+      screen.queryByRole('dialog', { name: 'History' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('Copied as new')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Expand' }));
+    expect(
+      await screen.findByText(
+        'Copied note was created in the selected folder.',
+      ),
+    ).toBeVisible();
+    expect(screen.getByText('Workspace First')).toBeVisible();
   });
 });

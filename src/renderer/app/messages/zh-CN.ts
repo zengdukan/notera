@@ -116,8 +116,7 @@ export const chineseMessages = Object.freeze({
   'trash.restoreToSelectedFolder': '恢复到所选目录',
   'trash.deleteConfirmTitle': '永久删除「{name}」？',
   'trash.deleteWarningTitle': '此操作无法撤销。',
-  'trash.deleteWarningDescription':
-    'Notera 将删除此项目以及仅被它引用的数据。',
+  'trash.deleteWarningDescription': 'Notera 将删除此项目以及仅被它引用的数据。',
   'trash.deletePermanently': '永久删除',
   'trash.restoredTitle': '已恢复「{name}」',
   'trash.restoredDescription': '该项目已重新显示在工作区中。',

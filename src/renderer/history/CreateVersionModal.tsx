@@ -62,6 +62,7 @@ export function CreateVersionModal({
             {failed ? (
               <SectionMessage
                 appearance="error"
+                headingLevel="h2"
                 title={intl.formatMessage({
                   id: 'history.create.failureTitle',
                 })}

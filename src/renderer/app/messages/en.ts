@@ -139,8 +139,7 @@ export const englishMessages = Object.freeze({
     'Notera will remove this item and any data only referenced by it.',
   'trash.deletePermanently': 'Delete permanently',
   'trash.restoredTitle': 'Restored {name}',
-  'trash.restoredDescription':
-    'The item is available in the workspace again.',
+  'trash.restoredDescription': 'The item is available in the workspace again.',
   'trash.deletedTitle': 'Permanently deleted {name}',
   'trash.deletedSuccessDescription': 'The item can no longer be restored.',
   'trash.missingTitle': 'This item is no longer in trash',
@@ -232,8 +231,7 @@ export const englishMessages = Object.freeze({
   'history.create.submit': 'Create version',
   'history.copy.formLabel': 'Copy history version as a new note',
   'history.copy.heading': 'Copy as new',
-  'history.copy.description':
-    'Choose a destination and name for the new note.',
+  'history.copy.description': 'Choose a destination and name for the new note.',
   'history.copy.nameLabel': 'Note name',
   'history.copy.nameRequired': 'Enter a note name.',
   'history.copy.nameTooLong': 'Note name must be 1,000 characters or fewer.',
