@@ -31,8 +31,12 @@ describe('LocalNotesService grouped trash', () => {
       password: 'correct horse battery staple',
     });
     const { localNotes } = manager;
-    const parent = await localNotes.createFolder({
+    const archive = await localNotes.createFolder({
       parentFolderId: profile.rootFolderId,
+      name: 'Archive',
+    });
+    const parent = await localNotes.createFolder({
+      parentFolderId: archive.id,
       name: 'Parent',
     });
     const child = await localNotes.createFolder({
@@ -61,6 +65,10 @@ describe('LocalNotesService grouped trash', () => {
         objectId: parent.id,
         kind: 'folder',
         displayName: 'Parent',
+        folderPath: [
+          { id: profile.rootFolderId, name: '' },
+          { id: archive.id, name: 'Archive' },
+        ],
         originalParentAvailable: true,
       }),
     ]);
@@ -71,7 +79,7 @@ describe('LocalNotesService grouped trash', () => {
           limit: 10,
         })
       ).items,
-    ).toEqual([]);
+    ).toEqual([expect.objectContaining({ id: archive.id, name: 'Archive' })]);
     await expect(localNotes.getNote(note.id)).rejects.toMatchObject({
       code: 'ENTITY_NOT_FOUND',
     });

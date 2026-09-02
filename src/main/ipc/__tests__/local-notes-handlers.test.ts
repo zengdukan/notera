@@ -62,6 +62,10 @@ const trashItem = {
   trashEntryId,
   objectId: noteId,
   displayName: 'Note',
+  folderPath: [
+    { id: targetFolderId, name: '' },
+    { id: folderId, name: 'Folder' },
+  ],
   deletedAt: 1,
   expiresAt: 2,
   originalParentAvailable: true,

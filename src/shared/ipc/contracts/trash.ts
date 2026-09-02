@@ -7,11 +7,13 @@ import {
 } from '../common';
 import { defineRequestContract } from '../contract';
 import { cursorPageRequestSchema, cursorPageSchema } from '../pagination';
+import { folderPathItemSchema } from './content-tree';
 
 const trashItemBase = {
   trashEntryId: uuidSchema,
   objectId: uuidSchema,
   displayName: limitedUnicodeString(1000),
+  folderPath: z.array(folderPathItemSchema).min(1).max(1000),
   deletedAt: timestampSchema,
   expiresAt: timestampSchema,
   originalParentAvailable: z.boolean(),
@@ -36,7 +38,12 @@ export const trashList = defineRequestContract({
   channel: 'notera:trash:list',
   request: cursorPageRequestSchema,
   data: cursorPageSchema(trashItemSchema),
-  errors: ['PROFILE_LOCKED', 'INVALID_CURSOR', 'IPC_OPERATION_FAILED'],
+  errors: [
+    'PROFILE_LOCKED',
+    'INVALID_CURSOR',
+    'DB_CORRUPT',
+    'IPC_OPERATION_FAILED',
+  ],
 });
 
 export const trashRestore = defineRequestContract({

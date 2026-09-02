@@ -12,6 +12,7 @@ import type { VaultDatabase } from '@notera/storage-sqlcipher';
 import { ApplicationError } from '../errors';
 import { AttachmentReferenceCoordinator } from '../local-attachments/references';
 import type { Page, PageRequest } from '../types';
+import { folderPathFrom } from './folders';
 import type { TrashItem } from './types';
 
 function allNotesInFolder(
@@ -47,7 +48,14 @@ function allTrashEntries(database: VaultDatabase): readonly TrashEntry[] {
   return entries;
 }
 
-function trashItem(database: VaultDatabase, entry: TrashEntry): TrashItem {
+function trashItem(
+  database: VaultDatabase,
+  entry: TrashEntry,
+  folders: ReadonlyMap<
+    string,
+    ReturnType<VaultDatabase['folders']['listAll']>[number]
+  >,
+): TrashItem {
   let displayName: string;
   if (entry.objectType === 'FOLDER') {
     const folder = database.folders.get(entry.objectId);
@@ -60,11 +68,14 @@ function trashItem(database: VaultDatabase, entry: TrashEntry): TrashItem {
     if (note === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
     displayName = note.title;
   }
+  const originalParent = folders.get(entry.originalParentId);
+  if (originalParent === undefined) throw new ApplicationError('DB_CORRUPT');
   return Object.freeze({
     trashEntryId: entry.id,
     objectId: entry.objectId,
     kind: entry.objectType === 'FOLDER' ? 'folder' : 'note',
     displayName,
+    folderPath: folderPathFrom(folders, originalParent),
     deletedAt: entry.deletedAt,
     expiresAt: entry.expiresAt,
     originalParentAvailable:
@@ -124,8 +135,13 @@ export function listTrash(
     cursor: input?.cursor,
     limit: input?.limit,
   });
+  const folders = new Map(
+    database.folders.listAll().map((folder) => [folder.id, folder]),
+  );
   return Object.freeze({
-    items: Object.freeze(page.items.map((entry) => trashItem(database, entry))),
+    items: Object.freeze(
+      page.items.map((entry) => trashItem(database, entry, folders)),
+    ),
     ...(page.nextCursor === undefined ? {} : { nextCursor: page.nextCursor }),
   });
 }

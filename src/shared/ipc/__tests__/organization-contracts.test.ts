@@ -235,6 +235,10 @@ describe('history and trash contracts', () => {
       trashEntryId: uuid(1),
       objectId: uuid(2),
       displayName: 'Deleted',
+      folderPath: [
+        { id: uuid(3), name: '' },
+        { id: uuid(4), name: 'Archive' },
+      ],
       deletedAt: 10,
       expiresAt: 20,
       originalParentAvailable: false,
@@ -242,6 +246,13 @@ describe('history and trash contracts', () => {
 
     expect(trashItemSchema.parse({ ...base, kind: 'folder' })).toBeDefined();
     expect(trashItemSchema.parse({ ...base, kind: 'note' })).toBeDefined();
+    expect(
+      trashItemSchema.safeParse({
+        ...base,
+        kind: 'note',
+        folderPath: undefined,
+      }).success,
+    ).toBe(false);
     expect(() =>
       trashItemSchema.parse({ ...base, kind: 'note', document: {} }),
     ).toThrow();

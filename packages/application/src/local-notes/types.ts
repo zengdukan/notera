@@ -114,6 +114,7 @@ export interface TrashItem {
   readonly objectId: FolderId | NoteId;
   readonly kind: 'folder' | 'note';
   readonly displayName: string;
+  readonly folderPath: readonly FolderPathItem[];
   readonly deletedAt: Timestamp;
   readonly expiresAt: Timestamp;
   readonly originalParentAvailable: boolean;

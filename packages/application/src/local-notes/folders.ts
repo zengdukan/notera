@@ -5,6 +5,7 @@ import {
   createRegularFolder,
   moveFolder as moveDomainFolder,
   renameFolder as renameDomainFolder,
+  type Folder,
   type Timestamp,
 } from '@notera/domain';
 import type {
@@ -85,6 +86,13 @@ export function getFolderPath(
   );
   const target = folders.get(folderId);
   if (target === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
+  return Object.freeze({ items: folderPathFrom(folders, target) });
+}
+
+export function folderPathFrom(
+  folders: ReadonlyMap<string, Folder>,
+  target: Folder,
+): readonly FolderPathItem[] {
   const reversed: FolderPathItem[] = [];
   const visited = new Set<string>();
   let current = target;
@@ -102,7 +110,7 @@ export function getFolderPath(
     if (parent === undefined) throw new ApplicationError('DB_CORRUPT');
     current = parent;
   }
-  return Object.freeze({ items: Object.freeze(reversed.reverse()) });
+  return Object.freeze(reversed.reverse());
 }
 
 export function createFolder(

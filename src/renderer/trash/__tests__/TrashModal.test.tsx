@@ -17,6 +17,10 @@ const noteItem = {
   objectId: 'note',
   kind: 'note' as const,
   displayName: 'Deleted note',
+  folderPath: [
+    { id: 'root', name: '' },
+    { id: 'archive', name: 'Archive' },
+  ],
   deletedAt: 1,
   expiresAt: 2,
   originalParentAvailable: true,
@@ -26,6 +30,7 @@ const folderItem = {
   objectId: 'folder',
   kind: 'folder' as const,
   displayName: 'Deleted folder',
+  folderPath: [{ id: 'root', name: '' }],
   deletedAt: 3,
   expiresAt: 4,
   originalParentAvailable: false,
@@ -74,12 +79,19 @@ describe('TrashModal', () => {
     );
 
     const noteRow = await screen.findByRole('button', {
-      name: /^Deleted note Deleted /,
+      name: /^Deleted note \/ Archive · Deleted /,
     });
     expect(noteRow).toBeVisible();
     expect(
-      screen.getAllByText(`Deleted ${localVersionName(new Date(1))}`),
-    ).toHaveLength(2);
+      screen.getByText(
+        `/ Archive · Deleted ${localVersionName(new Date(noteItem.deletedAt))}`,
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        `/ · Deleted ${localVersionName(new Date(folderItem.deletedAt))}`,
+      ),
+    ).toBeVisible();
     expect(screen.getByTestId('trash-note-icon')).toBeVisible();
     expect(screen.getByTestId('trash-folder-icon')).toBeVisible();
     expect(screen.queryByText(/^Expires /)).not.toBeInTheDocument();

@@ -12,6 +12,7 @@ import { Divider } from '@atlaskit/side-nav-items/menu-section';
 import { token } from '@atlaskit/tokens';
 
 import { localVersionName } from '../history/local-version-name';
+import { formatFolderPath } from '../shared-ui/folder-path';
 import type { TrashItem } from './trash-queries';
 
 function DangerDeleteIcon(props: ComponentProps<typeof DeleteIcon>) {
@@ -69,7 +70,9 @@ export function TrashList({
                   />
                 </Inline>
               }
-              description={`Deleted ${localVersionName(new Date(item.deletedAt))}`}
+              description={`${formatFolderPath(item.folderPath)} · Deleted ${localVersionName(
+                new Date(item.deletedAt),
+              )}`}
               elemBefore={
                 <ItemIcon
                   color="currentColor"
