@@ -66,4 +66,30 @@ describe('export render readiness', () => {
       createExportReadiness().waitForStable(root, Promise.resolve()),
     ).resolves.toBe(1);
   });
+
+  it('waits for lazy renderer placeholders before inspecting content', async () => {
+    const root = document.createElement('main');
+    root.innerHTML =
+      '<input type="hidden" data-lazy-begin="task"><p>&nbsp;</p>';
+    const decoded = deferred<void>();
+    let resolved = false;
+    const result = createExportReadiness()
+      .waitForStable(root, Promise.resolve())
+      .then((value) => {
+        resolved = true;
+        return value;
+      });
+    await Promise.resolve();
+    expect(resolved).toBe(false);
+
+    root.innerHTML =
+      '<img alt="loaded task media"><span data-export-lossy="true">task</span>';
+    const image = root.querySelector('img')!;
+    Object.defineProperty(image, 'decode', { value: () => decoded.promise });
+    await Promise.resolve();
+    expect(resolved).toBe(false);
+
+    decoded.resolve();
+    await expect(result).resolves.toBe(1);
+  });
 });

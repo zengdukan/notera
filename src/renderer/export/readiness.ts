@@ -6,6 +6,24 @@ export interface ExportReadiness {
   ): Promise<number>;
 }
 
+function waitForLazyContent(root: ParentNode): Promise<void> {
+  if (root.querySelector('input[data-lazy-begin]') === null) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    const observer = new MutationObserver(() => {
+      if (root.querySelector('input[data-lazy-begin]') !== null) return;
+      observer.disconnect();
+      resolve();
+    });
+    observer.observe(root as Node, { childList: true, subtree: true });
+    if (root.querySelector('input[data-lazy-begin]') === null) {
+      observer.disconnect();
+      resolve();
+    }
+  });
+}
+
 export function createExportReadiness(): ExportReadiness {
   let pendingMermaid = 0;
   const waiters = new Set<() => void>();
@@ -31,6 +49,7 @@ export function createExportReadiness(): ExportReadiness {
     },
 
     async waitForStable(root: ParentNode, fontsReady: Promise<unknown>) {
+      await waitForLazyContent(root);
       await fontsReady;
       let imageFailures = 0;
       const images = Array.from(root.querySelectorAll('img'));
