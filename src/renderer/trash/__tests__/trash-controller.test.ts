@@ -1,5 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 
+import { searchKey } from '../../app/query-keys';
 import {
   NoteraClientError,
   type NoteraClient,
@@ -49,5 +50,32 @@ describe('trash controller', () => {
     expect(request).toHaveBeenCalledWith('trash.deletePermanent', {
       trashEntryId: 'trash',
     });
+  });
+
+  it('invalidates cached search results after restoring a note', async () => {
+    const queryClient = new QueryClient();
+    const cachedSearchKey = searchKey('profile', 'aa');
+    queryClient.setQueryData(cachedSearchKey, {
+      pages: [{ items: [] }],
+      pageParams: [undefined],
+    });
+    const controller = createTrashController({
+      client: {
+        request: jest.fn().mockResolvedValue({}),
+        subscribe: jest.fn(),
+      } as unknown as NoteraClient,
+      queryClient,
+      profileId: 'profile',
+    });
+
+    expect(queryClient.getQueryState(cachedSearchKey)?.isInvalidated).toBe(
+      false,
+    );
+    await expect(controller.restore({ trashEntryId: 'trash' })).resolves.toBe(
+      'restored',
+    );
+    expect(queryClient.getQueryState(cachedSearchKey)?.isInvalidated).toBe(
+      true,
+    );
   });
 });

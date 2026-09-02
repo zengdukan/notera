@@ -1,6 +1,12 @@
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 
-import { folderPathsKey, trashKey, treeKey, treesKey } from '../app/query-keys';
+import {
+  folderPathsKey,
+  searchesKey,
+  trashKey,
+  treeKey,
+  treesKey,
+} from '../app/query-keys';
 import {
   NoteraClientError,
   type NoteraClient,
@@ -62,6 +68,9 @@ export function createTrashController(input: {
           }),
           input.queryClient.invalidateQueries({
             queryKey: folderPathsKey(input.profileId),
+          }),
+          input.queryClient.invalidateQueries({
+            queryKey: searchesKey(input.profileId),
           }),
         ]);
         return 'restored';
