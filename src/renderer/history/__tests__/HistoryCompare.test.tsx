@@ -112,8 +112,8 @@ describe('HistoryCompare', () => {
     expect(screen.queryByText('Historical title')).toBeNull();
     expect(screen.queryByText('Current saved version')).toBeNull();
     expect(screen.queryByText('Current title')).toBeNull();
-    expect(screen.getByText('Removed')).toBeVisible();
-    expect(screen.getByText('Added')).toBeVisible();
+    expect(screen.queryByText('Removed')).toBeNull();
+    expect(screen.queryByText('Added')).toBeNull();
     expect(screen.getByText('2 of 3')).toBeVisible();
 
     const documentContainer = screen.getByTestId('history-diff-document');
@@ -130,7 +130,7 @@ describe('HistoryCompare', () => {
         disabled: true,
         document: currentDocument,
         diff: expect.objectContaining({
-          colorScheme: 'traditional',
+          colorScheme: 'standard',
           originalDocument: historicalDocument,
         }),
       }),

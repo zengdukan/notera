@@ -125,19 +125,6 @@ function DiffToolbar({
               {intl.formatMessage({ id: 'history.compare.currentShort' })}
             </Text>
           </Inline>
-          <Box xcss={toolbarDividerStyles} />
-          <Inline alignBlock="center" space="space.050">
-            <Box xcss={[legendSwatchStyles, removedSwatchStyles]} />
-            <Text size="small">
-              {intl.formatMessage({ id: 'history.compare.removed' })}
-            </Text>
-          </Inline>
-          <Inline alignBlock="center" space="space.050">
-            <Box xcss={[legendSwatchStyles, addedSwatchStyles]} />
-            <Text size="small">
-              {intl.formatMessage({ id: 'history.compare.added' })}
-            </Text>
-          </Inline>
         </Inline>
         <Inline alignBlock="center" space="space.050">
           <Button
@@ -192,23 +179,6 @@ const toolbarStyles = xcss({
   borderBlockEndWidth: 'border.width',
   paddingBlock: 'space.100',
   paddingInline: 'space.150',
-});
-const toolbarDividerStyles = xcss({
-  height: '24px',
-  borderInlineStartColor: 'color.border',
-  borderInlineStartStyle: 'solid',
-  borderInlineStartWidth: 'border.width',
-});
-const legendSwatchStyles = xcss({
-  width: '12px',
-  height: '12px',
-  borderRadius: 'radius.small',
-});
-const removedSwatchStyles = xcss({
-  backgroundColor: 'color.background.danger',
-});
-const addedSwatchStyles = xcss({
-  backgroundColor: 'color.background.success',
 });
 const positionStyles = xcss({
   minWidth: '72px',
