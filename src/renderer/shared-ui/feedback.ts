@@ -5,4 +5,5 @@ export interface GlobalFeedback {
   readonly title: string;
   readonly description?: string;
   readonly appearance: AppearanceTypes;
+  readonly autoDismiss?: boolean;
 }

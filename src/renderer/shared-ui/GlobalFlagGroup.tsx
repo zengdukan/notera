@@ -1,4 +1,4 @@
-import Flag, { FlagGroup } from '@atlaskit/flag';
+import Flag, { AutoDismissFlag, FlagGroup } from '@atlaskit/flag';
 
 import type { GlobalFeedback } from './feedback';
 
@@ -13,15 +13,18 @@ export function GlobalFlagGroup({
 }) {
   return (
     <FlagGroup label={label} onDismissed={(id) => onDismissed(String(id))}>
-      {flags.map((flag) => (
-        <Flag
-          appearance={flag.appearance}
-          description={flag.description}
-          id={flag.id}
-          key={flag.id}
-          title={flag.title}
-        />
-      ))}
+      {flags.map((flag) => {
+        const FlagComponent = flag.autoDismiss ? AutoDismissFlag : Flag;
+        return (
+          <FlagComponent
+            appearance={flag.appearance}
+            description={flag.description}
+            id={flag.id}
+            key={flag.id}
+            title={flag.title}
+          />
+        );
+      })}
     </FlagGroup>
   );
 }

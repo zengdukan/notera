@@ -415,6 +415,7 @@ function UnlockedNavigationWorkspace({
               setFeedback({
                 id: 'history-copy-success',
                 appearance: 'success',
+                autoDismiss: true,
                 title: intl.formatMessage({
                   id: 'history.copy.successTitle',
                 }),
