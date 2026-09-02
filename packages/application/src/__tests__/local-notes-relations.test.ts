@@ -173,13 +173,20 @@ describe('LocalNotesService note relations', () => {
 
     await localNotes.removeFavorite(first.id);
     await localNotes.removeFavorite(first.id);
-    await localNotes.trashNote(second.id);
+    const trashed = await localNotes.trashNote(second.id);
     expect(
       (await localNotes.listFavorites({ limit: 10 })).items.map(({ id }) => id),
     ).toEqual([third.id]);
     await expect(localNotes.addFavorite(second.id)).rejects.toMatchObject({
       code: 'ENTITY_NOT_FOUND',
     });
+    await localNotes.restoreTrash({ trashEntryId: trashed.trashEntryId });
+    await expect(localNotes.getNote(second.id)).resolves.toMatchObject({
+      isFavorite: false,
+    });
+    expect(
+      (await localNotes.listFavorites({ limit: 10 })).items.map(({ id }) => id),
+    ).toEqual([third.id]);
 
     await manager.close();
   }, 60_000);

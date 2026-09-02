@@ -256,6 +256,7 @@ export function trashNote(
     if (note === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
     const plan = trashDomainNote({ note, trashEntryId, deletedAt: now });
     transaction.trash.apply(plan);
+    transaction.favorites.delete(note.id);
     const references = new AttachmentReferenceCoordinator(
       transaction.attachments,
     ).moveNotesToTrash(new Map([[note.id, trashEntryId]]));

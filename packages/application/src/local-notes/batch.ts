@@ -409,6 +409,11 @@ export function batchTrash(
   });
   database.transaction((transaction) => {
     transaction.trash.apply({ entries });
+    entries
+      .filter((entry) => entry.objectType === 'NOTE')
+      .forEach((entry) =>
+        transaction.favorites.delete(entry.objectId as Note['id']),
+      );
     const references = new AttachmentReferenceCoordinator(
       transaction.attachments,
     ).moveNotesToTrash(

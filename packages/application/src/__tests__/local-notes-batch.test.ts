@@ -47,6 +47,8 @@ describe('LocalNotesService atomic batches', () => {
         yield new Uint8Array([2]);
       })(),
     });
+    await localNotes.addFavorite(nested.id);
+    await localNotes.addFavorite(sibling.id);
 
     await expect(
       localNotes.batchMove({
@@ -145,6 +147,16 @@ describe('LocalNotesService atomic batches', () => {
     });
     expect(trashed.trashEntryIds).toHaveLength(2);
     expect((await localNotes.listTrash({ limit: 10 })).items).toHaveLength(2);
+    for (const trashEntryId of trashed.trashEntryIds) {
+      await localNotes.restoreTrash({ trashEntryId });
+    }
+    await expect(localNotes.getNote(nested.id)).resolves.toMatchObject({
+      isFavorite: false,
+    });
+    await expect(localNotes.getNote(sibling.id)).resolves.toMatchObject({
+      isFavorite: false,
+    });
+    expect((await localNotes.listFavorites({ limit: 10 })).items).toEqual([]);
 
     await manager.close();
   }, 60_000);

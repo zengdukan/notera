@@ -98,6 +98,7 @@ export function trashFolder(
   });
   database.transaction((transaction) => {
     transaction.trash.apply(plan);
+    notes.forEach((note) => transaction.favorites.delete(note.id));
     const references = new AttachmentReferenceCoordinator(
       transaction.attachments,
     ).moveNotesToTrash(

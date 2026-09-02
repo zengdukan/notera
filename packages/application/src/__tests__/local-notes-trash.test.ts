@@ -51,6 +51,7 @@ describe('LocalNotesService grouped trash', () => {
         yield new Uint8Array([1, 2, 3]);
       })(),
     });
+    await localNotes.addFavorite(note.id);
 
     const trashed = await localNotes.trashFolder(parent.id);
     const page = await localNotes.listTrash({ limit: 10 });
@@ -81,7 +82,11 @@ describe('LocalNotesService grouped trash', () => {
 
     await localNotes.restoreTrash({ trashEntryId: trashed.trashEntryId });
     expect((await localNotes.listTrash({ limit: 10 })).items).toEqual([]);
-    expect((await localNotes.getNote(note.id)).folderId).toBe(child.id);
+    expect(await localNotes.getNote(note.id)).toMatchObject({
+      folderId: child.id,
+      isFavorite: false,
+    });
+    expect((await localNotes.listFavorites({ limit: 10 })).items).toEqual([]);
     await expect(
       manager.localAttachments.listForNote({ noteId: note.id, limit: 10 }),
     ).resolves.toMatchObject({
