@@ -92,4 +92,38 @@ describe('export render readiness', () => {
     decoded.resolve();
     await expect(result).resolves.toBe(1);
   });
+
+  it('waits for expected ADF text when a lazy placeholder has not mounted yet', async () => {
+    const root = document.createElement('main');
+    const readiness = createExportReadiness({
+      version: 1,
+      type: 'doc',
+      content: [
+        {
+          type: 'taskList',
+          content: [
+            {
+              type: 'taskItem',
+              attrs: { localId: 'task-1', state: 'TODO' },
+              content: [{ type: 'text', text: '梳理经济问题' }],
+            },
+          ],
+        },
+      ],
+    });
+    let resolved = false;
+    const result = readiness
+      .waitForStable(root, Promise.resolve())
+      .then((value) => {
+        resolved = true;
+        return value;
+      });
+
+    await Promise.resolve();
+    expect(resolved).toBe(false);
+
+    root.innerHTML =
+      '<div class="ak-renderer-document"><div>梳理经济问题</div></div>';
+    await expect(result).resolves.toBe(0);
+  });
 });

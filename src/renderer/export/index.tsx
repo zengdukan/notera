@@ -30,7 +30,10 @@ class ExportErrorBoundary extends React.Component<
 }
 
 function ExportPage({ payload }: { readonly payload: ExportRenderDocument }) {
-  const readiness = useMemo(createExportReadiness, [payload.operationId]);
+  const readiness = useMemo(
+    () => createExportReadiness(payload.document),
+    [payload.document],
+  );
   const rootRef = useRef<HTMLElement>(null);
   const reported = useRef(false);
   const [rendered, setRendered] = useState(false);
