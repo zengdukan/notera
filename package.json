@@ -92,6 +92,7 @@
     "@atlaskit/dropdown-menu": "^18.0.3",
     "@atlaskit/editor-common": "^119.0.0",
     "@atlaskit/editor-core": "^224.0.0",
+    "@atlaskit/editor-plugin-show-diff": "^13.0.1",
     "@atlaskit/editor-prosemirror": "^8.0.3",
     "@atlaskit/editor-toolbar": "^2.6.8",
     "@atlaskit/emoji": "^71.17.0",

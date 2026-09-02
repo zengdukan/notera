@@ -25,6 +25,11 @@ jest.mock('../../editor/RendererSurface', () => ({
     <output>{JSON.stringify(document)}</output>
   ),
 }));
+jest.mock('../../atlassian-editor/editor', () => ({
+  Editor: ({ document }: { document: unknown }) => (
+    <output>{JSON.stringify(document)}</output>
+  ),
+}));
 
 jest.mock('react-scrolllock', () => ({
   __esModule: true,
@@ -124,9 +129,7 @@ describe('HistoryModal', () => {
     expect(
       within(footer).getByRole('button', { name: 'Compare' }),
     ).toBeVisible();
-    expect(
-      within(footer).getByRole('button', { name: 'Copy as new' }),
-    ).toBeVisible();
+    expect(within(footer).getByRole('button', { name: 'Copy' })).toBeVisible();
     expect(
       within(footer).getByRole('button', { name: 'Restore version' }),
     ).toBeVisible();
@@ -193,9 +196,7 @@ describe('HistoryModal', () => {
       </AppProviders>,
     );
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Copy as new' }),
-    );
+    await user.click(await screen.findByRole('button', { name: 'Copy' }));
     expect(
       screen.getByRole('form', { name: 'Copy history version as a new note' }),
     ).toBeVisible();
@@ -274,9 +275,7 @@ describe('HistoryModal', () => {
       </AppProviders>,
     );
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Copy as new' }),
-    );
+    await user.click(await screen.findByRole('button', { name: 'Copy' }));
     const name = screen.getByRole('textbox', { name: /Note name/u });
     const submit = screen.getByRole('button', { name: 'Copy' });
     expect(screen.getByText('Enter a note name.')).toBeVisible();

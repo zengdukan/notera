@@ -21,30 +21,46 @@ const requestDocument = jest.fn((receive: (document: unknown) => void) => {
   receive(changedDocument);
 });
 const forceToolbarDockingWithoutAnalytics = jest.fn();
+const execute = jest.fn();
+const scrollToNext = Symbol('scroll-to-next');
+const scrollToPrevious = Symbol('scroll-to-previous');
 const mockEditorApi = {
-  core: { actions: { requestDocument } },
+  core: { actions: { execute, requestDocument } },
   selectionToolbar: {
     actions: { forceToolbarDockingWithoutAnalytics },
   },
+  showDiff: { commands: { scrollToNext, scrollToPrevious } },
 };
 const mockEditorActions = {};
 const mockPreset = { add: jest.fn() };
 mockPreset.add.mockReturnValue(mockPreset);
 const mockUseUniversalPreset = jest.fn(() => mockPreset);
+const diffStep = {
+  stepType: 'replace',
+  from: 1,
+  to: 2,
+  slice: { content: [], openEnd: 0, openStart: 0 },
+  clientId: 'test-client',
+  userId: 'test-user',
+};
 
 jest.mock('@atlaskit/editor-core/composable-editor', () => ({
   ComposableEditor: (props: {
     appearance: string;
     defaultValue: unknown;
+    disabled?: boolean;
     onChange(): void;
     onEditorReady(actions: typeof mockEditorActions): void;
+    quickInsert?: boolean;
   }) => {
     const React = jest.requireActual<typeof import('react')>('react');
     React.useEffect(() => props.onEditorReady(mockEditorActions), [props]);
     return (
       <div
         data-appearance={props.appearance}
+        data-disabled={String(props.disabled ?? false)}
         data-document={JSON.stringify(props.defaultValue)}
+        data-quick-insert={String(props.quickInsert ?? false)}
         data-testid="composable-editor"
       >
         <button type="button" onClick={props.onChange}>
@@ -62,6 +78,19 @@ jest.mock('@atlaskit/editor-core/use-preset', () => ({
     preset: factory(),
     editorApi: mockEditorApi,
   }),
+}));
+jest.mock('@atlaskit/editor-common/hooks', () => ({
+  useSharedPluginStateWithSelector: (
+    _api: unknown,
+    _plugins: unknown,
+    selector: (state: unknown) => unknown,
+  ) =>
+    selector({
+      showDiffState: { activeIndex: 1, numberOfChanges: 3 },
+    }),
+}));
+jest.mock('@atlaskit/editor-plugin-show-diff', () => ({
+  showDiffPlugin: Symbol('show-diff'),
 }));
 jest.mock('@atlaskit/editor-plugins/block-controls', () => ({
   blockControlsPlugin: Symbol('block-controls'),
@@ -187,4 +216,73 @@ describe('Atlaskit product editor', () => {
     expect(onChange).toHaveBeenCalledWith(changedDocument);
   });
 
+  it('configures a read-only diff and exposes change navigation', async () => {
+    const user = userEvent.setup();
+    const renderDiffControls = jest.fn(
+      ({
+        activeIndex,
+        numberOfChanges,
+        onNext,
+        onPrevious,
+      }: {
+        activeIndex?: number;
+        numberOfChanges: number;
+        onNext(): void;
+        onPrevious(): void;
+      }) => (
+        <div>
+          <output>{`${activeIndex}:${numberOfChanges}`}</output>
+          <button type="button" onClick={onPrevious}>
+            Previous change
+          </button>
+          <button type="button" onClick={onNext}>
+            Next change
+          </button>
+        </div>
+      ),
+    );
+
+    render(
+      <Editor
+        appearance="chromeless"
+        diff={{
+          colorScheme: 'traditional',
+          originalDocument: initialDocument,
+          steps: [diffStep],
+        }}
+        disabled
+        mediaProvider={mediaProvider}
+        document={changedDocument}
+        onChange={jest.fn()}
+        renderDiffControls={renderDiffControls}
+      />,
+    );
+
+    expect(screen.getByTestId('composable-editor')).toHaveAttribute(
+      'data-appearance',
+      'chromeless',
+    );
+    expect(screen.getByTestId('composable-editor')).toHaveAttribute(
+      'data-disabled',
+      'true',
+    );
+    expect(screen.getByTestId('composable-editor')).toHaveAttribute(
+      'data-quick-insert',
+      'false',
+    );
+    expect(screen.getByText('1:3')).toBeVisible();
+    expect(mockPreset.add).toHaveBeenCalledWith([
+      expect.anything(),
+      {
+        colorScheme: 'traditional',
+        originalDoc: initialDocument,
+        steps: [diffStep],
+      },
+    ]);
+
+    await user.click(screen.getByRole('button', { name: 'Previous change' }));
+    await user.click(screen.getByRole('button', { name: 'Next change' }));
+    expect(execute).toHaveBeenNthCalledWith(1, scrollToPrevious);
+    expect(execute).toHaveBeenNthCalledWith(2, scrollToNext);
+  });
 });
