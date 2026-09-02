@@ -235,6 +235,7 @@ export interface TrashReader {
 export interface TrashRestoreStoragePlan {
   readonly entries: readonly TrashEntry[];
   readonly targetFolderIds: ReadonlyMap<TrashEntryId | string, FolderId>;
+  readonly mergeFolderIds?: ReadonlyMap<TrashEntryId | string, FolderId>;
   readonly now: Timestamp;
 }
 

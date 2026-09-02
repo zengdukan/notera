@@ -272,25 +272,55 @@ export function restoreTrash(
       : { explicitTarget: requestedTarget }),
     now,
   });
-  if (
-    root.objectType === 'FOLDER' &&
-    [...folders, ...replacementFolders].some(
-      (folder) =>
-        folder.kind === 'REGULAR' &&
-        folder.id !== root.objectId &&
-        folder.parentId === rootTarget &&
-        folder.name === root.displayName &&
-        !trashedFolderIds.has(folder.id),
-    )
-  ) {
-    throw new ApplicationError('TRASH_TARGET_REQUIRED');
-  }
-  const targets = new Map(
-    entries.map((entry) => [
-      entry.id,
-      entry.id === root.id ? rootTarget : entry.originalParentId,
-    ]),
+  const targets = new Map<TrashEntry['id'], ReturnType<typeof asFolderId>>();
+  const mergeFolderIds = new Map<
+    TrashEntry['id'],
+    ReturnType<typeof asFolderId>
+  >();
+  const resolvedFolderIds = new Map<string, ReturnType<typeof asFolderId>>();
+  const activeFolders = [...folders, ...replacementFolders].filter(
+    ({ id }) => !trashedFolderIds.has(id),
   );
+  const pendingFolders = entries.filter(
+    (entry) => entry.objectType === 'FOLDER',
+  );
+  while (pendingFolders.length > 0) {
+    const index = pendingFolders.findIndex(
+      (entry) =>
+        entry.id === root.id || resolvedFolderIds.has(entry.originalParentId),
+    );
+    if (index < 0) throw new ApplicationError('DB_CORRUPT');
+    const entry = pendingFolders.splice(index, 1)[0];
+    if (entry === undefined) throw new ApplicationError('DB_CORRUPT');
+    const parentId =
+      entry.id === root.id
+        ? rootTarget
+        : resolvedFolderIds.get(entry.originalParentId);
+    if (parentId === undefined) throw new ApplicationError('DB_CORRUPT');
+    targets.set(entry.id, parentId);
+    const existing = activeFolders.find(
+      (folder): folder is RegularFolder =>
+        folder.kind === 'REGULAR' &&
+        folder.parentId === parentId &&
+        folder.name === entry.displayName,
+    );
+    if (existing === undefined) {
+      resolvedFolderIds.set(entry.objectId, entry.objectId);
+    } else {
+      mergeFolderIds.set(entry.id, existing.id);
+      resolvedFolderIds.set(entry.objectId, existing.id);
+    }
+  }
+  entries
+    .filter((entry) => entry.objectType === 'NOTE')
+    .forEach((entry) => {
+      const target =
+        entry.id === root.id
+          ? rootTarget
+          : resolvedFolderIds.get(entry.originalParentId);
+      if (target === undefined) throw new ApplicationError('DB_CORRUPT');
+      targets.set(entry.id, target);
+    });
   database.transaction((transaction) => {
     displacedFolders.forEach((folder) => transaction.folders.replace(folder));
     replacementFolders.forEach((folder) => transaction.folders.insert(folder));
@@ -304,7 +334,12 @@ export function restoreTrash(
       ),
     );
     transaction.attachments.removeReferences(references.remove);
-    transaction.trash.restore({ entries, targetFolderIds: targets, now });
+    transaction.trash.restore({
+      entries,
+      targetFolderIds: targets,
+      mergeFolderIds,
+      now,
+    });
     transaction.attachments.addReferences(references.add);
   });
 }

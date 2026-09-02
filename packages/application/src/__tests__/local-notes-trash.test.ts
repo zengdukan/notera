@@ -46,6 +46,10 @@ describe('LocalNotesService grouped trash', () => {
       folderId: top.id,
       title: '数学',
     });
+    const groupedNote = await localNotes.createNote({
+      folderId: top.id,
+      title: 'Grouped note',
+    });
 
     const trashedMath = await localNotes.trashNote(math.id);
     const trashedNested = await localNotes.trashFolder(nested.id);
@@ -108,10 +112,33 @@ describe('LocalNotesService grouped trash', () => {
         }),
       ]),
     );
-    await expect(
-      localNotes.restoreTrash({ trashEntryId: trashedTop.trashEntryId }),
-    ).rejects.toMatchObject({ code: 'TRASH_TARGET_REQUIRED' });
-    expect((await localNotes.listTrash({ limit: 10 })).items).toHaveLength(2);
+    await localNotes.restoreTrash({ trashEntryId: trashedTop.trashEntryId });
+    expect(await localNotes.getNote(groupedNote.id)).toMatchObject({
+      folderId: restoredMath.folderId,
+      title: 'Grouped note',
+    });
+    expect((await localNotes.listTrash({ limit: 10 })).items).toEqual([
+      expect.objectContaining({
+        trashEntryId: trashedNested.trashEntryId,
+        folderPath: [
+          { id: profile.rootFolderId, name: '' },
+          { id: today.id, name: 'today' },
+          { id: restoredMath.folderId, name: 'top' },
+        ],
+      }),
+    ]);
+    await localNotes.restoreTrash({
+      trashEntryId: trashedNested.trashEntryId,
+    });
+    expect(await localNotes.getFolderPath(nested.id)).toEqual({
+      items: [
+        { id: profile.rootFolderId, name: '' },
+        { id: today.id, name: 'today' },
+        { id: restoredMath.folderId, name: 'top' },
+        { id: nested.id, name: 'nested' },
+      ],
+    });
+    expect((await localNotes.listTrash({ limit: 10 })).items).toEqual([]);
 
     await manager.close();
   });

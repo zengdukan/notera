@@ -251,6 +251,12 @@ export class TrashRepository implements TrashWriter {
   restore(input: TrashRestoreStoragePlan): void {
     this.guard();
     this.assertCompleteGroups(input.entries);
+    const mergeFolderIds = input.mergeFolderIds ?? new Map();
+    const mergedEntries = input.entries.filter(
+      (entry) =>
+        entry.objectType === 'FOLDER' && mergeFolderIds.has(entry.id),
+    );
+    if (mergedEntries.length !== mergeFolderIds.size) relationViolation();
     const groupFolderIds = new Set(
       input.entries
         .filter(({ objectType }) => objectType === 'FOLDER')
@@ -261,7 +267,13 @@ export class TrashRepository implements TrashWriter {
       const targetId = input.targetFolderIds.get(entry.id);
       if (!stored || !targetId || input.now >= stored.expiresAt)
         relationViolation();
-      const target = groupFolderIds.has(targetId)
+      const mergeTargetId = mergeFolderIds.get(entry.id);
+      if (mergeTargetId !== undefined && entry.objectType !== 'FOLDER') {
+        relationViolation();
+      }
+      const effectiveTargetId = mergeTargetId ?? targetId;
+      const target =
+        mergeTargetId === undefined && groupFolderIds.has(effectiveTargetId)
         ? { found: 1 }
         : this.connection()
             .prepare(
@@ -270,8 +282,8 @@ export class TrashRepository implements TrashWriter {
                  WHERE t.vault_id = f.vault_id AND t.object_type = 'FOLDER'
                    AND t.object_id = f.id)`,
             )
-            .get(targetId, this.vaultId);
-      if (!target) relationViolation();
+            .get(effectiveTargetId, this.vaultId);
+      if (!target || mergeTargetId === entry.objectId) relationViolation();
     });
     const pendingFolders = input.entries.filter(
       ({ objectType }) => objectType === 'FOLDER',
@@ -291,6 +303,11 @@ export class TrashRepository implements TrashWriter {
     ordered.push(
       ...input.entries.filter(({ objectType }) => objectType === 'NOTE'),
     );
+    this.reparentIndependentMergedGroups(
+      input.entries,
+      mergedEntries,
+      mergeFolderIds,
+    );
     ordered.forEach((entry) => {
       const targetId = input.targetFolderIds.get(entry.id) as FolderId;
       if (entry.objectType === 'NOTE') {
@@ -307,7 +324,7 @@ export class TrashRepository implements TrashWriter {
           .get(entry.objectId, this.vaultId);
         if (!note || !row) relationViolation();
         insertNoteIndex(this.connection(), row.row_id, note);
-      } else {
+      } else if (!mergeFolderIds.has(entry.id)) {
         this.connection()
           .prepare(
             `UPDATE folders SET parent_id = ?, name = ?
@@ -318,6 +335,92 @@ export class TrashRepository implements TrashWriter {
       this.connection()
         .prepare('DELETE FROM trash_entries WHERE id = ? AND vault_id = ?')
         .run(entry.id, this.vaultId);
+    });
+    if (mergedEntries.length > 0) {
+      const mergedFolderIds = new Set<string>(
+        mergedEntries.map(({ objectId }) => objectId),
+      );
+      const placeholders = mergedEntries.map(() => '?').join(', ');
+      const remainingFolders = this.connection()
+        .prepare<{ id: string }>(
+          `SELECT id FROM folders WHERE vault_id = ?
+           AND parent_id IN (${placeholders})`,
+        )
+        .all(this.vaultId, ...mergedFolderIds);
+      const remainingNotes = this.connection()
+        .prepare(
+          `SELECT 1 FROM notes WHERE vault_id = ?
+           AND folder_id IN (${placeholders}) LIMIT 1`,
+        )
+        .get(this.vaultId, ...mergedFolderIds);
+      if (
+        remainingNotes !== undefined ||
+        remainingFolders.some(({ id }) => !mergedFolderIds.has(id))
+      ) {
+        relationViolation();
+      }
+      this.connection()
+        .prepare(
+          `DELETE FROM folders WHERE vault_id = ?
+           AND id IN (${placeholders})`,
+        )
+        .run(this.vaultId, ...mergedFolderIds);
+    }
+  }
+
+  private reparentIndependentMergedGroups(
+    entries: readonly TrashEntry[],
+    mergedEntries: readonly TrashEntry[],
+    mergeFolderIds: ReadonlyMap<TrashEntryId | string, FolderId>,
+  ): void {
+    if (mergedEntries.length === 0) return;
+    const currentEntryIds = new Set<string>(entries.map(({ id }) => id));
+    const targetBySourceId = new Map<string, FolderId>(
+      mergedEntries.map((entry) => {
+        if (entry.objectType !== 'FOLDER') relationViolation();
+        const targetId = mergeFolderIds.get(entry.id);
+        if (targetId === undefined) relationViolation();
+        return [entry.objectId, targetId] as const;
+      }),
+    );
+    const placeholders = mergedEntries.map(() => '?').join(', ');
+    const independentRoots = this.connection()
+      .prepare<TrashGroupRow>(
+        `SELECT id, group_root_id, object_type, object_id, original_parent_id
+         FROM trash_entries WHERE vault_id = ? AND id = group_root_id
+           AND original_parent_id IN (${placeholders})`,
+      )
+      .all(this.vaultId, ...targetBySourceId.keys())
+      .filter(({ id }) => !currentEntryIds.has(id));
+    independentRoots.forEach((entry) => {
+      const targetId = targetBySourceId.get(entry.original_parent_id);
+      if (targetId === undefined) relationViolation();
+      const result =
+        entry.object_type === 'NOTE'
+          ? this.connection()
+              .prepare(
+                'UPDATE notes SET folder_id = ? WHERE id = ? AND vault_id = ?',
+              )
+              .run(targetId, entry.object_id, this.vaultId)
+          : this.connection()
+              .prepare(
+                `UPDATE folders SET parent_id = ?, name = ?
+                 WHERE id = ? AND vault_id = ?`,
+              )
+              .run(
+                targetId,
+                `.notera-trash-${entry.id}`,
+                entry.object_id,
+                this.vaultId,
+              );
+      if (result.changes !== 1) relationViolation();
+      const moved = this.connection()
+        .prepare(
+          `UPDATE trash_entries SET original_parent_id = ?
+           WHERE id = ? AND vault_id = ?`,
+        )
+        .run(targetId, entry.id, this.vaultId);
+      if (moved.changes !== 1) relationViolation();
     });
   }
 
