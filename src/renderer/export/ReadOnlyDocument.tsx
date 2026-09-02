@@ -7,8 +7,10 @@ import type {
 } from '@atlaskit/editor-common/extensions';
 import { ProviderFactory } from '@atlaskit/editor-common/provider-factory';
 import { ReactRenderer } from '@atlaskit/renderer';
+import { IntlProvider } from 'react-intl';
 
 import type { ExportRenderDocument } from '../../shared';
+import { messagesFor, resolveLocale } from '../app/i18n';
 import { MATH_EXTENSION_TYPE, renderMathExtension } from './extensions/math';
 import {
   createMermaidExtensionHandler,
@@ -87,6 +89,7 @@ export function ReadOnlyDocument(props: {
   readonly readiness: ExportReadiness;
   readonly onRendered?: () => void;
 }) {
+  const locale = resolveLocale(navigator.language);
   const mediaProvider = useMemo(
     () => createExportMediaProvider(props.payload),
     [props.payload],
@@ -103,24 +106,26 @@ export function ReadOnlyDocument(props: {
   useEffect(() => () => providers.destroy(), [providers]);
 
   return (
-    <article className="notera-export-document">
-      <h1>{props.payload.title}</h1>
-      <ReactRenderer
-        adfStage="stage0"
-        allowAltTextOnImages
-        appearance="full-page"
-        dataProviders={providers}
-        disableActions
-        document={props.payload.document as unknown as DocNode}
-        extensionHandlers={extensionHandlers}
-        media={{
-          allowCaptions: true,
-          allowLinking: false,
-          enableDownloadButton: false,
-        }}
-        onRendered={props.onRendered}
-        shouldOpenMediaViewer={false}
-      />
-    </article>
+    <IntlProvider locale={locale} messages={messagesFor(locale)}>
+      <article className="notera-export-document">
+        <h1>{props.payload.title}</h1>
+        <ReactRenderer
+          adfStage="stage0"
+          allowAltTextOnImages
+          appearance="full-page"
+          dataProviders={providers}
+          disableActions
+          document={props.payload.document as unknown as DocNode}
+          extensionHandlers={extensionHandlers}
+          media={{
+            allowCaptions: true,
+            allowLinking: false,
+            enableDownloadButton: false,
+          }}
+          onRendered={props.onRendered}
+          shouldOpenMediaViewer={false}
+        />
+      </article>
+    </IntlProvider>
   );
 }

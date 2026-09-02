@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { useIntl } from 'react-intl';
 
 import {
   ReadOnlyDocument,
@@ -11,11 +12,20 @@ import { createExportMediaProvider } from '../media-provider';
 import { createExportReadiness } from '../readiness';
 
 const mockReactRenderer = jest.fn((props: unknown) => (
-  <div
-    data-has-props={String(props !== undefined)}
-    data-testid="atlaskit-renderer"
-  />
+  <IntlAwareRenderer props={props} />
 ));
+
+function IntlAwareRenderer({ props }: { readonly props: unknown }) {
+  const intl = useIntl();
+  return (
+    <div
+      data-has-props={String(props !== undefined)}
+      data-intl-locale={intl.locale}
+      data-testid="atlaskit-renderer"
+    />
+  );
+}
+
 const mockMermaidInitialize = jest.fn();
 const mockMermaidParse = jest.fn().mockResolvedValue(false);
 const mockMermaidRender = jest.fn();
@@ -61,11 +71,15 @@ describe('read-only export document', () => {
     mockMermaidRender.mockReset();
   });
 
-  it('passes the same ADF and fixed read-only options to Atlaskit', () => {
+  it('provides Intl context and fixed read-only options to Atlaskit', () => {
     const readiness = createExportReadiness();
     render(<ReadOnlyDocument payload={basePayload} readiness={readiness} />);
 
     expect(screen.getByTestId('atlaskit-renderer')).toBeInTheDocument();
+    expect(screen.getByTestId('atlaskit-renderer')).toHaveAttribute(
+      'data-intl-locale',
+      'en',
+    );
     expect(mockReactRenderer).toHaveBeenCalledTimes(1);
     expect(mockReactRenderer.mock.calls[0][0]).toMatchObject({
       adfStage: 'stage0',
