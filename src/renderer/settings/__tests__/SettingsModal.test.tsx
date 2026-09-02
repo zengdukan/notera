@@ -1,7 +1,7 @@
 /** @jest-environment jsdom */
 
 import type { ReactNode } from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AppProviders } from '../../app/AppProviders';
 import { NoteraClientError } from '../../platform/notera-client';
@@ -244,9 +244,14 @@ describe('SettingsModal', () => {
     expect(onRenameProfile).not.toHaveBeenCalled();
 
     await user.type(name, '  Renamed  ');
-    await user.click(screen.getByRole('button', { name: 'Rename' }));
+    const renameButton = screen.getByRole('button', { name: 'Rename' });
+    await user.click(renameButton);
     expect(onRenameProfile).toHaveBeenCalledWith('Renamed');
-    expect(await screen.findByText('Profile renamed')).toBeVisible();
+    const renameForm = renameButton.closest('form');
+    expect(renameForm).not.toBeNull();
+    expect(
+      await within(renameForm as HTMLFormElement).findByText('Profile renamed'),
+    ).toBeVisible();
 
     const currentPassword = screen.getByLabelText(/^Current password/);
     const newPassword = screen.getByLabelText(/^New password/);
@@ -257,7 +262,10 @@ describe('SettingsModal', () => {
     await user.type(currentPassword, 'old-secret');
     await user.type(newPassword, 'new-secret');
     await user.type(confirmPassword, 'different-secret');
-    await user.click(screen.getByRole('button', { name: 'Change password' }));
+    const changePasswordButton = screen.getByRole('button', {
+      name: 'Change password',
+    });
+    await user.click(changePasswordButton);
     expect(
       await screen.findByText('The new passwords do not match.'),
     ).toBeVisible();
@@ -265,12 +273,18 @@ describe('SettingsModal', () => {
 
     await user.clear(confirmPassword);
     await user.type(confirmPassword, 'new-secret');
-    await user.click(screen.getByRole('button', { name: 'Change password' }));
+    await user.click(changePasswordButton);
     expect(onChangePassword).toHaveBeenCalledWith({
       oldPassword: 'old-secret',
       newPassword: 'new-secret',
     });
-    expect(await screen.findByText('Password changed')).toBeVisible();
+    const passwordForm = changePasswordButton.closest('form');
+    expect(passwordForm).not.toBeNull();
+    expect(
+      await within(passwordForm as HTMLFormElement).findByText(
+        'Password changed',
+      ),
+    ).toBeVisible();
     expect(currentPassword).toHaveValue('');
     expect(newPassword).toHaveValue('');
     expect(confirmPassword).toHaveValue('');

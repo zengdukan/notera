@@ -132,29 +132,6 @@ export function ProfileSecuritySettings({
           </Text>
         </SectionMessage>
       ) : null}
-      {feedback === 'rename-success' ? (
-        <SectionMessage
-          appearance="success"
-          headingLevel="h3"
-          title={intl.formatMessage({ id: 'settings.rename.success' })}
-        >
-          <Text as="p">
-            {intl.formatMessage({ id: 'settings.rename.successDescription' })}
-          </Text>
-        </SectionMessage>
-      ) : null}
-      {feedback === 'password-success' ? (
-        <SectionMessage
-          appearance="success"
-          headingLevel="h3"
-          title={intl.formatMessage({ id: 'settings.password.success' })}
-        >
-          <Text as="p">
-            {intl.formatMessage({ id: 'settings.password.successDescription' })}
-          </Text>
-        </SectionMessage>
-      ) : null}
-
       <Form<{ autoLock: (typeof lockOptions)[number] }>
         isDisabled={operation !== undefined}
         label={intl.formatMessage({ id: 'settings.securityForm.label' })}
@@ -257,6 +234,19 @@ export function ProfileSecuritySettings({
                   {intl.formatMessage({ id: 'settings.rename.submit' })}
                 </Button>
               </FormFooter>
+              {feedback === 'rename-success' ? (
+                <SectionMessage
+                  appearance="success"
+                  headingLevel="h3"
+                  title={intl.formatMessage({ id: 'settings.rename.success' })}
+                >
+                  <Text as="p">
+                    {intl.formatMessage({
+                      id: 'settings.rename.successDescription',
+                    })}
+                  </Text>
+                </SectionMessage>
+              ) : null}
             </FormSection>
           </form>
         )}
@@ -398,6 +388,21 @@ export function ProfileSecuritySettings({
                   {intl.formatMessage({ id: 'settings.password.submit' })}
                 </Button>
               </FormFooter>
+              {feedback === 'password-success' ? (
+                <SectionMessage
+                  appearance="success"
+                  headingLevel="h3"
+                  title={intl.formatMessage({
+                    id: 'settings.password.success',
+                  })}
+                >
+                  <Text as="p">
+                    {intl.formatMessage({
+                      id: 'settings.password.successDescription',
+                    })}
+                  </Text>
+                </SectionMessage>
+              ) : null}
             </FormSection>
           </form>
         )}
