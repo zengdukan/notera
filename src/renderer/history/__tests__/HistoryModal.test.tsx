@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { QueryClient } from '@tanstack/react-query';
 import {
   fireEvent,
@@ -158,8 +158,10 @@ describe('HistoryModal', () => {
       restore: jest.fn(),
     } as unknown as HistoryController;
 
-    render(
-      <AppProviders locale="en" queryClient={new QueryClient()}>
+    function CopyHarness() {
+      const [open, setOpen] = useState(true);
+      if (!open) return null;
+      return (
         <ModalHost
           modal={{
             kind: 'history',
@@ -173,12 +175,21 @@ describe('HistoryModal', () => {
                 controller={controller}
                 rootFolderId="root"
                 folders={[{ id: 'folder', name: 'Projects', depth: 0 }]}
-                onCopySuccess={onCopySuccess}
+                onCopySuccess={() => {
+                  onCopySuccess();
+                  setOpen(false);
+                }}
               />
             ),
           }}
-          onClose={jest.fn()}
+          onClose={() => setOpen(false)}
         />
+      );
+    }
+
+    render(
+      <AppProviders locale="en" queryClient={new QueryClient()}>
+        <CopyHarness />
       </AppProviders>,
     );
 
@@ -204,7 +215,15 @@ describe('HistoryModal', () => {
         title: 'Copied note',
       }),
     );
-    expect(onCopySuccess).toHaveBeenCalledWith('Copied note');
+    expect(onCopySuccess).toHaveBeenCalledWith();
+    expect(screen.queryByRole('dialog', { name: 'History' })).toBeNull();
+    expect(await screen.findByText('Copied as new')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Expand' }));
+    expect(
+      await screen.findByText(
+        'Copied note was created in the selected folder.',
+      ),
+    ).toBeVisible();
   });
 
   it('blocks invalid names and preserves the form after copy failure', async () => {

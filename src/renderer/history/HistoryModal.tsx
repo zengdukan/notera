@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Button from '@atlaskit/button/new';
+import { useFlags } from '@atlaskit/flag';
 import Form, { ErrorMessage, Field, MessageWrapper } from '@atlaskit/form';
 import Heading from '@atlaskit/heading';
 import ArrowLeftIcon from '@atlaskit/icon/core/arrow-left';
@@ -47,9 +48,10 @@ export function HistoryModal({
   readonly controller: HistoryController;
   readonly rootFolderId?: string;
   readonly folders?: readonly FolderPickerItem[];
-  readonly onCopySuccess: (title: string) => void;
+  readonly onCopySuccess: () => void;
 }) {
   const intl = useIntl();
+  const { showFlag } = useFlags();
   const history = useHistoryList({ client, profileId, noteId });
   const items = useMemo(
     () => uniqueHistoryItems(history.data?.pages),
@@ -140,7 +142,18 @@ export function HistoryModal({
             targetFolderId,
             title: normalizedCopyTitle,
           });
-          onCopySuccess(normalizedCopyTitle);
+          showFlag({
+            id: 'history-copy-success',
+            appearance: 'success',
+            isAutoDismiss: true,
+            title: intl.formatMessage({ id: 'history.copy.successTitle' }),
+            description: intl.formatMessage(
+              { id: 'history.copy.successDescription' },
+              { title: normalizedCopyTitle },
+            ),
+            autoDismissSeconds: 3,
+          });
+          onCopySuccess();
         } catch {
           setCopyFailed(true);
         }

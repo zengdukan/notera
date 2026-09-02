@@ -226,11 +226,11 @@ jest.mock('../../history/HistoryModal', () => ({
     onCopySuccess,
   }: {
     noteTitle: string;
-    onCopySuccess(title: string): void;
+    onCopySuccess(): void;
   }) => (
     <div>
       History workspace for {noteTitle}
-      <button type="button" onClick={() => onCopySuccess('Copied note')}>
+      <button type="button" onClick={onCopySuccess}>
         Complete history copy
       </button>
     </div>
@@ -668,7 +668,7 @@ describe('NavigationWorkspace', () => {
     expect(screen.getByText('Export workspace')).toBeVisible();
   });
 
-  it('closes history and shows feedback after copying as new', async () => {
+  it('closes history without switching the current note after copying as new', async () => {
     const user = userEvent.setup();
     const request = jest.fn(async (key: string) => {
       if (key === 'contentTree.listChildren') return { items: [] };
@@ -695,13 +695,6 @@ describe('NavigationWorkspace', () => {
     expect(
       screen.queryByRole('dialog', { name: 'History' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText('Copied as new')).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Expand' }));
-    expect(
-      await screen.findByText(
-        'Copied note was created in the selected folder.',
-      ),
-    ).toBeVisible();
     expect(screen.getByText('Workspace First')).toBeVisible();
   });
 });

@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import AppProvider, { useSetColorMode } from '@atlaskit/app-provider';
+import { FlagsProvider } from '@atlaskit/flag';
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import { IntlProvider } from 'react-intl';
 
@@ -44,11 +45,13 @@ function ApplicationProviders({
 }) {
   return (
     <IntlProvider locale={locale} messages={messagesFor(locale)}>
-      <SessionProvider>
-        <MathEditorProvider>
-          <MermaidEditorProvider>{children}</MermaidEditorProvider>
-        </MathEditorProvider>
-      </SessionProvider>
+      <FlagsProvider>
+        <SessionProvider>
+          <MathEditorProvider>
+            <MermaidEditorProvider>{children}</MermaidEditorProvider>
+          </MathEditorProvider>
+        </SessionProvider>
+      </FlagsProvider>
     </IntlProvider>
   );
 }
