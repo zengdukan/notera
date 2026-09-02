@@ -42,6 +42,19 @@ describe('application internationalization', () => {
     });
   });
 
+  it('defines localized recent-note messages', () => {
+    expect(messagesFor('en')).toMatchObject({
+      'recent.sortDescription': 'Sorted by last modified time',
+      'recent.listLabel': 'Recent notes',
+      'recent.returnToContent': 'Return to content',
+    });
+    expect(messagesFor('zh-CN')).toMatchObject({
+      'recent.sortDescription': '按最近修改时间排序',
+      'recent.listLabel': '最近浏览笔记',
+      'recent.returnToContent': '返回内容目录',
+    });
+  });
+
   it('includes Chinese messages required by rendered editor content', () => {
     expect(messagesFor('zh-CN')).toMatchObject({
       'fabric.editor.fieldsetLabel': '操作项列表',

@@ -1,10 +1,11 @@
 /** @jest-environment jsdom */
 
 import type { ReactNode } from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { AppProviders } from '../../app/AppProviders';
+import type { AppLocale } from '../../app/i18n';
 import { createAppQueryClient } from '../../app/query-client';
 import type { NoteraClient } from '../../platform/notera-client';
 import { ModalHost } from '../../shared-ui/ModalHost';
@@ -56,15 +57,17 @@ function clientWithPages(
 
 function renderRecent({
   client,
+  locale = 'zh-CN',
   onOpen = jest.fn().mockResolvedValue(true),
   onClose = jest.fn(),
 }: {
   readonly client: NoteraClient;
+  readonly locale?: AppLocale;
   readonly onOpen?: jest.Mock;
   readonly onClose?: jest.Mock;
 }) {
   render(
-    <AppProviders locale="zh-CN" queryClient={createAppQueryClient()}>
+    <AppProviders locale={locale} queryClient={createAppQueryClient()}>
       <ModalHost
         modal={{
           kind: 'recent',
@@ -97,8 +100,11 @@ describe('RecentModal', () => {
       screen.queryByTestId('notera-modal-recent--footer'),
     ).not.toBeInTheDocument();
     expect(screen.getByText(/^研究资料 \/ 产品策略 · /)).toBeVisible();
-    expect(screen.getByText('按最近浏览时间排序')).toBeVisible();
-    expect(screen.getByRole('list', { name: '最近浏览笔记' })).toBeVisible();
+    expect(screen.getByText('按最近修改时间排序')).toBeVisible();
+    const recentListGroup = screen.getByRole('group', {
+      name: '最近浏览笔记',
+    });
+    expect(within(recentListGroup).getByRole('list')).toBeVisible();
     expect(screen.queryByText('打开笔记 →')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('menuitem', { name: /Recent note/ }));
@@ -117,7 +123,7 @@ describe('RecentModal', () => {
       client: { request, subscribe: jest.fn() } as unknown as NoteraClient,
     });
 
-    expect(screen.getByText('正在加载最近浏览...')).toBeVisible();
+    expect(screen.getByText('正在加载最近浏览…')).toBeVisible();
     expect(screen.getByLabelText('正在加载最近浏览')).toBeVisible();
     expect(screen.getAllByTestId('recent-note-skeleton')).toHaveLength(3);
   });
@@ -131,6 +137,17 @@ describe('RecentModal', () => {
     expect(screen.getByText('打开过的笔记会显示在这里。')).toBeVisible();
     await user.click(screen.getByRole('button', { name: '返回内容目录' }));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders recent-note copy in English', async () => {
+    const { client } = clientWithPages([{ items: [] }]);
+    renderRecent({ client, locale: 'en' });
+
+    expect(await screen.findByText('No recent notes')).toBeVisible();
+    expect(screen.getByText('Notes you open will appear here.')).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Return to content' }),
+    ).toBeVisible();
   });
 
   it('retries a failed recent-notes request in place', async () => {

@@ -7,6 +7,8 @@ import { Box, Inline, Stack, Text } from '@atlaskit/primitives';
 import SectionMessage from '@atlaskit/section-message';
 import Spinner from '@atlaskit/spinner';
 import { ModalBody } from '@atlaskit/modal-dialog';
+import VisuallyHidden from '@atlaskit/visually-hidden';
+import { useIntl } from 'react-intl';
 
 import { Divider } from '@atlaskit/side-nav-items/menu-section';
 import type { NoteraClient } from '../platform/notera-client';
@@ -18,10 +20,13 @@ import {
 } from './recent-queries';
 
 function RecentLoadingState() {
+  const intl = useIntl();
+  const listLabel = intl.formatMessage({ id: 'recent.listLabel' });
   return (
     <Stack space="space.200">
-      <MenuGroup isLoading menuLabel="最近浏览笔记" role="list">
-        <Section isList>
+      <VisuallyHidden id="recent-list-label">{listLabel}</VisuallyHidden>
+      <MenuGroup isLoading menuLabel={listLabel}>
+        <Section isList titleId="recent-list-label">
           {Array.from({ length: 3 }, (_, index) => (
             <SkeletonItem
               hasIcon
@@ -33,9 +38,12 @@ function RecentLoadingState() {
         </Section>
       </MenuGroup>
       <Inline alignBlock="center" alignInline="center" space="space.100">
-        <Spinner label="正在加载最近浏览" size="medium" />
+        <Spinner
+          label={intl.formatMessage({ id: 'recent.loadingLabel' })}
+          size="medium"
+        />
         <Text color="color.text.subtle" size="small">
-          正在加载最近浏览...
+          {intl.formatMessage({ id: 'recent.loadingDescription' })}
         </Text>
       </Inline>
     </Stack>
@@ -43,16 +51,17 @@ function RecentLoadingState() {
 }
 
 function RecentEmptyState({ onClose }: { readonly onClose: () => void }) {
+  const intl = useIntl();
   return (
     <EmptyState
-      buttonGroupLabel="最近浏览操作"
-      description="打开过的笔记会显示在这里。"
-      header="暂无最近浏览"
+      buttonGroupLabel={intl.formatMessage({ id: 'recent.emptyActionsLabel' })}
+      description={intl.formatMessage({ id: 'recent.emptyDescription' })}
+      header={intl.formatMessage({ id: 'recent.emptyTitle' })}
       headingLevel={2}
       headingSize="xsmall"
       primaryAction={
         <Button appearance="primary" onClick={onClose}>
-          返回内容目录
+          {intl.formatMessage({ id: 'recent.returnToContent' })}
         </Button>
       }
       width="narrow"
@@ -61,22 +70,23 @@ function RecentEmptyState({ onClose }: { readonly onClose: () => void }) {
 }
 
 function RecentErrorState({ onRetry }: { readonly onRetry: () => void }) {
+  const intl = useIntl();
   return (
     <Stack space="space.300">
       <SectionMessage
         appearance="error"
         headingLevel="h2"
-        title="无法加载最近浏览"
+        title={intl.formatMessage({ id: 'recent.loadErrorTitle' })}
       >
         <Text as="p">
-          读取本地笔记列表时出现问题。请检查 Profile 是否已解锁后重试。
+          {intl.formatMessage({ id: 'recent.loadErrorDescription' })}
         </Text>
         <Button appearance="danger" onClick={onRetry} spacing="compact">
-          重试
+          {intl.formatMessage({ id: 'recent.retry' })}
         </Button>
       </SectionMessage>
       <Text as="p" color="color.text.subtle" size="small">
-        不会影响已保存在本地的笔记内容。
+        {intl.formatMessage({ id: 'recent.errorDisclosure' })}
       </Text>
     </Stack>
   );
@@ -95,6 +105,8 @@ export function RecentModal({
   ) => Promise<boolean | void> | boolean | void;
   readonly onClose: () => void;
 }) {
+  const intl = useIntl();
+  const listLabel = intl.formatMessage({ id: 'recent.listLabel' });
   const recent = useRecentNotes({ client, profileId });
   const items = uniqueRecentNotes(recent.data?.pages);
   const [openingId, setOpeningId] = useState<string>();
@@ -141,12 +153,14 @@ export function RecentModal({
       <Box paddingBlockEnd="space.300">
         <Stack space="space.200">
           <Text as="p" color="color.text.subtle" size="small">
-            按最近浏览时间排序
+            {intl.formatMessage({ id: 'recent.sortDescription' })}
           </Text>
-          <MenuGroup menuLabel="最近浏览笔记" role="list">
-            <Section isList>
+          <VisuallyHidden id="recent-list-label">{listLabel}</VisuallyHidden>
+          <MenuGroup menuLabel={listLabel}>
+            <Section isList titleId="recent-list-label">
               {items.map((note) => {
-                const title = note.title || '无标题';
+                const title =
+                  note.title || intl.formatMessage({ id: 'recent.untitled' });
                 return (
                   <Fragment key={note.id}>
                     <ButtonItem
@@ -170,7 +184,7 @@ export function RecentModal({
                 isLoading={recent.isFetchingNextPage}
                 onClick={() => void recent.fetchNextPage()}
               >
-                加载更多
+                {intl.formatMessage({ id: 'recent.loadMore' })}
               </Button>
             </Inline>
           ) : null}
