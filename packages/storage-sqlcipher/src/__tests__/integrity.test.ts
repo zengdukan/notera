@@ -301,10 +301,12 @@ describe('vault integrity scan', () => {
     const first = regularFolder(1);
     const second = regularFolder(2, first.id);
     const missingParent = regularFolder(3);
+    const trashedNote = storedNote(4);
     database.transaction((transaction) => {
       transaction.folders.insert(first);
       transaction.folders.insert(second);
       transaction.folders.insert(missingParent);
+      transaction.notes.insert(trashedNote);
     });
 
     const missingId = '99000000-0000-4000-8000-000000000001';
@@ -348,6 +350,21 @@ describe('vault integrity scan', () => {
         '81000000-0000-4000-8000-000000000099',
         '32000000-0000-4000-8000-000000000003',
       );
+    const orphanedTrashEntryId = '72000000-0000-4000-8000-000000000001';
+    raw
+      .prepare(
+        `INSERT INTO trash_entries(
+           id, group_root_id, vault_id, object_type, object_id,
+           original_parent_id, deleted_at, expires_at
+         ) VALUES (?, ?, ?, 'NOTE', ?, ?, 1, 2)`,
+      )
+      .run(
+        orphanedTrashEntryId,
+        '72000000-0000-4000-8000-000000000099',
+        TEST_VAULT_ID,
+        trashedNote.id,
+        TEST_ROOT_FOLDER_ID,
+      );
     raw.close();
 
     const report = database.checkIntegrity();
@@ -388,6 +405,11 @@ describe('vault integrity scan', () => {
           code: 'RELATION_ORPHANED',
           table: 'attachment_references',
           entityId: '81000000-0000-4000-8000-000000000099',
+        },
+        {
+          code: 'RELATION_ORPHANED',
+          table: 'trash_entries',
+          entityId: orphanedTrashEntryId,
         },
       ]),
     );

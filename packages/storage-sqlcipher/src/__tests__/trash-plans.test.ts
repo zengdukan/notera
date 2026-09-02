@@ -191,6 +191,68 @@ describe('trash and content plans', () => {
     expect(database.trash.listExpiredGroups(root.expiresAt)).toHaveLength(3);
   });
 
+  it('keeps separate delete operations independent at the same timestamp', () => {
+    const { database } = createVault();
+    const parent = createRegularFolder({
+      id: asFolderId('74000000-0000-4000-8000-000000000011'),
+      vaultId: TEST_VAULT_ID,
+      parentId: TEST_ROOT_FOLDER_ID,
+      name: asFolderName('Parent'),
+      sortOrder: asSortOrder(0),
+      createdAt: asTimestamp(1),
+      updatedAt: asTimestamp(1),
+    });
+    const separateNote = { ...note(11), folderId: parent.id };
+    const notePlan = trashNote({
+      note: separateNote,
+      trashEntryId: asTrashEntryId(
+        '75000000-0000-4000-8000-000000000011',
+      ),
+      deletedAt: asTimestamp(10),
+    });
+    const folderPlan = trashFolderTree({
+      sourceFolderId: parent.id,
+      folders: [parent],
+      notes: [],
+      folderTrashEntryIds: new Map([
+        [
+          parent.id,
+          asTrashEntryId('75000000-0000-4000-8000-000000000012'),
+        ],
+      ]),
+      noteTrashEntryIds: new Map(),
+      deletedAt: asTimestamp(10),
+    });
+    database.transaction((transaction) => {
+      transaction.folders.insert(parent);
+      transaction.notes.insert(separateNote);
+      transaction.trash.apply(notePlan);
+      transaction.trash.apply(folderPlan);
+    });
+
+    expect(database.trash.list({ limit: 10 }).items).toEqual([
+      notePlan.entries[0],
+      folderPlan.entries[0],
+    ]);
+    expect(database.trash.listGroup(notePlan.entries[0].id)).toEqual(
+      notePlan.entries,
+    );
+    expect(database.trash.listGroup(folderPlan.entries[0].id)).toEqual(
+      folderPlan.entries,
+    );
+
+    database.transaction((transaction) =>
+      transaction.trash.restore({
+        entries: folderPlan.entries,
+        targetFolderIds: new Map([
+          [folderPlan.entries[0].id, TEST_ROOT_FOLDER_ID],
+        ]),
+        now: asTimestamp(11),
+      }),
+    );
+    expect(database.trash.list({ limit: 10 }).items).toEqual(notePlan.entries);
+  });
+
   it('trashes and restores a Note with its FTS row atomically', () => {
     const { database, filePath } = createVault();
     const stored = note(1);

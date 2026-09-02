@@ -277,11 +277,12 @@ describe('scoped search and index health', () => {
     raw
       .prepare(
         `INSERT INTO trash_entries(
-           id, vault_id, object_type, object_id, original_parent_id,
+           id, group_root_id, vault_id, object_type, object_id, original_parent_id,
            deleted_at, expires_at
-         ) VALUES (?, ?, 'FOLDER', ?, ?, 20, 30)`,
+         ) VALUES (?, ?, ?, 'FOLDER', ?, ?, 20, 30)`,
       )
       .run(
+        asTrashEntryId('30000000-0000-4000-8000-000000000001'),
         asTrashEntryId('30000000-0000-4000-8000-000000000001'),
         TEST_VAULT_ID,
         parent.id,

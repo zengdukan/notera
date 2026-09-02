@@ -70,6 +70,14 @@ interface SchemaV5Module {
   readonly V5_UPLOAD_ATTACHMENT_REFERENCES: Migration;
 }
 
+interface SchemaV6Module {
+  readonly V6_ATTACHMENT_SIZE_LIMIT: Migration;
+}
+
+interface SchemaV7Module {
+  readonly V7_TRASH_GROUP_ROOT: Migration;
+}
+
 interface SnapshotDatabaseModule {
   createVaultDatabase(options: {
     filePath: string;
@@ -119,6 +127,16 @@ function schemaV4Module(): SchemaV4Module {
 function schemaV5Module(): SchemaV5Module {
   // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
   return require('../schema/v5') as SchemaV5Module;
+}
+
+function schemaV6Module(): SchemaV6Module {
+  // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
+  return require('../schema/v6') as SchemaV6Module;
+}
+
+function schemaV7Module(): SchemaV7Module {
+  // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
+  return require('../schema/v7') as SchemaV7Module;
 }
 
 function databaseModuleWithProductionMigrations(
@@ -212,33 +230,41 @@ afterEach(() => {
 describe('schema migrations', () => {
   it('derives the current version and selects only the continuous suffix', () => {
     const registry = registryModule();
-    expect(registry.CURRENT_SCHEMA_VERSION).toBe(6);
+    expect(registry.CURRENT_SCHEMA_VERSION).toBe(7);
     expect(registry.selectProductionMigrations(1)).toEqual([
       schemaV2Module().V2_PENDING_VAULT_META_DIGEST,
       schemaV3Module().V3_NOTE_VERSION_NAME,
       schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
       schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
       expect.objectContaining({ targetVersion: 6 }),
+      expect.objectContaining({ targetVersion: 7 }),
     ]);
     expect(registry.selectProductionMigrations(2)).toEqual([
       schemaV3Module().V3_NOTE_VERSION_NAME,
       schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
       schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
       expect.objectContaining({ targetVersion: 6 }),
+      expect.objectContaining({ targetVersion: 7 }),
     ]);
     expect(registry.selectProductionMigrations(3)).toEqual([
       schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
       schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
       expect.objectContaining({ targetVersion: 6 }),
+      expect.objectContaining({ targetVersion: 7 }),
     ]);
     expect(registry.selectProductionMigrations(4)).toEqual([
       schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
       expect.objectContaining({ targetVersion: 6 }),
+      expect.objectContaining({ targetVersion: 7 }),
     ]);
     expect(registry.selectProductionMigrations(5)).toEqual([
       expect.objectContaining({ targetVersion: 6 }),
+      expect.objectContaining({ targetVersion: 7 }),
     ]);
-    expect(registry.selectProductionMigrations(6)).toEqual([]);
+    expect(registry.selectProductionMigrations(6)).toEqual([
+      expect.objectContaining({ targetVersion: 7 }),
+    ]);
+    expect(registry.selectProductionMigrations(7)).toEqual([]);
 
     const v2 = migration(2);
     const v3 = migration(3);
@@ -553,7 +579,7 @@ describe('schema migrations', () => {
     const migrated = openTestConnection(filePath);
     expect(
       migrated.prepare('SELECT schema_version FROM schema_metadata').get(),
-    ).toEqual({ schema_version: 6 });
+    ).toEqual({ schema_version: 7 });
     expect(
       migrated
         .prepare('SELECT byte_length FROM attachment_blobs WHERE blob_id = ?')
@@ -582,6 +608,81 @@ describe('schema migrations', () => {
       ),
     ).toThrow();
     migrated.close();
+  });
+
+  it('migrates v6 trash entries into operation-scoped groups', () => {
+    const connection = openNewConnection(tempDatabasePath('trash-groups-v6.db'));
+    baselineV1Module().createBaselineV1(connection, {
+      identity: TEST_IDENTITY,
+      profileName: 'Profile',
+      vaultMetaDigest: vaultMetaDigest(),
+      createdAt: 1,
+    });
+    runnerModule().runMigrations(connection, 1, 6, [
+      schemaV2Module().V2_PENDING_VAULT_META_DIGEST,
+      schemaV3Module().V3_NOTE_VERSION_NAME,
+      schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
+      schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
+      schemaV6Module().V6_ATTACHMENT_SIZE_LIMIT,
+    ]);
+    const topFolderId = '74000000-0000-4000-8000-000000000001';
+    const separateNoteEntryId = '75000000-0000-4000-8000-000000000001';
+    const folderEntryId = '75000000-0000-4000-8000-000000000002';
+    const groupedNoteEntryId = '75000000-0000-4000-8000-000000000003';
+    const insert = connection.prepare(
+      `INSERT INTO trash_entries(
+         id, vault_id, object_type, object_id, original_parent_id,
+         deleted_at, expires_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    );
+    insert.run(
+      separateNoteEntryId,
+      TEST_IDENTITY.id,
+      'NOTE',
+      '76000000-0000-4000-8000-000000000001',
+      topFolderId,
+      10,
+      30,
+    );
+    insert.run(
+      folderEntryId,
+      TEST_IDENTITY.id,
+      'FOLDER',
+      topFolderId,
+      TEST_IDENTITY.rootFolderId,
+      20,
+      40,
+    );
+    insert.run(
+      groupedNoteEntryId,
+      TEST_IDENTITY.id,
+      'NOTE',
+      '76000000-0000-4000-8000-000000000002',
+      topFolderId,
+      20,
+      40,
+    );
+
+    runnerModule().runMigrations(connection, 6, 7, [
+      schemaV7Module().V7_TRASH_GROUP_ROOT,
+    ]);
+
+    expect(
+      connection
+        .prepare(
+          `SELECT id, group_root_id FROM trash_entries
+           ORDER BY id`,
+        )
+        .all(),
+    ).toEqual([
+      { id: separateNoteEntryId, group_root_id: separateNoteEntryId },
+      { id: folderEntryId, group_root_id: folderEntryId },
+      { id: groupedNoteEntryId, group_root_id: folderEntryId },
+    ]);
+    expect(
+      connection.prepare('SELECT schema_version FROM schema_metadata').get(),
+    ).toEqual({ schema_version: 7 });
+    connection.close();
   });
 
   it('produces the same normalized structure from snapshot and migration', () => {

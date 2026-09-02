@@ -280,11 +280,12 @@ describe('organization and immutable history repositories', () => {
     raw
       .prepare(
         `INSERT INTO trash_entries(
-         id, vault_id, object_type, object_id, original_parent_id,
+         id, group_root_id, vault_id, object_type, object_id, original_parent_id,
          deleted_at, expires_at
-       ) VALUES (?, ?, 'NOTE', ?, ?, 1, 2)`,
+       ) VALUES (?, ?, ?, 'NOTE', ?, ?, 1, 2)`,
       )
       .run(
+        '60000000-0000-4000-8000-000000000001',
         '60000000-0000-4000-8000-000000000001',
         TEST_VAULT_ID,
         storedNote.id,

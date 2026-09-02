@@ -23,7 +23,7 @@ async function countBlobFiles(root: string): Promise<number> {
 }
 
 describe('LocalNotesService grouped trash', () => {
-  it('trashes a parent whose descendant is already in trash', async () => {
+  it('keeps earlier note and folder deletions independent from their parent', async () => {
     const manager = await createProfileManager({ appDataRoot: tempRoot() });
     const profile = await manager.createProfile({
       displayName: 'Nested trash',
@@ -42,13 +42,32 @@ describe('LocalNotesService grouped trash', () => {
       parentFolderId: top.id,
       name: 'nested',
     });
+    const math = await localNotes.createNote({
+      folderId: top.id,
+      title: '数学',
+    });
 
-    await localNotes.trashFolder(nested.id);
+    const trashedMath = await localNotes.trashNote(math.id);
+    const trashedNested = await localNotes.trashFolder(nested.id);
     const trashedTop = await localNotes.trashFolder(top.id);
 
-    expect(await localNotes.listTrash({ limit: 10 })).toMatchObject({
-      items: [
-        {
+    const items = (await localNotes.listTrash({ limit: 10 })).items;
+    expect(items).toHaveLength(3);
+    expect(items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          trashEntryId: trashedMath.trashEntryId,
+          objectId: math.id,
+          kind: 'note',
+          displayName: '数学',
+        }),
+        expect.objectContaining({
+          trashEntryId: trashedNested.trashEntryId,
+          objectId: nested.id,
+          kind: 'folder',
+          displayName: 'nested',
+        }),
+        expect.objectContaining({
           trashEntryId: trashedTop.trashEntryId,
           objectId: top.id,
           kind: 'folder',
@@ -58,16 +77,61 @@ describe('LocalNotesService grouped trash', () => {
             { id: today.id, name: 'today' },
           ],
           originalParentAvailable: true,
-        },
-      ],
-    });
+        }),
+      ]),
+    );
     await localNotes.restoreTrash({ trashEntryId: trashedTop.trashEntryId });
-    expect(
-      await localNotes.listChildren({ parentFolderId: top.id, limit: 10 }),
-    ).toMatchObject({
-      items: [{ id: nested.id, kind: 'folder', name: 'nested' }],
+    expect((await localNotes.listTrash({ limit: 10 })).items).toHaveLength(2);
+    await localNotes.restoreTrash({
+      trashEntryId: trashedNested.trashEntryId,
+    });
+    await localNotes.restoreTrash({ trashEntryId: trashedMath.trashEntryId });
+    expect(await localNotes.getNote(math.id)).toMatchObject({
+      folderId: top.id,
+      title: '数学',
     });
     expect((await localNotes.listTrash({ limit: 10 })).items).toEqual([]);
+
+    await manager.close();
+  });
+
+  it('rebases an independent note when its trashed parent is deleted permanently', async () => {
+    const manager = await createProfileManager({ appDataRoot: tempRoot() });
+    const profile = await manager.createProfile({
+      displayName: 'Permanent parent delete',
+      password: 'correct horse battery staple',
+    });
+    const { localNotes } = manager;
+    const today = await localNotes.createFolder({
+      parentFolderId: profile.rootFolderId,
+      name: 'today',
+    });
+    const top = await localNotes.createFolder({
+      parentFolderId: today.id,
+      name: 'top',
+    });
+    const math = await localNotes.createNote({
+      folderId: top.id,
+      title: '数学',
+    });
+    const trashedMath = await localNotes.trashNote(math.id);
+    const trashedTop = await localNotes.trashFolder(top.id);
+
+    await localNotes.deleteTrashPermanent(trashedTop.trashEntryId);
+
+    expect((await localNotes.listTrash({ limit: 10 })).items).toEqual([
+      expect.objectContaining({
+        trashEntryId: trashedMath.trashEntryId,
+        folderPath: [
+          { id: profile.rootFolderId, name: '' },
+          { id: today.id, name: 'today' },
+        ],
+      }),
+    ]);
+    await localNotes.restoreTrash({ trashEntryId: trashedMath.trashEntryId });
+    expect(await localNotes.getNote(math.id)).toMatchObject({
+      folderId: today.id,
+    });
 
     await manager.close();
   });

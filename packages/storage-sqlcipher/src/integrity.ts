@@ -369,6 +369,8 @@ class IntegrityScanner {
       'trash_entries',
       't.id',
       `FROM trash_entries t
+       LEFT JOIN trash_entries root
+         ON root.id = t.group_root_id AND root.vault_id = t.vault_id
        LEFT JOIN folders parent
          ON parent.id = t.original_parent_id AND parent.vault_id = t.vault_id
        LEFT JOIN notes n
@@ -378,6 +380,7 @@ class IntegrityScanner {
          ON t.object_type = 'FOLDER' AND f.id = t.object_id
         AND f.vault_id = t.vault_id
        WHERE t.vault_id = ? AND (
+         root.id IS NULL OR root.group_root_id <> root.id OR
          parent.id IS NULL OR
          (t.object_type = 'NOTE' AND n.id IS NULL) OR
          (t.object_type = 'FOLDER' AND f.id IS NULL)
