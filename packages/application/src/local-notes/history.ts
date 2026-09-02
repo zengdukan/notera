@@ -36,6 +36,17 @@ function checkedVersionName(value: unknown) {
   return asVersionName(value);
 }
 
+function checkedCopyTitle(value: unknown): string {
+  if (
+    typeof value !== 'string' ||
+    value.trim().length === 0 ||
+    [...value].length > 1_000
+  ) {
+    throw new ApplicationError('INVALID_NAME');
+  }
+  return value.trim();
+}
+
 function versionForNote(
   database: VaultDatabase,
   noteId: ReturnType<typeof asNoteId>,
@@ -225,6 +236,7 @@ export function copyHistory(
     readonly noteId: unknown;
     readonly versionId: unknown;
     readonly targetFolderId: unknown;
+    readonly title: unknown;
   },
   id: string,
   now: Timestamp,
@@ -232,6 +244,7 @@ export function copyHistory(
   const noteId = asNoteId(input?.noteId);
   const version = versionForNote(database, noteId, input?.versionId);
   const targetFolderId = asFolderId(input?.targetFolderId);
+  const title = checkedCopyTitle(input?.title);
   const copied = database.transaction((transaction) => {
     const targetFolder = transaction.folders.get(targetFolderId);
     if (targetFolder === undefined) {
@@ -240,7 +253,7 @@ export function copyHistory(
     const source = getActiveNoteEntity(database, noteId);
     const newNoteId = asNoteId(id);
     const basePlan = copyDomainNote({
-      source: { ...source, title: version.title, document: version.document },
+      source: { ...source, title, document: version.document },
       newNoteId,
       targetFolder,
       sortOrder: asSortOrder(0),

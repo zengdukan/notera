@@ -413,8 +413,13 @@ const cases: readonly MappingCase[] = [
   {
     key: 'history.copy',
     method: 'copyHistory',
-    request: { noteId, versionId, targetFolderId },
-    applicationArgument: { noteId, versionId, targetFolderId },
+    request: { noteId, versionId, targetFolderId, title: 'Copied note' },
+    applicationArgument: {
+      noteId,
+      versionId,
+      targetFolderId,
+      title: 'Copied note',
+    },
     applicationResult: note,
     expectedResult: note,
   },

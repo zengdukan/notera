@@ -22,6 +22,7 @@ export interface HistoryController {
     readonly noteId: string;
     readonly versionId: string;
     readonly targetFolderId: string;
+    readonly title: string;
   }): Promise<void>;
   restore(input: {
     readonly noteId: string;

@@ -247,6 +247,7 @@ export interface LocalNotesService {
     readonly noteId: NoteId;
     readonly versionId: NoteVersionId;
     readonly targetFolderId: FolderId;
+    readonly title: string;
   }): Promise<NoteSummary>;
   listTrash(input: PageRequest): Promise<Page<TrashItem>>;
   restoreTrash(input: {

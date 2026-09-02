@@ -181,6 +181,7 @@ export function HistoryModal({
                     noteId,
                     versionId: selected.versionId,
                     targetFolderId,
+                    title: selected.displayTitle,
                   }),
                 )
               }

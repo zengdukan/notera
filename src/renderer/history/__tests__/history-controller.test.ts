@@ -9,6 +9,39 @@ import { NoteWriteCoordinator } from '../../notes/note-write-coordinator';
 import { createHistoryController } from '../history-controller';
 
 describe('history controller', () => {
+  it('copies history with a title and invalidates the target folder', async () => {
+    const request = jest.fn().mockResolvedValue({});
+    const queryClient = new QueryClient();
+    const invalidate = jest
+      .spyOn(queryClient, 'invalidateQueries')
+      .mockResolvedValue(undefined);
+    const controller = createHistoryController({
+      client: { request, subscribe: jest.fn() } as unknown as NoteraClient,
+      queryClient,
+      profileId: 'profile',
+      lifecycle: new ActiveDocumentLifecycle(),
+      writeCoordinator: new NoteWriteCoordinator(),
+      onRestored: jest.fn(),
+    });
+
+    await controller.copy({
+      noteId: 'note',
+      versionId: 'version',
+      targetFolderId: 'folder',
+      title: 'Copied note',
+    });
+
+    expect(request).toHaveBeenCalledWith('history.copy', {
+      noteId: 'note',
+      versionId: 'version',
+      targetFolderId: 'folder',
+      title: 'Copied note',
+    });
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ['profile', 'profile', 'tree', 'folder'],
+    });
+  });
+
   it('flushes before create and restores serially from the latest saved content version', async () => {
     const calls: string[] = [];
     const lifecycle = new ActiveDocumentLifecycle();

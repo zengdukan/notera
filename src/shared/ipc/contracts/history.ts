@@ -8,7 +8,7 @@ import {
 } from '../common';
 import { defineRequestContract } from '../contract';
 import { cursorPageRequestSchema, cursorPageSchema } from '../pagination';
-import { noteSummarySchema } from './content-tree';
+import { noteSummarySchema, noteTitleSchema } from './content-tree';
 
 export const versionKindSchema = z.enum(['USER', 'SYSTEM_PROTECTION']);
 const protectionReasonSchema = z.enum([
@@ -151,6 +151,9 @@ export const historyCopy = defineRequestContract({
     noteId: uuidSchema,
     versionId: uuidSchema,
     targetFolderId: uuidSchema,
+    title: noteTitleSchema.refine((value) => value.trim().length > 0, {
+      message: 'Note title cannot be blank.',
+    }),
   }),
   data: noteSummarySchema,
   errors: [...historyMutationErrors, 'PARENT_FOLDER_INVALID'],

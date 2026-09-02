@@ -139,9 +139,10 @@ describe('LocalNotesService history use cases', () => {
       noteId: note.id,
       versionId: permanent.versionId,
       targetFolderId: profile.rootFolderId,
+      title: '  Copied milestone  ',
     });
     await expect(localNotes.getNote(copied.id)).resolves.toMatchObject({
-      title: 'Old title',
+      title: 'Copied milestone',
       document: historicalDocument,
       tags: [],
     });
@@ -154,6 +155,7 @@ describe('LocalNotesService history use cases', () => {
       noteId: note.id,
       versionId: restored.protectionVersionId,
       targetFolderId: profile.rootFolderId,
+      title: 'Protection copy',
     });
     expect(
       (
@@ -165,6 +167,14 @@ describe('LocalNotesService history use cases', () => {
     ).toEqual(
       expect.arrayContaining([historicalAttachment.id, currentAttachment.id]),
     );
+    await expect(
+      localNotes.copyHistory({
+        noteId: note.id,
+        versionId: permanent.versionId,
+        targetFolderId: profile.rootFolderId,
+        title: '   ',
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID_NAME' });
     await expect(
       localNotes.restoreHistory({
         noteId: note.id,

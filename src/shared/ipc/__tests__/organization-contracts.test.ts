@@ -230,6 +230,28 @@ describe('history and trash contracts', () => {
     ).toEqual(ipcFailure('CONTENT_VERSION_CONFLICT'));
   });
 
+  it('requires a non-blank title when copying history', () => {
+    const input = {
+      noteId: uuid(1),
+      versionId: uuid(2),
+      targetFolderId: uuid(3),
+      title: 'Copied note',
+    };
+    expect(historyContracts.copy.request.parse(input)).toEqual(input);
+    expect(
+      historyContracts.copy.request.safeParse({ ...input, title: '   ' })
+        .success,
+    ).toBe(false);
+    expect(
+      historyContracts.copy.request.safeParse({ ...input, title: 'x'.repeat(1001) })
+        .success,
+    ).toBe(false);
+    const { title: _title, ...missingTitle } = input;
+    expect(historyContracts.copy.request.safeParse(missingTitle).success).toBe(
+      false,
+    );
+  });
+
   it('uses strict folder/note trash item variants and explicit restore targets', () => {
     const base = {
       trashEntryId: uuid(1),
