@@ -6,7 +6,7 @@ import ArrowLeftIcon from '@atlaskit/icon/core/arrow-left';
 import ArrowRightIcon from '@atlaskit/icon/core/arrow-right';
 import { Slice } from '@atlaskit/editor-prosemirror/model';
 import { ReplaceStep } from '@atlaskit/editor-prosemirror/transform';
-import { Box, Inline, Stack, Text, xcss } from '@atlaskit/primitives';
+import { Box, Inline, Text, xcss } from '@atlaskit/primitives';
 import { useIntl } from 'react-intl';
 
 import type { AdfDocument } from '../../shared/ipc/adf';
@@ -42,11 +42,12 @@ export function createHistoryDiffSteps(
 export function HistoryCompare({
   noteId,
   comparison,
+  selectedVersionName,
 }: {
   readonly noteId: string;
   readonly comparison: RequestData<'history.compare'>;
+  readonly selectedVersionName: string;
 }) {
-  const intl = useIntl();
   const steps = useMemo(
     () =>
       createHistoryDiffSteps(
@@ -55,7 +56,7 @@ export function HistoryCompare({
       ),
     [comparison.left.document, comparison.right.document],
   );
-  const untitled = intl.formatMessage({ id: 'history.untitled' });
+  const intl = useIntl();
 
   return (
     <Box
@@ -63,52 +64,36 @@ export function HistoryCompare({
       aria-label={intl.formatMessage({ id: 'history.compare.region' })}
       xcss={compareStyles}
     >
-      <Stack space="space.200">
-        <Box xcss={summaryStyles}>
-          <Inline alignBlock="center" shouldWrap space="space.200">
-            <Stack grow="fill" space="space.050">
-              <Text color="color.text.subtle" size="small">
-                {intl.formatMessage({ id: 'history.compare.selected' })}
-              </Text>
-              <Text weight="semibold">
-                {comparison.right.title || untitled}
-              </Text>
-            </Stack>
-            <ArrowRightIcon label="" color="var(--ds-icon-subtle)" />
-            <Stack grow="fill" space="space.050">
-              <Text color="color.text.subtle" size="small">
-                {intl.formatMessage({ id: 'history.compare.current' })}
-              </Text>
-              <Text weight="semibold">{comparison.left.title || untitled}</Text>
-            </Stack>
-          </Inline>
-        </Box>
-        <Box xcss={documentStyles}>
-          <Editor
-            appearance="chromeless"
-            diff={{
-              colorScheme: 'traditional',
-              originalDocument: comparison.right.document,
-              steps,
-            }}
-            disabled
-            document={comparison.left.document}
-            mediaProvider={mediaProviderForNote(noteId)}
-            onChange={() => undefined}
-            renderDiffControls={(navigation) => (
-              <DiffToolbar navigation={navigation} />
-            )}
-          />
-        </Box>
-      </Stack>
+      <Box xcss={documentStyles}>
+        <Editor
+          appearance="chromeless"
+          diff={{
+            colorScheme: 'traditional',
+            originalDocument: comparison.right.document,
+            steps,
+          }}
+          disabled
+          document={comparison.left.document}
+          mediaProvider={mediaProviderForNote(noteId)}
+          onChange={() => undefined}
+          renderDiffControls={(navigation) => (
+            <DiffToolbar
+              navigation={navigation}
+              selectedVersionName={selectedVersionName}
+            />
+          )}
+        />
+      </Box>
     </Box>
   );
 }
 
 function DiffToolbar({
   navigation,
+  selectedVersionName,
 }: {
   readonly navigation: ProductEditorDiffNavigation;
+  readonly selectedVersionName: string;
 }) {
   const intl = useIntl();
   const hasChanges = navigation.numberOfChanges > 0;
@@ -131,6 +116,16 @@ function DiffToolbar({
         shouldWrap
       >
         <Inline alignBlock="center" space="space.150">
+          <Inline alignBlock="center" space="space.075">
+            <Text weight="semibold">{selectedVersionName}</Text>
+            <Text color="color.text.subtle">
+              {intl.formatMessage({ id: 'history.compare.versus' })}
+            </Text>
+            <Text weight="semibold">
+              {intl.formatMessage({ id: 'history.compare.currentShort' })}
+            </Text>
+          </Inline>
+          <Box xcss={toolbarDividerStyles} />
           <Inline alignBlock="center" space="space.050">
             <Box xcss={[legendSwatchStyles, removedSwatchStyles]} />
             <Text size="small">
@@ -179,14 +174,6 @@ const compareStyles = xcss({
   minHeight: '0',
   flexGrow: 1,
 });
-const summaryStyles = xcss({
-  backgroundColor: 'color.background.neutral.subtle',
-  borderColor: 'color.border',
-  borderRadius: 'radius.small',
-  borderStyle: 'solid',
-  borderWidth: 'border.width',
-  padding: 'space.150',
-});
 const documentStyles = xcss({
   minWidth: '0',
   minHeight: '320px',
@@ -207,6 +194,12 @@ const toolbarStyles = xcss({
   borderBlockEndWidth: 'border.width',
   paddingBlock: 'space.100',
   paddingInline: 'space.150',
+});
+const toolbarDividerStyles = xcss({
+  height: '24px',
+  borderInlineStartColor: 'color.border',
+  borderInlineStartStyle: 'solid',
+  borderInlineStartWidth: 'border.width',
 });
 const legendSwatchStyles = xcss({
   width: '12px',

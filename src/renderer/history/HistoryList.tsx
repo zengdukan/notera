@@ -7,7 +7,7 @@ import { useIntl, type IntlShape } from 'react-intl';
 
 import type { HistoryItem } from './history-queries';
 
-function itemLabel(item: HistoryItem, intl: IntlShape): string {
+export function historyItemLabel(item: HistoryItem, intl: IntlShape): string {
   if (item.kind === 'USER')
     return (
       item.versionName ??
@@ -50,7 +50,7 @@ export function HistoryList({
     >
       <MenuList>
         {items.map((item) => {
-          const label = itemLabel(item, intl);
+          const label = historyItemLabel(item, intl);
           return (
             <ButtonMenuItem
               description={intl.formatDate(item.createdAt, {

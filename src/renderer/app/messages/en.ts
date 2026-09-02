@@ -226,6 +226,8 @@ export const englishMessages = Object.freeze({
   'history.compare.next': 'Next change',
   'history.compare.position': '{current} of {total}',
   'history.compare.noChanges': 'No content changes',
+  'history.compare.versus': 'vs',
+  'history.compare.currentShort': 'Current version',
   'history.copy.action': 'Copy',
   'history.restore.action': 'Restore version',
   'history.create.title': 'Create version',

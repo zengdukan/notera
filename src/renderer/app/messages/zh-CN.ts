@@ -202,6 +202,8 @@ export const chineseMessages = Object.freeze({
   'history.compare.next': '下一处变更',
   'history.compare.position': '第 {current} 处，共 {total} 处',
   'history.compare.noChanges': '内容无变化',
+  'history.compare.versus': 'vs',
+  'history.compare.currentShort': '当前版本',
   'history.copy.action': '复制',
   'history.restore.action': '恢复此版本',
   'history.create.title': '创建版本',

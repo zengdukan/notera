@@ -19,7 +19,7 @@ import { FolderPicker, type FolderPickerItem } from '../notes/FolderPicker';
 import type { NoteraClient, RequestData } from '../platform/notera-client';
 import { HistoryCompare } from './HistoryCompare';
 import type { HistoryController } from './history-controller';
-import { HistoryList } from './HistoryList';
+import { HistoryList, historyItemLabel } from './HistoryList';
 import { HistoryPreview } from './HistoryPreview';
 import {
   uniqueHistoryItems,
@@ -179,7 +179,15 @@ export function HistoryModal({
                 </SectionMessage>
               ) : null}
               {view === 'compare' && comparison ? (
-                <HistoryCompare noteId={noteId} comparison={comparison} />
+                <HistoryCompare
+                  noteId={noteId}
+                  comparison={comparison}
+                  selectedVersionName={
+                    selected
+                      ? historyItemLabel(selected, intl)
+                      : intl.formatMessage({ id: 'history.untitled' })
+                  }
+                />
               ) : (
                 <Box xcss={workspaceStyles}>
                   <Box

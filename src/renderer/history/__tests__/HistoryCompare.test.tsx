@@ -97,14 +97,21 @@ describe('HistoryCompare', () => {
   it('renders a single read-only inline diff from history to current', () => {
     render(
       <AppProviders locale="en">
-        <HistoryCompare noteId="note" comparison={comparison} />
+        <HistoryCompare
+          noteId="note"
+          comparison={comparison}
+          selectedVersionName="Milestone"
+        />
       </AppProviders>,
     );
 
-    expect(screen.getByText('Selected history version')).toBeVisible();
-    expect(screen.getByText('Historical title')).toBeVisible();
-    expect(screen.getByText('Current saved version')).toBeVisible();
-    expect(screen.getByText('Current title')).toBeVisible();
+    expect(screen.getByText('Milestone')).toBeVisible();
+    expect(screen.getByText('vs')).toBeVisible();
+    expect(screen.getByText('Current version')).toBeVisible();
+    expect(screen.queryByText('Selected history version')).toBeNull();
+    expect(screen.queryByText('Historical title')).toBeNull();
+    expect(screen.queryByText('Current saved version')).toBeNull();
+    expect(screen.queryByText('Current title')).toBeNull();
     expect(screen.getByText('Removed')).toBeVisible();
     expect(screen.getByText('Added')).toBeVisible();
     expect(screen.getByText('2 of 3')).toBeVisible();
@@ -126,7 +133,11 @@ describe('HistoryCompare', () => {
     const user = userEvent.setup();
     render(
       <AppProviders locale="en">
-        <HistoryCompare noteId="note" comparison={comparison} />
+        <HistoryCompare
+          noteId="note"
+          comparison={comparison}
+          selectedVersionName="Milestone"
+        />
       </AppProviders>,
     );
 
