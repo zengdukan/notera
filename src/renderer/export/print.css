@@ -47,6 +47,17 @@ svg {
   max-width: 100%;
 }
 
+.notera-export-media {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.notera-export-media-inline {
+  object-fit: contain;
+}
+
 @page {
   size: A4;
   margin: 16mm 18mm 18mm;
@@ -57,5 +68,60 @@ svg {
   body {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
+  }
+
+  [data-testid="sticky-table-fixed"],
+  .pm-table-sticky-wrapper,
+  .pm-table-sticky-scrollbar-container,
+  .pm-table-sticky-scrollbar-container-view-page {
+    display: none !important;
+  }
+
+  .pm-table-container {
+    left: 0 !important;
+    margin-left: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .pm-table-wrapper {
+    overflow: visible !important;
+    width: 100% !important;
+  }
+
+  .pm-table-wrapper > table {
+    margin-left: 0 !important;
+    table-layout: fixed !important;
+    width: 100% !important;
+  }
+
+  .pm-table-wrapper > table col,
+  .pm-table-wrapper > table th,
+  .pm-table-wrapper > table td {
+    min-width: 0 !important;
+    width: auto !important;
+  }
+
+  .notera-export-document .ak-renderer-document .pm-table-container tr.fixed,
+  .notera-export-document .ak-renderer-document .pm-table-container tr.sticky {
+    display: table-row !important;
+    position: static !important;
+    transform: none !important;
+  }
+
+  .notera-export-document
+    .ak-renderer-document
+    .pm-table-container
+    .sticky
+    > th,
+  .notera-export-document
+    .ak-renderer-document
+    .pm-table-container
+    .sticky
+    > td {
+    left: auto !important;
+    position: static !important;
+    right: auto !important;
+    top: auto !important;
   }
 }

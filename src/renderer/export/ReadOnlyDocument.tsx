@@ -17,6 +17,7 @@ import {
   MERMAID_EXTENSION_TYPE,
 } from './extensions/mermaid';
 import { createExportMediaProvider } from './media-provider';
+import { createExportMediaNodeComponents } from './media-node';
 import type { ExportReadiness } from './readiness';
 
 function sourceOf(parameters: unknown): string {
@@ -103,6 +104,10 @@ export function ReadOnlyDocument(props: {
       createExportExtensionHandlers(props.payload.document, props.readiness),
     [props.payload.document, props.readiness],
   );
+  const nodeComponents = useMemo(
+    () => createExportMediaNodeComponents(props.payload),
+    [props.payload],
+  );
   useEffect(() => () => providers.destroy(), [providers]);
 
   return (
@@ -115,6 +120,7 @@ export function ReadOnlyDocument(props: {
           appearance="full-page"
           dataProviders={providers}
           disableActions
+          disableTableOverflowShadow
           document={props.payload.document as unknown as DocNode}
           extensionHandlers={extensionHandlers}
           media={{
@@ -122,6 +128,7 @@ export function ReadOnlyDocument(props: {
             allowLinking: false,
             enableDownloadButton: false,
           }}
+          nodeComponents={nodeComponents}
           onRendered={props.onRendered}
           shouldOpenMediaViewer={false}
         />

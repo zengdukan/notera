@@ -126,4 +126,41 @@ describe('export render readiness', () => {
       '<div class="ak-renderer-document"><div>梳理经济问题</div></div>';
     await expect(result).resolves.toBe(0);
   });
+
+  it('waits for expected media elements before decoding images', async () => {
+    const mediaId = '20000000-0000-4000-8000-000000000002';
+    const root = document.createElement('main');
+    root.innerHTML = '<div class="ak-renderer-document"></div>';
+    const readiness = createExportReadiness({
+      version: 1,
+      type: 'doc',
+      content: [
+        {
+          type: 'mediaSingle',
+          content: [{ type: 'media', attrs: { id: mediaId, type: 'file' } }],
+        },
+      ],
+    });
+    let resolved = false;
+    const result = readiness
+      .waitForStable(root, Promise.resolve())
+      .then((value) => {
+        resolved = true;
+        return value;
+      });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(resolved).toBe(false);
+
+    const image = document.createElement('img');
+    image.dataset.exportMediaId = mediaId;
+    const decoded = deferred<void>();
+    Object.defineProperty(image, 'decode', { value: () => decoded.promise });
+    root.querySelector('.ak-renderer-document')!.append(image);
+    await Promise.resolve();
+    expect(resolved).toBe(false);
+
+    decoded.resolve();
+    await expect(result).resolves.toBe(0);
+  });
 });

@@ -85,6 +85,7 @@ describe('read-only export document', () => {
       adfStage: 'stage0',
       appearance: 'full-page',
       disableActions: true,
+      disableTableOverflowShadow: true,
       document: basePayload.document,
       media: {
         allowCaptions: true,
@@ -111,6 +112,49 @@ describe('read-only export document', () => {
       token: nonce,
       baseUrl: basePayload.mediaBaseUrl,
     });
+  });
+
+  it('renders image attachments directly through the export resource lease', () => {
+    const attachmentId = '20000000-0000-4000-8000-000000000002';
+    const payload = {
+      ...basePayload,
+      attachments: [
+        {
+          id: attachmentId,
+          fileName: 'chart.png',
+          mimeType: 'image/png',
+          byteLength: 42,
+          relativePath: 'assets/chart.png' as const,
+        },
+      ],
+    };
+    render(
+      <ReadOnlyDocument
+        payload={payload}
+        readiness={createExportReadiness(payload.document)}
+      />,
+    );
+    const rendererProps = mockReactRenderer.mock.calls[0][0] as {
+      nodeComponents?: Record<string, React.ComponentType<any>>;
+    };
+    const Media = rendererProps.nodeComponents?.media;
+    expect(Media).toEqual(expect.any(Function));
+    if (Media === undefined) throw new Error('Export media renderer missing');
+
+    render(
+      <Media
+        alt="Exported chart"
+        id={attachmentId}
+        type="file"
+        width={640}
+        height={480}
+      />,
+    );
+
+    expect(screen.getByRole('img', { name: 'Exported chart' })).toHaveAttribute(
+      'src',
+      `${basePayload.mediaBaseUrl}/file/${attachmentId}/image`,
+    );
   });
 
   it('renders valid math and explicit source-preserving invalid placeholders', () => {
