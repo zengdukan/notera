@@ -62,11 +62,7 @@ export function SearchScopePicker({
         </Button>
       )}
       content={() => (
-        <Box
-          padding="space.100"
-          testId="search-scope-popup"
-          xcss={popupStyles}
-        >
+        <Box padding="space.100" testId="search-scope-popup" xcss={popupStyles}>
           <Stack space="space.100">
             <Button
               appearance="subtle"
@@ -109,7 +105,7 @@ export function SearchScopePicker({
                     id: folderId,
                     name:
                       folderId === rootFolderId
-                        ? 'Root'
+                        ? 'All notes'
                         : (folder?.name ?? 'Root'),
                   });
                 }}
