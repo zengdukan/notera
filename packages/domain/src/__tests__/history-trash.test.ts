@@ -158,6 +158,7 @@ describe('history and trash rules', () => {
     });
     const entry = plan.entries[0];
 
+    expect(entry.displayName).toBe(note.title);
     expect(entry.expiresAt).toBe(now + TRASH_RETENTION_MS);
     expect(
       expiredTrashEntries(plan.entries, asTimestamp(entry.expiresAt - 1)),
@@ -192,11 +193,13 @@ describe('history and trash rules', () => {
         expect.objectContaining({
           objectType: 'FOLDER',
           objectId: child.id,
+          displayName: child.name,
           originalParentId: parent.id,
         }),
         expect.objectContaining({
           objectType: 'NOTE',
           objectId: note.id,
+          displayName: note.title,
           originalParentId: child.id,
         }),
       ]),

@@ -23,7 +23,7 @@ async function countBlobFiles(root: string): Promise<number> {
 }
 
 describe('LocalNotesService grouped trash', () => {
-  it('keeps earlier note and folder deletions independent from their parent', async () => {
+  it('restores an earlier note through a rebuilt path without restoring its parent group', async () => {
     const manager = await createProfileManager({ appDataRoot: tempRoot() });
     const profile = await manager.createProfile({
       displayName: 'Nested trash',
@@ -80,17 +80,38 @@ describe('LocalNotesService grouped trash', () => {
         }),
       ]),
     );
-    await localNotes.restoreTrash({ trashEntryId: trashedTop.trashEntryId });
-    expect((await localNotes.listTrash({ limit: 10 })).items).toHaveLength(2);
-    await localNotes.restoreTrash({
-      trashEntryId: trashedNested.trashEntryId,
-    });
     await localNotes.restoreTrash({ trashEntryId: trashedMath.trashEntryId });
-    expect(await localNotes.getNote(math.id)).toMatchObject({
-      folderId: top.id,
-      title: '数学',
+    const restoredMath = await localNotes.getNote(math.id);
+    expect(restoredMath.folderId).not.toBe(top.id);
+    expect(await localNotes.getFolderPath(restoredMath.folderId)).toEqual({
+      items: [
+        { id: profile.rootFolderId, name: '' },
+        { id: today.id, name: 'today' },
+        { id: restoredMath.folderId, name: 'top' },
+      ],
     });
-    expect((await localNotes.listTrash({ limit: 10 })).items).toEqual([]);
+    expect((await localNotes.listTrash({ limit: 10 })).items).toHaveLength(2);
+    expect((await localNotes.listTrash({ limit: 10 })).items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          trashEntryId: trashedNested.trashEntryId,
+          displayName: 'nested',
+          folderPath: [
+            { id: profile.rootFolderId, name: '' },
+            { id: today.id, name: 'today' },
+            { id: top.id, name: 'top' },
+          ],
+        }),
+        expect.objectContaining({
+          trashEntryId: trashedTop.trashEntryId,
+          displayName: 'top',
+        }),
+      ]),
+    );
+    await expect(
+      localNotes.restoreTrash({ trashEntryId: trashedTop.trashEntryId }),
+    ).rejects.toMatchObject({ code: 'TRASH_TARGET_REQUIRED' });
+    expect((await localNotes.listTrash({ limit: 10 })).items).toHaveLength(2);
 
     await manager.close();
   });

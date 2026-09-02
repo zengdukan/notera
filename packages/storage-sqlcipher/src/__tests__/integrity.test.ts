@@ -8,6 +8,7 @@ import type {
   NoteTag,
   NoteVersion,
   Tag,
+  TrashPlan,
   VaultIdentity,
 } from '@notera/domain';
 import {
@@ -23,6 +24,7 @@ import {
   asTagId,
   asTagName,
   asTimestamp,
+  asTrashEntryId,
   createAttachment,
   createAttachmentBlob,
   createCurrentNoteAttachmentReference,
@@ -33,6 +35,7 @@ import {
   createTag,
   createUploadAttachmentReference,
   createUserVersion,
+  trashNote,
 } from '@notera/domain';
 
 import type { StorageError } from '../errors';
@@ -83,6 +86,7 @@ interface VaultDatabaseApi {
       };
       readonly favorites: { insert(value: Favorite): void };
       readonly history: { insert(value: NoteVersion): void };
+      readonly trash: { apply(value: TrashPlan): void };
       readonly attachments: {
         insertBlob(value: StoredAttachmentBlob): void;
         insertAttachment(value: Attachment): void;
@@ -427,8 +431,18 @@ describe('vault integrity scan', () => {
       asTimestamp(2),
     );
     const attachment = storedAttachment();
+    const trashed = storedNote(2);
+    const trashPlan = trashNote({
+      note: trashed,
+      trashEntryId: asTrashEntryId(
+        '71000000-0000-4000-8000-000000000002',
+      ),
+      deletedAt: asTimestamp(2),
+    });
     database.transaction((transaction) => {
       transaction.notes.insert(note);
+      transaction.notes.insert(trashed);
+      transaction.trash.apply(trashPlan);
       transaction.history.insert(version);
       transaction.attachments.insertBlob(attachment.storedBlob);
       transaction.attachments.insertAttachment(attachment.attachment);
@@ -448,6 +462,9 @@ describe('vault integrity scan', () => {
       )
       .run(attachment.storedBlob.blob.id);
     raw.prepare('DELETE FROM notes_fts WHERE note_id = ?').run(note.id);
+    raw
+      .prepare('UPDATE trash_entries SET display_name = zeroblob(1) WHERE id = ?')
+      .run(trashPlan.entries[0].id);
     raw.close();
 
     const report = database.checkIntegrity();
@@ -466,6 +483,11 @@ describe('vault integrity scan', () => {
           entityId: attachment.storedBlob.blob.id,
         },
         { code: 'SEARCH_INDEX_INVALID', table: 'notes_fts' },
+        {
+          code: 'ENTITY_INVALID',
+          table: 'trash_entries',
+          entityId: trashPlan.entries[0].id,
+        },
       ]),
     );
     expect(JSON.stringify(report)).not.toContain(note.title);

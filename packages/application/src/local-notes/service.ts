@@ -287,7 +287,7 @@ class SessionLocalNotesService implements LocalNotesService {
 
   restoreTrash(input: Parameters<LocalNotesService['restoreTrash']>[0]) {
     return this.run('WRITE', (database) =>
-      restoreTrash(database, input, this.now()),
+      restoreTrash(database, input, this.randomId, this.now()),
     );
   }
 

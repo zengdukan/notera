@@ -1,9 +1,14 @@
 import {
   asFolderId,
+  asFolderName,
+  asSortOrder,
   asTrashEntryId,
+  createRegularFolder,
   resolveTrashRestoreTarget,
   trashFolderTree,
+  type Folder,
   type Note,
+  type RegularFolder,
   type Timestamp,
   type TrashEntry,
 } from '@notera/domain';
@@ -56,17 +61,14 @@ function trashItem(
     ReturnType<VaultDatabase['folders']['listAll']>[number]
   >,
 ): TrashItem {
-  let displayName: string;
   if (entry.objectType === 'FOLDER') {
     const folder = database.folders.get(entry.objectId);
     if (folder === undefined || folder.kind === 'ROOT') {
       throw new ApplicationError('ENTITY_NOT_FOUND');
     }
-    displayName = folder.name;
   } else {
     const note = database.notes.get(entry.objectId);
     if (note === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
-    displayName = note.title;
   }
   const originalParent = folders.get(entry.originalParentId);
   if (originalParent === undefined) throw new ApplicationError('DB_CORRUPT');
@@ -74,7 +76,7 @@ function trashItem(
     trashEntryId: entry.id,
     objectId: entry.objectId,
     kind: entry.objectType === 'FOLDER' ? 'folder' : 'note',
-    displayName,
+    displayName: entry.displayName,
     folderPath: folderPathFrom(folders, originalParent),
     deletedAt: entry.deletedAt,
     expiresAt: entry.expiresAt,
@@ -142,8 +144,21 @@ export function listTrash(
     cursor: input?.cursor,
     limit: input?.limit,
   });
+  const trashedFolderNames = new Map(
+    allTrashEntries(database)
+      .filter((entry) => entry.objectType === 'FOLDER')
+      .map((entry) => [entry.objectId, asFolderName(entry.displayName)]),
+  );
   const folders = new Map(
-    database.folders.listAll().map((folder) => [folder.id, folder]),
+    database.folders.listAll().map((folder) => [
+      folder.id,
+      folder.kind === 'REGULAR' && trashedFolderNames.has(folder.id)
+        ? Object.freeze({
+            ...folder,
+            name: trashedFolderNames.get(folder.id) as RegularFolder['name'],
+          })
+        : folder,
+    ]),
   );
   return Object.freeze({
     items: Object.freeze(
@@ -156,6 +171,7 @@ export function listTrash(
 export function restoreTrash(
   database: VaultDatabase,
   input: { readonly trashEntryId: unknown; readonly targetFolderId?: unknown },
+  randomId: () => string,
   now: Timestamp,
 ): void {
   const rootId = asTrashEntryId(input?.trashEntryId);
@@ -164,8 +180,14 @@ export function restoreTrash(
   const root = entries.find(({ id }) => id === rootId);
   if (root === undefined) throw new ApplicationError('ENTITY_NOT_FOUND');
   const folders = database.folders.listAll();
+  const trashedEntries = allTrashEntries(database);
   const trashedObjectIds = new Set(
-    allTrashEntries(database).map(({ objectId }) => objectId),
+    trashedEntries.map(({ objectId }) => objectId),
+  );
+  const trashedFolderIds = new Set(
+    trashedEntries
+      .filter(({ objectType }) => objectType === 'FOLDER')
+      .map(({ objectId }) => objectId),
   );
   const explicitTarget =
     input?.targetFolderId === undefined
@@ -174,13 +196,95 @@ export function restoreTrash(
   if (input?.targetFolderId !== undefined && explicitTarget === undefined) {
     throw new ApplicationError('PARENT_FOLDER_INVALID');
   }
+  const replacementFolders: Folder[] = [];
+  const displacedFolders: RegularFolder[] = [];
+  let replacementTarget: Folder | undefined;
+  if (
+    explicitTarget === undefined &&
+    trashedFolderIds.has(root.originalParentId)
+  ) {
+    const foldersById = new Map(folders.map((folder) => [folder.id, folder]));
+    const trashFoldersById = new Map(
+      trashedEntries
+        .filter((entry) => entry.objectType === 'FOLDER')
+        .map((entry) => [entry.objectId, entry]),
+    );
+    const missingPath: Array<{
+      readonly folder: RegularFolder;
+      readonly displayName: RegularFolder['name'];
+    }> = [];
+    const visited = new Set<string>();
+    let current = foldersById.get(root.originalParentId);
+    while (current !== undefined && trashedFolderIds.has(current.id)) {
+      if (visited.has(current.id)) throw new ApplicationError('DB_CORRUPT');
+      visited.add(current.id);
+      if (current.kind === 'ROOT') throw new ApplicationError('DB_CORRUPT');
+      const trashEntry = trashFoldersById.get(current.id);
+      if (trashEntry === undefined) throw new ApplicationError('DB_CORRUPT');
+      missingPath.push({
+        folder: current,
+        displayName: asFolderName(trashEntry.displayName),
+      });
+      current = foldersById.get(current.parentId);
+    }
+    if (current === undefined) throw new ApplicationError('DB_CORRUPT');
+    let parent = current;
+    missingPath.reverse().forEach(({ folder, displayName }) => {
+      const existing = folders.find(
+        (candidate): candidate is RegularFolder =>
+          candidate.kind === 'REGULAR' &&
+          candidate.parentId === parent.id &&
+          candidate.name === displayName &&
+          !trashedFolderIds.has(candidate.id),
+      );
+      if (existing !== undefined) {
+        parent = existing;
+        replacementTarget = existing;
+        return;
+      }
+      const replacement = createRegularFolder({
+        id: asFolderId(randomId()),
+        vaultId: folder.vaultId,
+        parentId: parent.id,
+        name: displayName,
+        sortOrder: asSortOrder(0),
+        createdAt: now,
+        updatedAt: now,
+      });
+      replacementFolders.push(replacement);
+      replacementTarget = replacement;
+      parent = replacement;
+      displacedFolders.push(
+        createRegularFolder({
+          ...folder,
+          name: asFolderName(`.notera-trash-${randomId()}`),
+        }),
+      );
+    });
+  }
+  const requestedTarget = explicitTarget ?? replacementTarget;
   const rootTarget = resolveTrashRestoreTarget({
     entry: root,
     folders,
     trashedObjectIds,
-    ...(explicitTarget === undefined ? {} : { explicitTarget }),
+    ...(requestedTarget === undefined
+      ? {}
+      : { explicitTarget: requestedTarget }),
     now,
   });
+  if (
+    root.objectType === 'FOLDER' &&
+    [...folders, ...replacementFolders].some(
+      (folder) =>
+        folder.kind === 'REGULAR' &&
+        folder.id !== root.objectId &&
+        folder.parentId === rootTarget &&
+        folder.name === root.displayName &&
+        !trashedFolderIds.has(folder.id),
+    )
+  ) {
+    throw new ApplicationError('TRASH_TARGET_REQUIRED');
+  }
   const targets = new Map(
     entries.map((entry) => [
       entry.id,
@@ -188,6 +292,8 @@ export function restoreTrash(
     ]),
   );
   database.transaction((transaction) => {
+    displacedFolders.forEach((folder) => transaction.folders.replace(folder));
+    replacementFolders.forEach((folder) => transaction.folders.insert(folder));
     const references = new AttachmentReferenceCoordinator(
       transaction.attachments,
     ).restoreTrashEntries(

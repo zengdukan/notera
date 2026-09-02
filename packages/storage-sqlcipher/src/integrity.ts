@@ -355,7 +355,7 @@ class IntegrityScanner {
 
   private trash(): void {
     this.rows<TrashEntryRow>(
-      `SELECT id, vault_id, object_type, object_id, original_parent_id,
+      `SELECT id, vault_id, display_name, object_type, object_id, original_parent_id,
               deleted_at, expires_at
        FROM trash_entries ORDER BY id`,
     ).forEach((row) => {

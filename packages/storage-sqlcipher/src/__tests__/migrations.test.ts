@@ -78,6 +78,10 @@ interface SchemaV7Module {
   readonly V7_TRASH_GROUP_ROOT: Migration;
 }
 
+interface SchemaV8Module {
+  readonly V8_TRASH_DISPLAY_NAME: Migration;
+}
+
 interface SnapshotDatabaseModule {
   createVaultDatabase(options: {
     filePath: string;
@@ -137,6 +141,11 @@ function schemaV6Module(): SchemaV6Module {
 function schemaV7Module(): SchemaV7Module {
   // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
   return require('../schema/v7') as SchemaV7Module;
+}
+
+function schemaV8Module(): SchemaV8Module {
+  // eslint-disable-next-line global-require, @typescript-eslint/no-require-imports
+  return require('../schema/v8') as SchemaV8Module;
 }
 
 function databaseModuleWithProductionMigrations(
@@ -230,7 +239,7 @@ afterEach(() => {
 describe('schema migrations', () => {
   it('derives the current version and selects only the continuous suffix', () => {
     const registry = registryModule();
-    expect(registry.CURRENT_SCHEMA_VERSION).toBe(7);
+    expect(registry.CURRENT_SCHEMA_VERSION).toBe(8);
     expect(registry.selectProductionMigrations(1)).toEqual([
       schemaV2Module().V2_PENDING_VAULT_META_DIGEST,
       schemaV3Module().V3_NOTE_VERSION_NAME,
@@ -238,6 +247,7 @@ describe('schema migrations', () => {
       schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
       expect.objectContaining({ targetVersion: 6 }),
       expect.objectContaining({ targetVersion: 7 }),
+      expect.objectContaining({ targetVersion: 8 }),
     ]);
     expect(registry.selectProductionMigrations(2)).toEqual([
       schemaV3Module().V3_NOTE_VERSION_NAME,
@@ -245,26 +255,34 @@ describe('schema migrations', () => {
       schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
       expect.objectContaining({ targetVersion: 6 }),
       expect.objectContaining({ targetVersion: 7 }),
+      expect.objectContaining({ targetVersion: 8 }),
     ]);
     expect(registry.selectProductionMigrations(3)).toEqual([
       schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
       schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
       expect.objectContaining({ targetVersion: 6 }),
       expect.objectContaining({ targetVersion: 7 }),
+      expect.objectContaining({ targetVersion: 8 }),
     ]);
     expect(registry.selectProductionMigrations(4)).toEqual([
       schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
       expect.objectContaining({ targetVersion: 6 }),
       expect.objectContaining({ targetVersion: 7 }),
+      expect.objectContaining({ targetVersion: 8 }),
     ]);
     expect(registry.selectProductionMigrations(5)).toEqual([
       expect.objectContaining({ targetVersion: 6 }),
       expect.objectContaining({ targetVersion: 7 }),
+      expect.objectContaining({ targetVersion: 8 }),
     ]);
     expect(registry.selectProductionMigrations(6)).toEqual([
       expect.objectContaining({ targetVersion: 7 }),
+      expect.objectContaining({ targetVersion: 8 }),
     ]);
-    expect(registry.selectProductionMigrations(7)).toEqual([]);
+    expect(registry.selectProductionMigrations(7)).toEqual([
+      expect.objectContaining({ targetVersion: 8 }),
+    ]);
+    expect(registry.selectProductionMigrations(8)).toEqual([]);
 
     const v2 = migration(2);
     const v3 = migration(3);
@@ -579,7 +597,7 @@ describe('schema migrations', () => {
     const migrated = openTestConnection(filePath);
     expect(
       migrated.prepare('SELECT schema_version FROM schema_metadata').get(),
-    ).toEqual({ schema_version: 7 });
+    ).toEqual({ schema_version: 8 });
     expect(
       migrated
         .prepare('SELECT byte_length FROM attachment_blobs WHERE blob_id = ?')
@@ -682,6 +700,87 @@ describe('schema migrations', () => {
     expect(
       connection.prepare('SELECT schema_version FROM schema_metadata').get(),
     ).toEqual({ schema_version: 7 });
+    connection.close();
+  });
+
+  it('migrates v7 trash entries with persisted note and folder names', () => {
+    const connection = openNewConnection(
+      tempDatabasePath('trash-display-names-v7.db'),
+    );
+    baselineV1Module().createBaselineV1(connection, {
+      identity: TEST_IDENTITY,
+      profileName: 'Profile',
+      vaultMetaDigest: vaultMetaDigest(),
+      createdAt: 1,
+    });
+    runnerModule().runMigrations(connection, 1, 7, [
+      schemaV2Module().V2_PENDING_VAULT_META_DIGEST,
+      schemaV3Module().V3_NOTE_VERSION_NAME,
+      schemaV4Module().V4_NORMALIZED_ATTACHMENT_BLOBS,
+      schemaV5Module().V5_UPLOAD_ATTACHMENT_REFERENCES,
+      schemaV6Module().V6_ATTACHMENT_SIZE_LIMIT,
+      schemaV7Module().V7_TRASH_GROUP_ROOT,
+    ]);
+    const folderId = '74000000-0000-4000-8000-000000000021';
+    const noteId = '76000000-0000-4000-8000-000000000021';
+    const folderEntryId = '75000000-0000-4000-8000-000000000021';
+    const noteEntryId = '75000000-0000-4000-8000-000000000022';
+    connection
+      .prepare(
+        `INSERT INTO folders(
+           id, vault_id, kind, parent_id, name, sort_order, created_at, updated_at
+         ) VALUES (?, ?, 'REGULAR', ?, 'top', 0, 1, 1)`,
+      )
+      .run(folderId, TEST_IDENTITY.id, TEST_IDENTITY.rootFolderId);
+    connection
+      .prepare(
+        `INSERT INTO notes(
+           id, vault_id, folder_id, title, adf_json, content_version,
+           sort_order, created_at, updated_at
+         ) VALUES (?, ?, ?, '数学', '{"type":"doc","version":1}', 1, 0, 1, 1)`,
+      )
+      .run(noteId, TEST_IDENTITY.id, folderId);
+    const insertTrash = connection.prepare(
+      `INSERT INTO trash_entries(
+         id, group_root_id, vault_id, object_type, object_id,
+         original_parent_id, deleted_at, expires_at
+       ) VALUES (?, ?, ?, ?, ?, ?, 10, 20)`,
+    );
+    insertTrash.run(
+      folderEntryId,
+      folderEntryId,
+      TEST_IDENTITY.id,
+      'FOLDER',
+      folderId,
+      TEST_IDENTITY.rootFolderId,
+    );
+    insertTrash.run(
+      noteEntryId,
+      noteEntryId,
+      TEST_IDENTITY.id,
+      'NOTE',
+      noteId,
+      folderId,
+    );
+
+    runnerModule().runMigrations(connection, 7, 8, [
+      schemaV8Module().V8_TRASH_DISPLAY_NAME,
+    ]);
+
+    expect(
+      connection
+        .prepare(
+          `SELECT id, display_name FROM trash_entries
+           ORDER BY id`,
+        )
+        .all(),
+    ).toEqual([
+      { id: folderEntryId, display_name: 'top' },
+      { id: noteEntryId, display_name: '数学' },
+    ]);
+    expect(
+      connection.prepare('SELECT schema_version FROM schema_metadata').get(),
+    ).toEqual({ schema_version: 8 });
     connection.close();
   });
 

@@ -6,6 +6,7 @@ import { V4_NORMALIZED_ATTACHMENT_BLOBS } from '../schema/v4';
 import { V5_UPLOAD_ATTACHMENT_REFERENCES } from '../schema/v5';
 import { V6_ATTACHMENT_SIZE_LIMIT } from '../schema/v6';
 import { V7_TRASH_GROUP_ROOT } from '../schema/v7';
+import { V8_TRASH_DISPLAY_NAME } from '../schema/v8';
 import type { Migration } from './types';
 
 export const PRODUCTION_MIGRATIONS: readonly Migration[] = Object.freeze([
@@ -15,6 +16,7 @@ export const PRODUCTION_MIGRATIONS: readonly Migration[] = Object.freeze([
   V5_UPLOAD_ATTACHMENT_REFERENCES,
   V6_ATTACHMENT_SIZE_LIMIT,
   V7_TRASH_GROUP_ROOT,
+  V8_TRASH_DISPLAY_NAME,
 ]);
 
 export const CURRENT_SCHEMA_VERSION =

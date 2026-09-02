@@ -22,7 +22,8 @@ import type {
 import type { NoteRepository } from './notes';
 
 const TRASH_COLUMNS = `
-  id, vault_id, object_type, object_id, original_parent_id, deleted_at, expires_at
+  id, vault_id, display_name, object_type, object_id, original_parent_id,
+  deleted_at, expires_at
 `;
 const TRASH_CURSOR = 'trash.list';
 type ConnectionProvider = () => SqlcipherConnection;
@@ -151,6 +152,7 @@ export class TrashRepository implements TrashWriter {
       if (
         stored === undefined ||
         stored.vaultId !== entry.vaultId ||
+        stored.displayName !== entry.displayName ||
         stored.objectType !== entry.objectType ||
         stored.objectId !== entry.objectId ||
         stored.originalParentId !== entry.originalParentId ||
@@ -223,14 +225,15 @@ export class TrashRepository implements TrashWriter {
       this.connection()
         .prepare(
           `INSERT INTO trash_entries(
-           id, group_root_id, vault_id, object_type, object_id,
+           id, group_root_id, vault_id, display_name, object_type, object_id,
            original_parent_id, deleted_at, expires_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           entry.id,
           groupRoots.get(entry.id),
           entry.vaultId,
+          entry.displayName,
           entry.objectType,
           entry.objectId,
           entry.originalParentId,
@@ -307,9 +310,10 @@ export class TrashRepository implements TrashWriter {
       } else {
         this.connection()
           .prepare(
-            'UPDATE folders SET parent_id = ? WHERE id = ? AND vault_id = ?',
+            `UPDATE folders SET parent_id = ?, name = ?
+             WHERE id = ? AND vault_id = ?`,
           )
-          .run(targetId, entry.objectId, this.vaultId);
+          .run(targetId, entry.displayName, entry.objectId, this.vaultId);
       }
       this.connection()
         .prepare('DELETE FROM trash_entries WHERE id = ? AND vault_id = ?')

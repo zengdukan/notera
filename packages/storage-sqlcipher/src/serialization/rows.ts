@@ -88,6 +88,7 @@ export interface NoteVersionRow {
 export interface TrashEntryRow {
   readonly id: unknown;
   readonly vault_id: unknown;
+  readonly display_name: unknown;
   readonly object_type: unknown;
   readonly object_id: unknown;
   readonly original_parent_id: unknown;
@@ -229,12 +230,16 @@ export function hydrateNoteVersion(row: NoteVersionRow): NoteVersion {
 
 export function hydrateTrashEntry(row: TrashEntryRow): TrashEntry {
   try {
-    if (row.object_type !== 'NOTE' && row.object_type !== 'FOLDER') {
+    if (
+      (row.object_type !== 'NOTE' && row.object_type !== 'FOLDER') ||
+      typeof row.display_name !== 'string'
+    ) {
       throw new Error('invalid trash type');
     }
     return createTrashEntry({
       id: asTrashEntryId(row.id),
       vaultId: asVaultId(row.vault_id),
+      displayName: row.display_name,
       objectType: row.object_type,
       objectId:
         row.object_type === 'NOTE'

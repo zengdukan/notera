@@ -168,6 +168,7 @@ describe('offline entities', () => {
       vaultId: ids.vault,
       objectType: 'NOTE',
       objectId: ids.note,
+      displayName: 'Note',
       originalParentId: ids.folder,
       deletedAt: now,
       expiresAt: asTimestamp(2_000),
