@@ -64,7 +64,7 @@ export function HistoryCompare({
       aria-label={intl.formatMessage({ id: 'history.compare.region' })}
       xcss={compareStyles}
     >
-      <Box xcss={documentStyles}>
+      <Box testId="history-diff-document" xcss={documentStyles}>
         <Editor
           appearance="chromeless"
           diff={{
@@ -108,7 +108,7 @@ function DiffToolbar({
     : intl.formatMessage({ id: 'history.compare.noChanges' });
 
   return (
-    <Box xcss={toolbarStyles}>
+    <Box testId="history-diff-toolbar" xcss={toolbarStyles}>
       <Inline
         alignBlock="center"
         spread="space-between"
@@ -177,8 +177,6 @@ const compareStyles = xcss({
 const documentStyles = xcss({
   minWidth: '0',
   minHeight: '320px',
-  maxHeight: '440px',
-  overflow: 'auto',
   borderColor: 'color.border',
   borderRadius: 'radius.small',
   borderStyle: 'solid',

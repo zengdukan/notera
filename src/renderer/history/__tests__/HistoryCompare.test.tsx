@@ -116,6 +116,14 @@ describe('HistoryCompare', () => {
     expect(screen.getByText('Added')).toBeVisible();
     expect(screen.getByText('2 of 3')).toBeVisible();
 
+    const documentContainer = screen.getByTestId('history-diff-document');
+    const toolbar = screen.getByTestId('history-diff-toolbar');
+    const documentStyles = window.getComputedStyle(documentContainer);
+    const toolbarStyles = window.getComputedStyle(toolbar);
+    expect(documentStyles.maxHeight).not.toBe('440px');
+    expect(documentStyles.overflow).not.toBe('auto');
+    expect(toolbarStyles.position).toBe('sticky');
+
     expect(editor).toHaveBeenCalledWith(
       expect.objectContaining({
         appearance: 'chromeless',
