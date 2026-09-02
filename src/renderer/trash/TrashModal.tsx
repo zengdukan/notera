@@ -4,6 +4,7 @@ import { ModalBody } from '@atlaskit/modal-dialog';
 import SectionMessage from '@atlaskit/section-message';
 import Spinner from '@atlaskit/spinner';
 import { Box, Inline, Stack, Text } from '@atlaskit/primitives';
+import { useIntl } from 'react-intl';
 
 import type { FolderPickerItem } from '../notes/FolderPicker';
 import type { NoteraClient } from '../platform/notera-client';
@@ -34,6 +35,7 @@ export function TrashModal({
   readonly folders: readonly FolderPickerItem[];
   readonly controller: TrashController;
 }) {
+  const intl = useIntl();
   const trash = useTrashItems({ client, profileId });
   const items = useMemo(
     () => uniqueTrashItems(trash.data?.pages),
@@ -56,7 +58,10 @@ export function TrashModal({
       } else {
         setAction(undefined);
         if (result === 'missing') setFeedback('missing');
-        else setRestoredName(item.displayName || 'Untitled');
+        else
+          setRestoredName(
+            item.displayName || intl.formatMessage({ id: 'trash.untitled' }),
+          );
       }
     } catch {
       setFeedback('failed');
@@ -68,7 +73,10 @@ export function TrashModal({
       const result = await controller.deletePermanent(item.trashEntryId);
       setAction(undefined);
       if (result === 'missing') setFeedback('missing');
-      else setDeletedName(item.displayName || 'Untitled');
+      else
+        setDeletedName(
+          item.displayName || intl.formatMessage({ id: 'trash.untitled' }),
+        );
     } catch {
       setFeedback('failed');
     }
@@ -79,7 +87,9 @@ export function TrashModal({
       <ModalBody>
         <Box paddingBlock="space.1000">
           <Inline alignBlock="center" alignInline="center">
-            <Spinner label="Loading trash" />
+            <Spinner
+              label={intl.formatMessage({ id: 'trash.loadingLabel' })}
+            />
           </Inline>
         </Box>
       </ModalBody>
@@ -92,9 +102,11 @@ export function TrashModal({
           <SectionMessage
             appearance="error"
             headingLevel="h2"
-            title="Could not load trash"
+            title={intl.formatMessage({ id: 'trash.loadErrorTitle' })}
           >
-            <Text as="p">Close this dialog and try again.</Text>
+            <Text as="p">
+              {intl.formatMessage({ id: 'trash.loadErrorDescription' })}
+            </Text>
           </SectionMessage>
         </Box>
       </ModalBody>
@@ -128,36 +140,56 @@ export function TrashModal({
             <SectionMessage
               appearance="success"
               headingLevel="h2"
-              title={`Restored ${restoredName}`}
+              title={intl.formatMessage(
+                { id: 'trash.restoredTitle' },
+                { name: restoredName },
+              )}
             >
-              <Text as="p">The item is available in the workspace again.</Text>
+              <Text as="p">
+                {intl.formatMessage({ id: 'trash.restoredDescription' })}
+              </Text>
             </SectionMessage>
           ) : null}
           {deletedName ? (
             <SectionMessage
               appearance="success"
               headingLevel="h2"
-              title={`Permanently deleted ${deletedName}`}
+              title={intl.formatMessage(
+                { id: 'trash.deletedTitle' },
+                { name: deletedName },
+              )}
             >
-              <Text as="p">The item can no longer be restored.</Text>
+              <Text as="p">
+                {intl.formatMessage({
+                  id: 'trash.deletedSuccessDescription',
+                })}
+              </Text>
             </SectionMessage>
           ) : null}
           {feedback === 'missing' ? (
             <SectionMessage
               appearance="information"
               headingLevel="h2"
-              title="This item is no longer in trash"
+              title={intl.formatMessage({ id: 'trash.missingTitle' })}
             >
-              <Text as="p">The trash list has been refreshed.</Text>
+              <Text as="p">
+                {intl.formatMessage({ id: 'trash.missingDescription' })}
+              </Text>
             </SectionMessage>
           ) : null}
           {feedback === 'failed' ? (
             <SectionMessage
               appearance="error"
               headingLevel="h2"
-              title="Trash operation failed"
+              title={intl.formatMessage({
+                id: 'trash.operationFailedTitle',
+              })}
             >
-              <Text as="p">The item was not changed.</Text>
+              <Text as="p">
+                {intl.formatMessage({
+                  id: 'trash.operationFailedDescription',
+                })}
+              </Text>
             </SectionMessage>
           ) : null}
           <TrashList
@@ -178,7 +210,7 @@ export function TrashModal({
                 isLoading={trash.isFetchingNextPage}
                 onClick={() => void trash.fetchNextPage()}
               >
-                Load more
+                {intl.formatMessage({ id: 'trash.loadMore' })}
               </Button>
             </Inline>
           ) : null}

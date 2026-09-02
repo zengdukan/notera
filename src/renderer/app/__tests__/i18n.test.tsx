@@ -55,6 +55,21 @@ describe('application internationalization', () => {
     });
   });
 
+  it('defines localized trash messages and interpolation placeholders', () => {
+    expect(messagesFor('en')).toMatchObject({
+      'trash.title': 'Trash',
+      'trash.restoreLabel': 'Restore {title}',
+      'trash.deletedDescription': '{path} · Deleted {date}',
+      'trash.moveAction': 'Move to trash',
+    });
+    expect(messagesFor('zh-CN')).toMatchObject({
+      'trash.title': '回收站',
+      'trash.restoreLabel': '恢复「{title}」',
+      'trash.deletedDescription': '{path} · 删除于 {date}',
+      'trash.moveAction': '移至回收站',
+    });
+  });
+
   it('includes Chinese messages required by rendered editor content', () => {
     expect(messagesFor('zh-CN')).toMatchObject({
       'fabric.editor.fieldsetLabel': '操作项列表',

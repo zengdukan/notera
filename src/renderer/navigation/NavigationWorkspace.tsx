@@ -413,7 +413,7 @@ function UnlockedNavigationWorkspace({
     if (overlay.kind === 'trash-bin') {
       return {
         kind: overlay.kind,
-        title: 'Trash',
+        title: intl.formatMessage({ id: 'trash.title' }),
         width: 840,
         content: (
           <TrashModal
@@ -491,13 +491,14 @@ function UnlockedNavigationWorkspace({
     if (overlay.kind === 'trash') {
       return {
         kind: overlay.kind,
-        title: 'Move to trash',
+        title: intl.formatMessage({ id: 'trash.moveTitle' }),
         content: (
           <TrashContentModal
             name={
               overlay.entry.kind === 'folder'
                 ? overlay.entry.name
-                : overlay.entry.title || 'Untitled'
+                : overlay.entry.title ||
+                  intl.formatMessage({ id: 'trash.untitled' })
             }
             onCancel={() => setOverlay(undefined)}
             onConfirm={async () => {

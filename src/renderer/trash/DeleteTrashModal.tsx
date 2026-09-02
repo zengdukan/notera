@@ -4,6 +4,7 @@ import Heading from '@atlaskit/heading';
 import { ModalBody, ModalFooter } from '@atlaskit/modal-dialog';
 import SectionMessage from '@atlaskit/section-message';
 import { Stack, Text } from '@atlaskit/primitives';
+import { useIntl } from 'react-intl';
 
 export function DeleteTrashModal({
   name,
@@ -14,6 +15,9 @@ export function DeleteTrashModal({
   readonly onDelete: () => Promise<void> | void;
   readonly onCancel: () => void;
 }) {
+  const intl = useIntl();
+  const displayName =
+    name || intl.formatMessage({ id: 'trash.untitled' });
   const [deleting, setDeleting] = useState(false);
   const remove = async () => {
     setDeleting(true);
@@ -28,29 +32,32 @@ export function DeleteTrashModal({
       <ModalBody>
         <Stack space="space.200">
           <Heading size="small">
-            Permanently delete {name || 'Untitled'}?
+            {intl.formatMessage(
+              { id: 'trash.deleteConfirmTitle' },
+              { name: displayName },
+            )}
           </Heading>
           <SectionMessage
             appearance="error"
             headingLevel="h3"
-            title="This cannot be undone."
+            title={intl.formatMessage({ id: 'trash.deleteWarningTitle' })}
           >
             <Text as="p">
-              Notera will remove this item and any data only referenced by it.
+              {intl.formatMessage({ id: 'trash.deleteWarningDescription' })}
             </Text>
           </SectionMessage>
         </Stack>
       </ModalBody>
       <ModalFooter>
         <Button isDisabled={deleting} onClick={onCancel}>
-          Cancel
+          {intl.formatMessage({ id: 'trash.cancel' })}
         </Button>
         <Button
           appearance="danger"
           isLoading={deleting}
           onClick={() => void remove()}
         >
-          Delete permanently
+          {intl.formatMessage({ id: 'trash.deletePermanently' })}
         </Button>
       </ModalFooter>
     </>

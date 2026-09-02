@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Button from '@atlaskit/button/new';
 import { ModalBody, ModalFooter } from '@atlaskit/modal-dialog';
 import { Stack, Text } from '@atlaskit/primitives';
+import { useIntl } from 'react-intl';
 
 import { FolderPicker, type FolderPickerItem } from '../notes/FolderPicker';
 
@@ -18,6 +19,7 @@ export function RestoreTrashModal({
   readonly onRestore: (targetFolderId: string) => Promise<void> | void;
   readonly onCancel: () => void;
 }) {
+  const intl = useIntl();
   const [target, setTarget] = useState(rootFolderId);
   const [restoring, setRestoring] = useState(false);
   const restore = async () => {
@@ -32,7 +34,15 @@ export function RestoreTrashModal({
     <>
       <ModalBody>
         <Stack space="space.200">
-          <Text as="p">Choose where to restore {name || 'Untitled'}.</Text>
+          <Text as="p">
+            {intl.formatMessage(
+              { id: 'trash.restorePickerDescription' },
+              {
+                name:
+                  name || intl.formatMessage({ id: 'trash.untitled' }),
+              },
+            )}
+          </Text>
           <FolderPicker
             rootFolderId={rootFolderId}
             folders={folders}
@@ -44,14 +54,14 @@ export function RestoreTrashModal({
       </ModalBody>
       <ModalFooter>
         <Button isDisabled={restoring} onClick={onCancel}>
-          Cancel
+          {intl.formatMessage({ id: 'trash.cancel' })}
         </Button>
         <Button
           appearance="primary"
           isLoading={restoring}
           onClick={() => void restore()}
         >
-          Restore to selected folder
+          {intl.formatMessage({ id: 'trash.restoreToSelectedFolder' })}
         </Button>
       </ModalFooter>
     </>

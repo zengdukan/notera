@@ -10,8 +10,8 @@ import { ButtonMenuItem } from '@atlaskit/side-nav-items/button-menu-item';
 import { MenuList } from '@atlaskit/side-nav-items/menu-list';
 import { Divider } from '@atlaskit/side-nav-items/menu-section';
 import { token } from '@atlaskit/tokens';
+import { useIntl } from 'react-intl';
 
-import { localVersionName } from '../history/local-version-name';
 import { formatFolderPath } from '../shared-ui/folder-path';
 import type { TrashItem } from './trash-queries';
 
@@ -28,18 +28,29 @@ export function TrashList({
   readonly onRestore: (item: TrashItem) => void;
   readonly onDelete: (item: TrashItem) => void;
 }) {
+  const intl = useIntl();
   if (items.length === 0) {
     return (
       <EmptyState
-        header="Trash is empty"
-        description="Deleted notes and folders will appear here."
+        header={intl.formatMessage({ id: 'trash.emptyTitle' })}
+        description={intl.formatMessage({ id: 'trash.emptyDescription' })}
       />
     );
   }
   return (
     <MenuList>
       {items.map((item) => {
-        const title = item.displayName || 'Untitled';
+        const title =
+          item.displayName || intl.formatMessage({ id: 'trash.untitled' });
+        const deletedAt = intl.formatDate(item.deletedAt, {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hourCycle: 'h23',
+        });
         const ItemIcon = item.kind === 'note' ? NoteIcon : FolderClosedIcon;
         return (
           <Fragment key={item.trashEntryId}>
@@ -50,7 +61,10 @@ export function TrashList({
                     appearance="subtle"
                     icon={UndoIcon}
                     isTooltipDisabled={false}
-                    label={`Restore ${title}`}
+                    label={intl.formatMessage(
+                      { id: 'trash.restoreLabel' },
+                      { title },
+                    )}
                     onClick={(event) => {
                       event.stopPropagation();
                       onRestore(item);
@@ -61,7 +75,10 @@ export function TrashList({
                     appearance="subtle"
                     icon={DangerDeleteIcon}
                     isTooltipDisabled={false}
-                    label={`Delete ${title} permanently`}
+                    label={intl.formatMessage(
+                      { id: 'trash.deleteLabel' },
+                      { title },
+                    )}
                     onClick={(event) => {
                       event.stopPropagation();
                       onDelete(item);
@@ -70,9 +87,13 @@ export function TrashList({
                   />
                 </Inline>
               }
-              description={`${formatFolderPath(item.folderPath)} · Deleted ${localVersionName(
-                new Date(item.deletedAt),
-              )}`}
+              description={intl.formatMessage(
+                { id: 'trash.deletedDescription' },
+                {
+                  path: formatFolderPath(item.folderPath),
+                  date: deletedAt,
+                },
+              )}
               elemBefore={
                 <ItemIcon
                   color="currentColor"

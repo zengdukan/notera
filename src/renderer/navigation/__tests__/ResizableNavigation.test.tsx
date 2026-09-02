@@ -2,7 +2,9 @@
 
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { IntlProvider } from 'react-intl';
 
+import { type AppLocale, messagesFor } from '../../app/i18n';
 import { configureFeatureFlags } from '../../atlassian-editor/feature-flags';
 import { ResizableNavigation } from '../ResizableNavigation';
 
@@ -39,7 +41,7 @@ function setDesktopViewport(matches: boolean) {
   for (const listener of mediaQueryListeners) listener(event);
 }
 
-function renderNavigation() {
+function renderNavigation(locale: AppLocale = 'en') {
   const callbacks = {
     onFavorites: jest.fn(),
     onRecent: jest.fn(),
@@ -51,13 +53,15 @@ function renderNavigation() {
     onSettings: jest.fn(),
   };
   const result = render(
-    <ResizableNavigation
-      profileName="Personal Notes"
-      tree={<div>Content tree</div>}
-      {...callbacks}
-    >
-      <div>Central workspace</div>
-    </ResizableNavigation>,
+    <IntlProvider locale={locale} messages={messagesFor(locale)}>
+      <ResizableNavigation
+        profileName="Personal Notes"
+        tree={<div>Content tree</div>}
+        {...callbacks}
+      >
+        <div>Central workspace</div>
+      </ResizableNavigation>
+    </IntlProvider>,
   );
   return { ...result, callbacks };
 }
@@ -66,6 +70,12 @@ describe('ResizableNavigation', () => {
   beforeEach(() => {
     desktopViewport = true;
     mediaQueryListeners.clear();
+  });
+
+  it('localizes the trash navigation action', () => {
+    renderNavigation('zh-CN');
+
+    expect(screen.getByRole('button', { name: '回收站' })).toBeVisible();
   });
 
   it('renders the compact navigation for the ADS narrow viewport layout', () => {

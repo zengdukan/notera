@@ -624,6 +624,7 @@ describe('NavigationWorkspace', () => {
     expect(recentDialog).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Trash' }));
     expect(await screen.findByText('Trash workspace')).toBeVisible();
+    expect(screen.getByRole('dialog', { name: '回收站' })).toBeVisible();
   });
 
   it('opens create-version and history product modals from the note menu', async () => {

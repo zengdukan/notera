@@ -33,6 +33,7 @@ import {
   xcss,
 } from '@atlaskit/primitives';
 import { Show } from '@atlaskit/primitives/responsive';
+import { useIntl } from 'react-intl';
 import { ButtonMenuItem } from '@atlaskit/side-nav-items/button-menu-item';
 import { MenuList } from '@atlaskit/side-nav-items/menu-list';
 import {
@@ -253,6 +254,7 @@ function QuickNavigation({
   readonly onLock: () => void;
   readonly onSettings: () => void;
 }) {
+  const intl = useIntl();
   const toggleSideNav = useToggleSideNav({ trigger: 'toggle-button' });
 
   return (
@@ -277,7 +279,11 @@ function QuickNavigation({
         <QuickAction label="Search" icon={SearchIcon} onClick={onSearch} />
         <QuickAction label="Favorites" icon={StarIcon} onClick={onFavorites} />
         <QuickAction label="Recent" icon={ClockIcon} onClick={onRecent} />
-        <QuickAction label="Trash" icon={DeleteIcon} onClick={onTrash} />
+        <QuickAction
+          label={intl.formatMessage({ id: 'trash.title' })}
+          icon={DeleteIcon}
+          onClick={onTrash}
+        />
       </Stack>
     </Box>
   );
@@ -308,6 +314,7 @@ export function ResizableNavigation({
   readonly onLock: () => void;
   readonly onSettings: () => void;
 }) {
+  const intl = useIntl();
   const [isSideNavCollapsedOnDesktop, setIsSideNavCollapsedOnDesktop] =
     useState(false);
   const quickNavigation = (
@@ -377,7 +384,7 @@ export function ResizableNavigation({
                     elemBefore={<DeleteIcon label="" color="currentColor" />}
                     onClick={onTrash}
                   >
-                    Trash
+                    {intl.formatMessage({ id: 'trash.title' })}
                   </ButtonMenuItem>
                 </MenuList>
               </MenuSection>

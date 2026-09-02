@@ -6,7 +6,6 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { AppProviders } from '../../app/AppProviders';
-import { localVersionName } from '../../history/local-version-name';
 import type { NoteraClient } from '../../platform/notera-client';
 import { ModalHost } from '../../shared-ui/ModalHost';
 import type { TrashController } from '../trash-controller';
@@ -82,16 +81,8 @@ describe('TrashModal', () => {
       name: /^Deleted note \/ Archive · Deleted /,
     });
     expect(noteRow).toBeVisible();
-    expect(
-      screen.getByText(
-        `/ Archive · Deleted ${localVersionName(new Date(noteItem.deletedAt))}`,
-      ),
-    ).toBeVisible();
-    expect(
-      screen.getByText(
-        `/ · Deleted ${localVersionName(new Date(folderItem.deletedAt))}`,
-      ),
-    ).toBeVisible();
+    expect(screen.getByText(/^\/ Archive · Deleted /)).toBeVisible();
+    expect(screen.getByText(/^\/ · Deleted /)).toBeVisible();
     expect(screen.getByTestId('trash-note-icon')).toBeVisible();
     expect(screen.getByTestId('trash-folder-icon')).toBeVisible();
     expect(screen.queryByText(/^Expires /)).not.toBeInTheDocument();
@@ -164,5 +155,61 @@ describe('TrashModal', () => {
       'trash.purgeExpired',
       expect.anything(),
     );
+  }, 15_000);
+
+  it('renders trash list and restore feedback in Chinese', async () => {
+    const user = userEvent.setup();
+    const request = jest
+      .fn()
+      .mockResolvedValue({ items: [noteItem, folderItem] });
+    const restore = jest.fn().mockResolvedValue('restored');
+    const controller = {
+      restore,
+      deletePermanent: jest.fn(),
+    } as unknown as TrashController;
+
+    render(
+      <AppProviders locale="zh-CN" queryClient={new QueryClient()}>
+        <ModalHost
+          modal={{
+            kind: 'trash-bin',
+            title: '回收站',
+            content: (
+              <TrashModal
+                client={
+                  { request, subscribe: jest.fn() } as unknown as NoteraClient
+                }
+                profileId="profile"
+                rootFolderId="root"
+                folders={[{ id: 'target', name: '目标目录', depth: 0 }]}
+                controller={controller}
+              />
+            ),
+          }}
+          onClose={jest.fn()}
+        />
+      </AppProviders>,
+    );
+
+    expect(
+      await screen.findByRole('button', {
+        name: /^Deleted note \/ Archive · 删除于 /,
+      }),
+    ).toBeVisible();
+    await user.click(
+      screen.getByRole('button', { name: '恢复「Deleted note」' }),
+    );
+    expect(await screen.findByText('已恢复「Deleted note」')).toBeVisible();
+
+    await user.click(
+      screen.getByRole('button', { name: '恢复「Deleted folder」' }),
+    );
+    expect(
+      screen.getByText('选择「Deleted folder」的恢复位置。'),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: '恢复到所选目录' }),
+    ).toBeVisible();
+    expect(screen.getByRole('button', { name: '取消' })).toBeVisible();
   }, 15_000);
 });
