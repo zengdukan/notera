@@ -89,7 +89,7 @@ describe('SearchModal', () => {
       await screen.findByRole('button', { name: /😀 Needle/u }),
     ).toBeVisible();
     expect(screen.getByText('Needle', { selector: 'mark' })).toBeVisible();
-    expect(screen.getByText('Root / Scoped')).toBeVisible();
+    expect(screen.getByText('/ Scoped')).toBeVisible();
     const resultsRegion = screen.getByRole('region', {
       name: 'Search results',
     });

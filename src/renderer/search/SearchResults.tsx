@@ -5,6 +5,7 @@ import { ButtonItem, MenuGroup, Section } from '@atlaskit/menu';
 import { Box, Stack, Text } from '@atlaskit/primitives';
 
 import { Divider } from '@atlaskit/side-nav-items/menu-section';
+import { formatFolderPath } from '../shared-ui/folder-path';
 import type { SearchResult } from './search-queries';
 import { searchSnippet } from './search-snippet';
 import { HighlightedText } from './unicode-highlight';
@@ -49,9 +50,7 @@ export function SearchResults({
                 description={
                   <Stack space="space.025">
                     <Text color="color.text.subtle" maxLines={1} size="small">
-                      {result.folderPath
-                        .map((item) => item.name || 'Root')
-                        .join(' / ')}
+                      {formatFolderPath(result.folderPath)}
                     </Text>
                     <Text maxLines={2} size="small">
                       {excerpt.hasLeadingEllipsis ? '…' : null}

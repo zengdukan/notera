@@ -31,7 +31,7 @@ const secondNote = {
   favoriteSortOrder: 1,
 };
 const folderPath = [
-  { id: profileId, name: '研究资料' },
+  { id: profileId, name: 'Root' },
   { id: note.folderId, name: '产品策略' },
 ];
 
@@ -100,9 +100,7 @@ describe('FavoritesModal', () => {
       screen.queryByTestId('notera-modal-favorites--footer'),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByText(
-        `研究资料 / 产品策略 · ${formatRecentTimestamp(note.updatedAt)}`,
-      ),
+      screen.getByText(`/ 产品策略 · ${formatRecentTimestamp(note.updatedAt)}`),
     ).toBeVisible();
     await user.click(screen.getByRole('button', { name: /^First / }));
     expect(onOpen).toHaveBeenCalledWith({ ...note, folderPath });

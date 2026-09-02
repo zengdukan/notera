@@ -123,7 +123,7 @@ export function FolderPicker({
   readonly onChange: (folderId: string) => void;
 }) {
   const nodes = buildFolderTree(folders);
-  const rootLabel = <Text>Root</Text>;
+  const rootLabel = <Text>/</Text>;
 
   return (
     <Box xcss={folderPickerScrollStyles} testId="folder-picker-scroll">

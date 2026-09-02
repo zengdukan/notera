@@ -12,6 +12,7 @@ import { useIntl } from 'react-intl';
 
 import { Divider } from '@atlaskit/side-nav-items/menu-section';
 import type { NoteraClient } from '../platform/notera-client';
+import { formatFolderPath } from '../shared-ui/folder-path';
 import { formatRecentTimestamp } from './recent-format';
 import {
   uniqueRecentNotes,
@@ -164,7 +165,7 @@ export function RecentModal({
                 return (
                   <Fragment key={note.id}>
                     <ButtonItem
-                      description={`${note.folderPath.map((item) => item.name).join(' / ')} · ${formatRecentTimestamp(note.updatedAt)}`}
+                      description={`${formatFolderPath(note.folderPath)} · ${formatRecentTimestamp(note.updatedAt)}`}
                       iconBefore={<NoteIcon label="" />}
                       isDisabled={openingId !== undefined}
                       onClick={() => void open(note)}

@@ -21,6 +21,7 @@ import { Divider } from '@atlaskit/side-nav-items/menu-section';
 import { favoritesKey, noteKey, treeKey } from '../app/query-keys';
 import type { NoteraClient, RequestData } from '../platform/notera-client';
 import { formatRecentTimestamp } from '../recent/recent-format';
+import { formatFolderPath } from '../shared-ui/folder-path';
 import {
   uniqueFavorites,
   useFavorites,
@@ -224,7 +225,7 @@ export function FavoritesModal({
               return (
                 <Fragment key={note.id}>
                   <ButtonMenuItem
-                    description={`${note.folderPath.map((item) => item.name).join(' / ')} · ${formatRecentTimestamp(note.updatedAt)}`}
+                    description={`${formatFolderPath(note.folderPath)} · ${formatRecentTimestamp(note.updatedAt)}`}
                     elemBefore={<NoteIcon label="" color="currentColor" />}
                     actionsOnHover={
                       <IconButton

@@ -26,7 +26,7 @@ const secondNote = {
   title: 'Second note',
 };
 const folderPath = [
-  { id: '10000000-0000-4000-8000-000000000001', name: '研究资料' },
+  { id: '10000000-0000-4000-8000-000000000001', name: '' },
   { id: folderId, name: '产品策略' },
 ];
 
@@ -99,7 +99,7 @@ describe('RecentModal', () => {
     expect(
       screen.queryByTestId('notera-modal-recent--footer'),
     ).not.toBeInTheDocument();
-    expect(screen.getByText(/^研究资料 \/ 产品策略 · /)).toBeVisible();
+    expect(screen.getByText(/^\/ 产品策略 · /)).toBeVisible();
     expect(screen.getByText('按最近修改时间排序')).toBeVisible();
     const recentListGroup = screen.getByRole('group', {
       name: '最近浏览笔记',
