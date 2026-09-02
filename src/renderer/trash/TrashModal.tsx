@@ -3,7 +3,7 @@ import Button from '@atlaskit/button/new';
 import { ModalBody } from '@atlaskit/modal-dialog';
 import SectionMessage from '@atlaskit/section-message';
 import Spinner from '@atlaskit/spinner';
-import { Box, Stack } from '@atlaskit/primitives';
+import { Box, Inline, Stack, Text } from '@atlaskit/primitives';
 
 import type { FolderPickerItem } from '../notes/FolderPicker';
 import type { NoteraClient } from '../platform/notera-client';
@@ -77,10 +77,10 @@ export function TrashModal({
   if (trash.isPending) {
     return (
       <ModalBody>
-        <Box paddingBlockEnd="space.300">
-          <div className="notera-trash-state">
+        <Box paddingBlock="space.1000">
+          <Inline alignBlock="center" alignInline="center">
             <Spinner label="Loading trash" />
-          </div>
+          </Inline>
         </Box>
       </ModalBody>
     );
@@ -89,8 +89,12 @@ export function TrashModal({
     return (
       <ModalBody>
         <Box paddingBlockEnd="space.300">
-          <SectionMessage appearance="error" title="Could not load trash">
-            Close this dialog and try again.
+          <SectionMessage
+            appearance="error"
+            headingLevel="h2"
+            title="Could not load trash"
+          >
+            <Text as="p">Close this dialog and try again.</Text>
           </SectionMessage>
         </Box>
       </ModalBody>
@@ -119,60 +123,66 @@ export function TrashModal({
   return (
     <ModalBody>
       <Box paddingBlockEnd="space.300">
-        <div className="notera-trash-modal">
-          <Stack space="space.200">
-            {restoredName ? (
-              <SectionMessage
-                appearance="success"
-                title={`Restored ${restoredName}`}
-              >
-                The item is available in the workspace again.
-              </SectionMessage>
-            ) : null}
-            {deletedName ? (
-              <SectionMessage
-                appearance="success"
-                title={`Permanently deleted ${deletedName}`}
-              >
-                The item can no longer be restored.
-              </SectionMessage>
-            ) : null}
-            {feedback === 'missing' ? (
-              <SectionMessage
-                appearance="information"
-                title="This item is no longer in trash"
-              >
-                The trash list has been refreshed.
-              </SectionMessage>
-            ) : null}
-            {feedback === 'failed' ? (
-              <SectionMessage appearance="error" title="Trash operation failed">
-                The item was not changed.
-              </SectionMessage>
-            ) : null}
-            <TrashList
-              items={items}
-              onRestore={(item) => {
-                setDeletedName(undefined);
-                if (item.originalParentAvailable) void restore(item);
-                else setAction({ kind: 'restore', item });
-              }}
-              onDelete={(item) => {
-                setRestoredName(undefined);
-                setAction({ kind: 'delete', item });
-              }}
-            />
-            {trash.hasNextPage ? (
+        <Stack space="space.200">
+          {restoredName ? (
+            <SectionMessage
+              appearance="success"
+              headingLevel="h2"
+              title={`Restored ${restoredName}`}
+            >
+              <Text as="p">The item is available in the workspace again.</Text>
+            </SectionMessage>
+          ) : null}
+          {deletedName ? (
+            <SectionMessage
+              appearance="success"
+              headingLevel="h2"
+              title={`Permanently deleted ${deletedName}`}
+            >
+              <Text as="p">The item can no longer be restored.</Text>
+            </SectionMessage>
+          ) : null}
+          {feedback === 'missing' ? (
+            <SectionMessage
+              appearance="information"
+              headingLevel="h2"
+              title="This item is no longer in trash"
+            >
+              <Text as="p">The trash list has been refreshed.</Text>
+            </SectionMessage>
+          ) : null}
+          {feedback === 'failed' ? (
+            <SectionMessage
+              appearance="error"
+              headingLevel="h2"
+              title="Trash operation failed"
+            >
+              <Text as="p">The item was not changed.</Text>
+            </SectionMessage>
+          ) : null}
+          <TrashList
+            items={items}
+            onRestore={(item) => {
+              setDeletedName(undefined);
+              if (item.originalParentAvailable) void restore(item);
+              else setAction({ kind: 'restore', item });
+            }}
+            onDelete={(item) => {
+              setRestoredName(undefined);
+              setAction({ kind: 'delete', item });
+            }}
+          />
+          {trash.hasNextPage ? (
+            <Inline alignInline="center">
               <Button
-                appearance="subtle"
                 isLoading={trash.isFetchingNextPage}
                 onClick={() => void trash.fetchNextPage()}
               >
                 Load more
               </Button>
-            ) : null}
-          </Stack>
-        </div>
+            </Inline>
+          ) : null}
+        </Stack>
       </Box>
     </ModalBody>
   );

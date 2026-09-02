@@ -1,9 +1,22 @@
-import Button from '@atlaskit/button/new';
+import { Fragment, type ComponentProps } from 'react';
+import { IconButton } from '@atlaskit/button/new';
 import EmptyState from '@atlaskit/empty-state';
-import { Inline, Stack, Text } from '@atlaskit/primitives';
+import DeleteIcon from '@atlaskit/icon/core/delete';
+import FolderClosedIcon from '@atlaskit/icon/core/folder-closed';
+import NoteIcon from '@atlaskit/icon/core/note';
+import UndoIcon from '@atlaskit/icon/core/undo';
+import { Inline } from '@atlaskit/primitives';
+import { ButtonMenuItem } from '@atlaskit/side-nav-items/button-menu-item';
+import { MenuList } from '@atlaskit/side-nav-items/menu-list';
+import { Divider } from '@atlaskit/side-nav-items/menu-section';
+import { token } from '@atlaskit/tokens';
 
 import { localVersionName } from '../history/local-version-name';
 import type { TrashItem } from './trash-queries';
+
+function DangerDeleteIcon(props: ComponentProps<typeof DeleteIcon>) {
+  return <DeleteIcon {...props} color={token('color.icon.danger')} />;
+}
 
 export function TrashList({
   items,
@@ -23,47 +36,54 @@ export function TrashList({
     );
   }
   return (
-    <div aria-label="Deleted items" className="notera-trash-list" role="list">
-      {items.map((item) => (
-        <div
-          className="notera-trash-list__item"
-          key={item.trashEntryId}
-          role="listitem"
-        >
-          <div className="notera-trash-list__details">
-            <Stack space="space.025">
-              <Text weight="semibold">{item.displayName || 'Untitled'}</Text>
-              <Inline space="space.100" shouldWrap>
-                <Text>{item.kind === 'note' ? 'Note' : 'Folder'}</Text>
-                <Text color="color.text.subtle" size="small">
-                  Deleted {localVersionName(new Date(item.deletedAt))}
-                </Text>
-                <Text color="color.text.subtle" size="small">
-                  Expires {localVersionName(new Date(item.expiresAt))}
-                </Text>
-              </Inline>
-            </Stack>
-          </div>
-          <div className="notera-trash-list__actions">
-            <Button
-              appearance="subtle"
-              onClick={() => onRestore(item)}
-              aria-label={`Restore ${item.displayName || 'Untitled'}`}
+    <MenuList>
+      {items.map((item) => {
+        const title = item.displayName || 'Untitled';
+        const ItemIcon = item.kind === 'note' ? NoteIcon : FolderClosedIcon;
+        return (
+          <Fragment key={item.trashEntryId}>
+            <ButtonMenuItem
+              actionsOnHover={
+                <Inline alignBlock="center" space="space.025">
+                  <IconButton
+                    appearance="subtle"
+                    icon={UndoIcon}
+                    isTooltipDisabled={false}
+                    label={`Restore ${title}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onRestore(item);
+                    }}
+                    spacing="compact"
+                  />
+                  <IconButton
+                    appearance="subtle"
+                    icon={DangerDeleteIcon}
+                    isTooltipDisabled={false}
+                    label={`Delete ${title} permanently`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onDelete(item);
+                    }}
+                    spacing="compact"
+                  />
+                </Inline>
+              }
+              description={`Deleted ${localVersionName(new Date(item.deletedAt))}`}
+              elemBefore={
+                <ItemIcon
+                  color="currentColor"
+                  label=""
+                  testId={`trash-${item.kind}-icon`}
+                />
+              }
             >
-              Restore
-            </Button>
-            <Button
-              appearance="subtle"
-              onClick={() => onDelete(item)}
-              aria-label={`Delete ${item.displayName || 'Untitled'} permanently`}
-            >
-              <span className="notera-trash-action--danger">
-                Delete permanently
-              </span>
-            </Button>
-          </div>
-        </div>
-      ))}
-    </div>
+              {title}
+            </ButtonMenuItem>
+            <Divider />
+          </Fragment>
+        );
+      })}
+    </MenuList>
   );
 }

@@ -31,18 +31,16 @@ export function RestoreTrashModal({
   return (
     <>
       <ModalBody>
-        <div className="notera-trash-restore">
-          <Stack space="space.200">
-            <Text>Choose where to restore {name || 'Untitled'}.</Text>
-            <FolderPicker
-              rootFolderId={rootFolderId}
-              folders={folders}
-              disabledIds={new Set()}
-              value={target}
-              onChange={setTarget}
-            />
-          </Stack>
-        </div>
+        <Stack space="space.200">
+          <Text as="p">Choose where to restore {name || 'Untitled'}.</Text>
+          <FolderPicker
+            rootFolderId={rootFolderId}
+            folders={folders}
+            disabledIds={new Set()}
+            value={target}
+            onChange={setTarget}
+          />
+        </Stack>
       </ModalBody>
       <ModalFooter>
         <Button isDisabled={restoring} onClick={onCancel}>

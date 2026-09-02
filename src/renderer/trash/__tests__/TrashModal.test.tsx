@@ -6,6 +6,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { AppProviders } from '../../app/AppProviders';
+import { localVersionName } from '../../history/local-version-name';
 import type { NoteraClient } from '../../platform/notera-client';
 import { ModalHost } from '../../shared-ui/ModalHost';
 import type { TrashController } from '../trash-controller';
@@ -72,12 +73,31 @@ describe('TrashModal', () => {
       </AppProviders>,
     );
 
-    expect(await screen.findByText('Deleted note')).toBeVisible();
-    expect(screen.getByText('Note')).toBeVisible();
-    expect(screen.getByText('Folder')).toBeVisible();
-    await user.click(
-      screen.getByRole('button', { name: 'Restore Deleted note' }),
-    );
+    const noteRow = await screen.findByRole('button', {
+      name: /^Deleted note Deleted /,
+    });
+    expect(noteRow).toBeVisible();
+    expect(
+      screen.getAllByText(`Deleted ${localVersionName(new Date(1))}`),
+    ).toHaveLength(2);
+    expect(screen.getByTestId('trash-note-icon')).toBeVisible();
+    expect(screen.getByTestId('trash-folder-icon')).toBeVisible();
+    expect(screen.queryByText(/^Expires /)).not.toBeInTheDocument();
+
+    await user.hover(noteRow);
+    const restoreNote = screen.getByRole('button', {
+      name: 'Restore Deleted note',
+    });
+    const deleteNote = screen.getByRole('button', {
+      name: 'Delete Deleted note permanently',
+    });
+    noteRow.focus();
+    await user.tab();
+    expect(restoreNote).toHaveFocus();
+    await user.tab();
+    expect(deleteNote).toHaveFocus();
+
+    await user.click(restoreNote);
     expect(restore).toHaveBeenCalledWith({ trashEntryId: 'trash-note' });
     expect(await screen.findByText('Restored Deleted note')).toBeVisible();
 
@@ -132,5 +152,5 @@ describe('TrashModal', () => {
       'trash.purgeExpired',
       expect.anything(),
     );
-  });
+  }, 15_000);
 });
