@@ -91,7 +91,14 @@ export function trashFolder(
 ) {
   const folderId = asFolderId(value);
   database.folders.listContent(folderId, { limit: 1 });
-  const folders = database.folders.listSubtree(folderId);
+  const trashedFolderIds = new Set(
+    allTrashEntries(database)
+      .filter(({ objectType }) => objectType === 'FOLDER')
+      .map(({ objectId }) => objectId),
+  );
+  const folders = database.folders
+    .listSubtree(folderId)
+    .filter(({ id }) => !trashedFolderIds.has(id));
   const notes = folders.flatMap(({ id }) => allNotesInFolder(database, id));
   const folderTrashEntryIds = new Map(
     folders.map(({ id }) => [id, asTrashEntryId(randomId())]),

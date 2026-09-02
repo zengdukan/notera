@@ -23,6 +23,55 @@ async function countBlobFiles(root: string): Promise<number> {
 }
 
 describe('LocalNotesService grouped trash', () => {
+  it('trashes a parent whose descendant is already in trash', async () => {
+    const manager = await createProfileManager({ appDataRoot: tempRoot() });
+    const profile = await manager.createProfile({
+      displayName: 'Nested trash',
+      password: 'correct horse battery staple',
+    });
+    const { localNotes } = manager;
+    const today = await localNotes.createFolder({
+      parentFolderId: profile.rootFolderId,
+      name: 'today',
+    });
+    const top = await localNotes.createFolder({
+      parentFolderId: today.id,
+      name: 'top',
+    });
+    const nested = await localNotes.createFolder({
+      parentFolderId: top.id,
+      name: 'nested',
+    });
+
+    await localNotes.trashFolder(nested.id);
+    const trashedTop = await localNotes.trashFolder(top.id);
+
+    expect(await localNotes.listTrash({ limit: 10 })).toMatchObject({
+      items: [
+        {
+          trashEntryId: trashedTop.trashEntryId,
+          objectId: top.id,
+          kind: 'folder',
+          displayName: 'top',
+          folderPath: [
+            { id: profile.rootFolderId, name: '' },
+            { id: today.id, name: 'today' },
+          ],
+          originalParentAvailable: true,
+        },
+      ],
+    });
+    await localNotes.restoreTrash({ trashEntryId: trashedTop.trashEntryId });
+    expect(
+      await localNotes.listChildren({ parentFolderId: top.id, limit: 10 }),
+    ).toMatchObject({
+      items: [{ id: nested.id, kind: 'folder', name: 'nested' }],
+    });
+    expect((await localNotes.listTrash({ limit: 10 })).items).toEqual([]);
+
+    await manager.close();
+  });
+
   it('lists, restores, and permanently deletes complete folder groups', async () => {
     const appDataRoot = tempRoot();
     const manager = await createProfileManager({ appDataRoot });
