@@ -15,97 +15,8 @@
   min-height: 516px;
 }
 
-.notera-history-list__item button > span {
-  width: 100%;
-  text-align: left;
-}
-
 [data-testid='notera-modal-history--body'] {
   min-height: 500px;
-}
-
-.notera-history-modal {
-  min-height: 500px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--ds-space-200);
-}
-
-.notera-history-state {
-  min-height: 280px;
-  display: grid;
-  place-items: center;
-}
-
-.notera-history-workspace {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
-}
-
-.notera-history-workspace__list {
-  min-width: 0;
-  overflow: auto;
-  padding-right: var(--ds-space-200);
-  border-right: var(--notera-modal-border-width) solid
-    var(--notera-modal-divider);
-}
-
-.notera-history-workspace__preview {
-  min-width: 0;
-  overflow: auto;
-  padding-left: var(--ds-space-300);
-}
-
-.notera-history-list {
-  display: grid;
-  gap: var(--ds-space-100);
-}
-
-.notera-history-list__item {
-  border: var(--notera-modal-border-width) solid var(--notera-modal-border);
-  border-radius: var(--notera-modal-radius);
-}
-
-.notera-history-list__item:hover {
-  background: var(--ds-background-neutral-subtle-hovered);
-}
-
-.notera-history-list__item--selected {
-  border-color: var(--ds-border-selected);
-  background: var(--notera-modal-selected);
-}
-
-.notera-history-list__item--selected:hover {
-  background: var(--notera-modal-selected-hovered);
-}
-
-.notera-history-preview__document {
-  min-height: 280px;
-}
-
-.notera-history-compare {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.notera-history-compare > article {
-  min-width: 0;
-  overflow: auto;
-  padding-inline: var(--ds-space-300);
-}
-
-.notera-history-compare > article:first-child {
-  padding-left: 0;
-  border-right: var(--notera-modal-border-width) solid
-    var(--notera-modal-divider);
-}
-
-.notera-history-compare > article:last-child {
-  padding-right: 0;
 }
 
 .notera-export-setup,
@@ -142,38 +53,8 @@
     min-height: 0;
   }
 
-  [data-testid='notera-modal-history--body'],
-  .notera-history-modal {
+  [data-testid='notera-modal-history--body'] {
     min-height: 0;
-  }
-
-  .notera-history-workspace,
-  .notera-history-compare {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .notera-history-workspace__list {
-    max-height: 180px;
-    padding-right: 0;
-    padding-bottom: var(--ds-space-200);
-    border-right: 0;
-    border-bottom: var(--notera-modal-border-width) solid
-      var(--notera-modal-divider);
-  }
-
-  .notera-history-workspace__preview {
-    padding-top: var(--ds-space-200);
-    padding-left: 0;
-  }
-
-  .notera-history-compare > article {
-    padding: var(--ds-space-200) 0;
-  }
-
-  .notera-history-compare > article:first-child {
-    border-right: 0;
-    border-bottom: var(--notera-modal-border-width) solid
-      var(--notera-modal-divider);
   }
 
   .notera-export-setup,

@@ -3,8 +3,9 @@ import Button from '@atlaskit/button/new';
 import { Field } from '@atlaskit/form';
 import SectionMessage from '@atlaskit/section-message';
 import Textfield from '@atlaskit/textfield';
-import { Stack } from '@atlaskit/primitives';
+import { Stack, Text } from '@atlaskit/primitives';
 import { ModalBody, ModalFooter } from '@atlaskit/modal-dialog';
+import { useIntl } from 'react-intl';
 
 const CREATE_VERSION_FORM_ID = 'notera-create-version-form';
 
@@ -15,6 +16,7 @@ export function CreateVersionModal({
   readonly defaultName: string;
   readonly onCreate: (versionName: string) => Promise<void> | void;
 }) {
+  const intl = useIntl();
   const [name, setName] = useState(defaultName);
   const [submitting, setSubmitting] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -34,19 +36,23 @@ export function CreateVersionModal({
       <ModalBody>
         <form
           id={CREATE_VERSION_FORM_ID}
-          aria-label="Create version"
-          className="notera-create-version"
+          aria-label={intl.formatMessage({ id: 'history.create.formLabel' })}
           onSubmit={(event) => {
             event.preventDefault();
             if (name.trim().length > 0 && !submitting) void create();
           }}
         >
           <Stack space="space.200">
-            <Field name="versionName" label="Version name">
+            <Field
+              name="versionName"
+              label={intl.formatMessage({ id: 'history.create.nameLabel' })}
+            >
               {({ fieldProps }) => (
                 <Textfield
                   {...fieldProps}
-                  aria-label="Version name"
+                  aria-label={intl.formatMessage({
+                    id: 'history.create.nameLabel',
+                  })}
                   autoFocus
                   value={name}
                   onChange={(event) => setName(event.currentTarget.value)}
@@ -56,9 +62,15 @@ export function CreateVersionModal({
             {failed ? (
               <SectionMessage
                 appearance="error"
-                title="Version was not created"
+                title={intl.formatMessage({
+                  id: 'history.create.failureTitle',
+                })}
               >
-                Your name is preserved. Try again when the note can be saved.
+                <Text as="p">
+                  {intl.formatMessage({
+                    id: 'history.create.failureDescription',
+                  })}
+                </Text>
               </SectionMessage>
             ) : null}
           </Stack>
@@ -72,7 +84,7 @@ export function CreateVersionModal({
           isLoading={submitting}
           isDisabled={name.trim().length === 0}
         >
-          Create version
+          {intl.formatMessage({ id: 'history.create.submit' })}
         </Button>
       </ModalFooter>
     </>

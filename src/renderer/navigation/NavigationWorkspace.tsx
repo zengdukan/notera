@@ -377,7 +377,7 @@ function UnlockedNavigationWorkspace({
     if (overlay.kind === 'create-version') {
       return {
         kind: overlay.kind,
-        title: 'Create version',
+        title: intl.formatMessage({ id: 'history.create.title' }),
         width: 560,
         content: (
           <CreateVersionModal
@@ -396,7 +396,7 @@ function UnlockedNavigationWorkspace({
     if (overlay.kind === 'history') {
       return {
         kind: overlay.kind,
-        title: 'History',
+        title: intl.formatMessage({ id: 'history.title' }),
         width: 1080,
         content: (
           <HistoryModal

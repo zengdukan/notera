@@ -57,4 +57,26 @@ describe('CreateVersionModal', () => {
     expect(input).toHaveValue('Milestone');
     expect(screen.getByText('Version was not created')).toBeVisible();
   });
+
+  it('renders the form in Chinese', () => {
+    render(
+      <AppProviders locale="zh-CN">
+        <ModalHost
+          modal={{
+            kind: 'create-version',
+            title: '创建版本',
+            content: (
+              <CreateVersionModal defaultName="初始版本" onCreate={jest.fn()} />
+            ),
+          }}
+          onClose={jest.fn()}
+        />
+      </AppProviders>,
+    );
+
+    expect(screen.getByRole('textbox', { name: '版本名称' })).toHaveValue(
+      '初始版本',
+    );
+    expect(screen.getByRole('button', { name: '创建版本' })).toBeVisible();
+  });
 });

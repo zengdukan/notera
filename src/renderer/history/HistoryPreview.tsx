@@ -1,5 +1,6 @@
 import Spinner from '@atlaskit/spinner';
-import { Stack, Text } from '@atlaskit/primitives';
+import { Box, Stack, Text, xcss } from '@atlaskit/primitives';
+import { useIntl } from 'react-intl';
 
 import { RendererSurface } from '../editor/RendererSurface';
 import type { HistorySnapshot } from './history-queries';
@@ -13,14 +14,23 @@ export function HistoryPreview({
   readonly snapshot?: HistorySnapshot;
   readonly loading: boolean;
 }) {
-  if (loading) return <Spinner label="Loading version" />;
-  if (!snapshot) return <Text>Select a version to preview it.</Text>;
+  const intl = useIntl();
+  if (loading)
+    return (
+      <Spinner label={intl.formatMessage({ id: 'history.preview.loading' })} />
+    );
+  if (!snapshot)
+    return <Text>{intl.formatMessage({ id: 'history.preview.select' })}</Text>;
   return (
-    <div className="notera-history-preview__document">
+    <Box xcss={documentStyles}>
       <Stack space="space.150">
-        <Text weight="semibold">{snapshot.title || 'Untitled'}</Text>
+        <Text weight="semibold">
+          {snapshot.title || intl.formatMessage({ id: 'history.untitled' })}
+        </Text>
         <RendererSurface noteId={noteId} document={snapshot.document} />
       </Stack>
-    </div>
+    </Box>
   );
 }
+
+const documentStyles = xcss({ minHeight: '280px' });

@@ -13,6 +13,7 @@ import DeleteIcon from '@atlaskit/icon/core/delete';
 import DownloadIcon from '@atlaskit/icon/core/download';
 import { Box, Inline, Text, xcss } from '@atlaskit/primitives';
 import Textfield from '@atlaskit/textfield';
+import { useIntl } from 'react-intl';
 
 import type { SaveState } from './document-session';
 
@@ -49,10 +50,21 @@ const saveLabel: Readonly<Record<SaveState, string>> = Object.freeze({
 const MORE_ACTIONS: readonly {
   readonly id: NoteMoreAction;
   readonly label: string;
+  readonly messageId?: string;
   readonly icon: typeof AddIcon;
 }[] = Object.freeze([
-  { id: 'create-version', label: 'Create version', icon: AddIcon },
-  { id: 'history', label: 'History', icon: ClockIcon },
+  {
+    id: 'create-version',
+    label: 'Create version',
+    messageId: 'history.create.title',
+    icon: AddIcon,
+  },
+  {
+    id: 'history',
+    label: 'History',
+    messageId: 'history.title',
+    icon: ClockIcon,
+  },
   { id: 'export', label: 'Export', icon: DownloadIcon },
   { id: 'move', label: 'Move', icon: ArrowRightIcon },
   { id: 'copy', label: 'Copy', icon: CopyIcon },
@@ -86,6 +98,7 @@ export function StickyNoteHeader({
   readonly onRetry?: () => void;
   readonly onMore: (action: NoteMoreAction) => void;
 }) {
+  const intl = useIntl();
   const displayTitle = title || 'Untitled';
   return (
     <Box xcss={headerStyles}>
@@ -163,7 +176,9 @@ export function StickyNoteHeader({
                     }
                     onClick={() => onMore(action.id)}
                   >
-                    {action.label}
+                    {action.messageId
+                      ? intl.formatMessage({ id: action.messageId })
+                      : action.label}
                   </DropdownItem>
                 );
               })}

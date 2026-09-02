@@ -5,10 +5,13 @@ import { QueryClient } from '@tanstack/react-query';
 import { render, screen, within } from '@testing-library/react';
 
 import { AppProviders } from '../../app/AppProviders';
+import { configureFeatureFlags } from '../../atlassian-editor/feature-flags';
 import type { NoteraClient } from '../../platform/notera-client';
 import { ModalHost } from '../../shared-ui/ModalHost';
 import type { HistoryController } from '../history-controller';
 import { HistoryModal } from '../HistoryModal';
+
+configureFeatureFlags();
 
 jest.mock('../../editor/RendererSurface', () => ({
   RendererSurface: ({ document }: { document: unknown }) => (
@@ -77,6 +80,8 @@ describe('HistoryModal', () => {
                 profileId="profile"
                 noteId="note"
                 controller={controller}
+                rootFolderId="root"
+                folders={[]}
               />
             ),
           }}
@@ -88,11 +93,14 @@ describe('HistoryModal', () => {
     expect(await screen.findByText('Milestone')).toBeVisible();
     expect(screen.getByText('Protected before history restore')).toBeVisible();
     expect(
-      screen.getByRole('listbox', { name: 'Saved versions' }),
+      screen.getByRole('navigation', { name: 'Saved versions' }),
     ).toBeVisible();
     expect(
-      screen.getByRole('option', { name: 'Preview Milestone' }),
-    ).toHaveAttribute('aria-selected', 'true');
+      screen
+        .getByTestId('history-version-version')
+        .closest('[data-selected="true"]'),
+    ).not.toBeNull();
+    expect(screen.getByRole('button', { name: /Milestone/u })).toBeVisible();
     expect(
       screen.getByRole('region', { name: 'Version preview' }),
     ).toBeVisible();
@@ -106,6 +114,9 @@ describe('HistoryModal', () => {
     const footer = screen.getByTestId('notera-modal-history--footer');
     expect(
       within(footer).getByRole('button', { name: 'Compare' }),
+    ).toBeVisible();
+    expect(
+      within(footer).getByRole('button', { name: 'Copy as new' }),
     ).toBeVisible();
     expect(
       within(footer).getByRole('button', { name: 'Restore version' }),

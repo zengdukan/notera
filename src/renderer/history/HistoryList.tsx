@@ -1,16 +1,28 @@
-import Button from '@atlaskit/button/new';
 import EmptyState from '@atlaskit/empty-state';
-import { Stack, Text } from '@atlaskit/primitives';
+import ClockIcon from '@atlaskit/icon/core/clock';
+import { Box } from '@atlaskit/primitives';
+import { ButtonMenuItem } from '@atlaskit/side-nav-items/button-menu-item';
+import { MenuList } from '@atlaskit/side-nav-items/menu-list';
+import { useIntl, type IntlShape } from 'react-intl';
 
-import { localVersionName } from './local-version-name';
 import type { HistoryItem } from './history-queries';
 
-function itemLabel(item: HistoryItem): string {
+function itemLabel(item: HistoryItem, intl: IntlShape): string {
   if (item.kind === 'USER')
-    return item.versionName ?? localVersionName(new Date(item.createdAt));
+    return (
+      item.versionName ??
+      intl.formatDate(item.createdAt, {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      })
+    );
   if (item.protectionReason === 'BEFORE_HISTORY_RESTORE')
-    return 'Protected before history restore';
-  return 'Protected before migration';
+    return intl.formatMessage({ id: 'history.protected.beforeRestore' });
+  return intl.formatMessage({ id: 'history.protected.beforeMigration' });
 }
 
 export function HistoryList({
@@ -22,46 +34,40 @@ export function HistoryList({
   readonly selectedId?: string;
   readonly onSelect: (item: HistoryItem) => void;
 }) {
+  const intl = useIntl();
   if (items.length === 0) {
     return (
       <EmptyState
-        header="No saved versions"
-        description="Create a version from the note menu."
+        header={intl.formatMessage({ id: 'history.empty.title' })}
+        description={intl.formatMessage({ id: 'history.empty.description' })}
       />
     );
   }
   return (
-    <div
-      aria-label="Saved versions"
-      className="notera-history-list"
-      role="listbox"
+    <Box
+      as="nav"
+      aria-label={intl.formatMessage({ id: 'history.versionList.label' })}
     >
-      {items.map((item) => (
-        <div
-          className={`notera-history-list__item${
-            selectedId === item.versionId
-              ? ' notera-history-list__item--selected'
-              : ''
-          }`}
-          key={item.versionId}
-        >
-          <Button
-            appearance="subtle"
-            shouldFitContainer
-            onClick={() => onSelect(item)}
-            aria-label={`Preview ${itemLabel(item)}`}
-            aria-selected={selectedId === item.versionId}
-            role="option"
-          >
-            <Stack space="space.025">
-              <Text weight="semibold">{itemLabel(item)}</Text>
-              <Text color="color.text.subtle" size="small">
-                {localVersionName(new Date(item.createdAt))}
-              </Text>
-            </Stack>
-          </Button>
-        </div>
-      ))}
-    </div>
+      <MenuList>
+        {items.map((item) => {
+          const label = itemLabel(item, intl);
+          return (
+            <ButtonMenuItem
+              description={intl.formatDate(item.createdAt, {
+                dateStyle: 'medium',
+                timeStyle: 'medium',
+              })}
+              elemBefore={<ClockIcon label="" color="currentColor" />}
+              isSelected={selectedId === item.versionId}
+              key={item.versionId}
+              testId={`history-version-${item.versionId}`}
+              onClick={() => onSelect(item)}
+            >
+              {label}
+            </ButtonMenuItem>
+          );
+        })}
+      </MenuList>
+    </Box>
   );
 }

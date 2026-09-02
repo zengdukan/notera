@@ -70,6 +70,20 @@ describe('application internationalization', () => {
     });
   });
 
+  it('defines localized history and copy messages', () => {
+    expect(messagesFor('en')).toMatchObject({
+      'history.title': 'History',
+      'history.copy.action': 'Copy as new',
+      'history.copy.successDescription':
+        '{title} was created in the selected folder.',
+    });
+    expect(messagesFor('zh-CN')).toMatchObject({
+      'history.title': '历史版本',
+      'history.copy.action': '复制为新笔记',
+      'history.copy.successDescription': '已在所选目录中创建「{title}」。',
+    });
+  });
+
   it('includes Chinese messages required by rendered editor content', () => {
     expect(messagesFor('zh-CN')).toMatchObject({
       'fabric.editor.fieldsetLabel': '操作项列表',

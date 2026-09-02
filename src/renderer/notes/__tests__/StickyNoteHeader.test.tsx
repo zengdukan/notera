@@ -1,12 +1,22 @@
 /** @jest-environment jsdom */
 
+import type { ReactElement } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { IntlProvider } from 'react-intl';
 
+import { type AppLocale, messagesFor } from '../../app/i18n';
 import { configureFeatureFlags } from '../../atlassian-editor/feature-flags';
 import { StickyNoteHeader } from '../StickyNoteHeader';
 
 configureFeatureFlags();
+
+const renderHeader = (element: ReactElement, locale: AppLocale = 'en') =>
+  render(
+    <IntlProvider locale={locale} messages={messagesFor(locale)}>
+      {element}
+    </IntlProvider>,
+  );
 
 const paths = [
   { id: 'root', name: 'Notes' },
@@ -15,7 +25,7 @@ const paths = [
 
 describe('StickyNoteHeader', () => {
   it('uses the same top anchor in edit and preview modes', () => {
-    const editView = render(
+    const editView = renderHeader(
       <StickyNoteHeader
         mode="edit"
         title="Draft"
@@ -29,7 +39,7 @@ describe('StickyNoteHeader', () => {
         onMore={jest.fn()}
       />,
     );
-    const previewView = render(
+    const previewView = renderHeader(
       <StickyNoteHeader
         mode="preview"
         title="Draft"
@@ -50,7 +60,7 @@ describe('StickyNoteHeader', () => {
   });
 
   it('keeps breadcrumbs, title, save status and ordered note actions in one header', () => {
-    render(
+    renderHeader(
       <StickyNoteHeader
         mode="preview"
         title="Architecture"
@@ -82,7 +92,7 @@ describe('StickyNoteHeader', () => {
     const onTitleChange = jest.fn();
     const onMore = jest.fn();
     const onRetry = jest.fn();
-    render(
+    renderHeader(
       <StickyNoteHeader
         mode="edit"
         title="Draft"
@@ -130,7 +140,7 @@ describe('StickyNoteHeader', () => {
   });
 
   it('focuses the title for a newly created note', () => {
-    render(
+    renderHeader(
       <StickyNoteHeader
         mode="edit"
         title=""
@@ -147,5 +157,30 @@ describe('StickyNoteHeader', () => {
     );
 
     expect(screen.getByRole('textbox', { name: 'Note title' })).toHaveFocus();
+  });
+
+  it('localizes the history actions in Chinese', async () => {
+    const user = userEvent.setup();
+    renderHeader(
+      <StickyNoteHeader
+        mode="preview"
+        title="架构"
+        path={paths}
+        saveState="clean"
+        isFavorite={false}
+        onTitleChange={jest.fn()}
+        onToggleFavorite={jest.fn()}
+        onEdit={jest.fn()}
+        onPreview={jest.fn()}
+        onMore={jest.fn()}
+      />,
+      'zh-CN',
+    );
+
+    await user.click(screen.getByRole('button', { name: 'More' }));
+    expect(
+      await screen.findByRole('menuitem', { name: '创建版本' }),
+    ).toBeVisible();
+    expect(screen.getByRole('menuitem', { name: '历史版本' })).toBeVisible();
   });
 });
