@@ -43,7 +43,8 @@ interface TrashApi {
   apply(plan: { entries: readonly TrashEntry[] }): void;
   restore(input: {
     entries: readonly TrashEntry[];
-    targetFolderIds: ReadonlyMap<string, typeof TEST_ROOT_FOLDER_ID>;
+    targetFolderIds: ReadonlyMap<string, ReturnType<typeof asFolderId>>;
+    mergeFolderIds?: ReadonlyMap<string, ReturnType<typeof asFolderId>>;
     now: ReturnType<typeof asTimestamp>;
   }): void;
   deletePermanent(entries: readonly TrashEntry[]): void;
@@ -54,7 +55,10 @@ interface VaultApi {
   readonly notes: { get(id: ReturnType<typeof asNoteId>): Note | undefined };
   transaction<Result>(
     callback: (transaction: {
-      folders: { insert(folder: Folder): void };
+      folders: {
+        insert(folder: Folder): void;
+        replace(folder: Folder): void;
+      };
       notes: { insert(note: Note): void };
       trash: TrashApi;
       contentPlans: {
@@ -251,6 +255,109 @@ describe('trash and content plans', () => {
       }),
     );
     expect(database.trash.list({ limit: 10 }).items).toEqual(notePlan.entries);
+  });
+
+  it('merges a folder group into an existing path and rebases independent entries', () => {
+    const { database, filePath } = createVault();
+    const original = createRegularFolder({
+      id: asFolderId('74000000-0000-4000-8000-000000000021'),
+      vaultId: TEST_VAULT_ID,
+      parentId: TEST_ROOT_FOLDER_ID,
+      name: asFolderName('top'),
+      sortOrder: asSortOrder(0),
+      createdAt: asTimestamp(1),
+      updatedAt: asTimestamp(1),
+    });
+    const replacement = createRegularFolder({
+      ...original,
+      id: asFolderId('74000000-0000-4000-8000-000000000022'),
+      createdAt: asTimestamp(11),
+      updatedAt: asTimestamp(11),
+    });
+    const independent = { ...note(21), folderId: original.id };
+    const grouped = { ...note(22), folderId: original.id };
+    const independentPlan = trashNote({
+      note: independent,
+      trashEntryId: asTrashEntryId(
+        '75000000-0000-4000-8000-000000000021',
+      ),
+      deletedAt: asTimestamp(5),
+    });
+    const folderPlan = trashFolderTree({
+      sourceFolderId: original.id,
+      folders: [original],
+      notes: [grouped],
+      folderTrashEntryIds: new Map([
+        [
+          original.id,
+          asTrashEntryId('75000000-0000-4000-8000-000000000022'),
+        ],
+      ]),
+      noteTrashEntryIds: new Map([
+        [
+          grouped.id,
+          asTrashEntryId('75000000-0000-4000-8000-000000000023'),
+        ],
+      ]),
+      deletedAt: asTimestamp(10),
+    });
+    const folderRoot = folderPlan.entries.find(
+      (entry) => entry.objectType === 'FOLDER',
+    );
+    const groupedEntry = folderPlan.entries.find(
+      (entry) => entry.objectType === 'NOTE',
+    );
+    if (folderRoot === undefined || groupedEntry === undefined) {
+      throw new Error('Expected complete folder group');
+    }
+    database.transaction((transaction) => {
+      transaction.folders.insert(original);
+      transaction.notes.insert(independent);
+      transaction.notes.insert(grouped);
+      transaction.trash.apply(independentPlan);
+      transaction.trash.apply(folderPlan);
+      transaction.folders.replace(
+        createRegularFolder({
+          ...original,
+          name: asFolderName('.notera-trash-original'),
+        }),
+      );
+      transaction.folders.insert(replacement);
+      transaction.trash.restore({
+        entries: folderPlan.entries,
+        targetFolderIds: new Map([
+          [folderRoot.id, TEST_ROOT_FOLDER_ID],
+          [groupedEntry.id, replacement.id],
+        ]),
+        mergeFolderIds: new Map([[folderRoot.id, replacement.id]]),
+        now: asTimestamp(12),
+      });
+    });
+
+    expect(database.trash.list({ limit: 10 }).items).toEqual([
+      expect.objectContaining({
+        id: independentPlan.entries[0].id,
+        originalParentId: replacement.id,
+      }),
+    ]);
+    expect(database.notes.get(grouped.id)).toMatchObject({
+      folderId: replacement.id,
+    });
+    const raw = openTestConnection(filePath);
+    expect(
+      raw
+        .prepare('SELECT folder_id FROM notes WHERE id = ?')
+        .get(independent.id),
+    ).toEqual({ folder_id: replacement.id });
+    expect(
+      raw
+        .prepare('SELECT original_parent_id FROM trash_entries WHERE id = ?')
+        .get(independentPlan.entries[0].id),
+    ).toEqual({ original_parent_id: replacement.id });
+    expect(
+      raw.prepare('SELECT id FROM folders WHERE id = ?').get(original.id),
+    ).toBeUndefined();
+    raw.close();
   });
 
   it('trashes and restores a Note with its FTS row atomically', () => {

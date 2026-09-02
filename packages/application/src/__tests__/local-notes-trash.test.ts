@@ -23,6 +23,55 @@ async function countBlobFiles(root: string): Promise<number> {
 }
 
 describe('LocalNotesService grouped trash', () => {
+  it('keeps an independently deleted note visible after deleting its parent folder', async () => {
+    const manager = await createProfileManager({ appDataRoot: tempRoot() });
+    const profile = await manager.createProfile({
+      displayName: 'Independent trash groups',
+      password: 'correct horse battery staple',
+    });
+    const { localNotes } = manager;
+    const today = await localNotes.createFolder({
+      parentFolderId: profile.rootFolderId,
+      name: 'today',
+    });
+    const top = await localNotes.createFolder({
+      parentFolderId: today.id,
+      name: 'top',
+    });
+    const math = await localNotes.createNote({
+      folderId: top.id,
+      title: '数学',
+    });
+
+    const trashedMath = await localNotes.trashNote(math.id);
+    const trashedTop = await localNotes.trashFolder(top.id);
+
+    expect((await localNotes.listTrash({ limit: 10 })).items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          trashEntryId: trashedMath.trashEntryId,
+          displayName: '数学',
+          folderPath: [
+            { id: profile.rootFolderId, name: '' },
+            { id: today.id, name: 'today' },
+            { id: top.id, name: 'top' },
+          ],
+        }),
+        expect.objectContaining({
+          trashEntryId: trashedTop.trashEntryId,
+          displayName: 'top',
+          folderPath: [
+            { id: profile.rootFolderId, name: '' },
+            { id: today.id, name: 'today' },
+          ],
+        }),
+      ]),
+    );
+    expect((await localNotes.listTrash({ limit: 10 })).items).toHaveLength(2);
+
+    await manager.close();
+  });
+
   it('restores an earlier note through a rebuilt path without restoring its parent group', async () => {
     const manager = await createProfileManager({ appDataRoot: tempRoot() });
     const profile = await manager.createProfile({
