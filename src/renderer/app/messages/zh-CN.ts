@@ -228,8 +228,6 @@ export const chineseMessages = Object.freeze({
   'export.action': '导出',
   'export.title': '导出',
   'export.format.label': '导出格式',
-  'export.format.markdown': 'Markdown',
-  'export.format.pdf': 'PDF',
   'export.plaintext.title': '导出会创建明文文件',
   'export.plaintext.description':
     '导出的文件不受 Notera 加密保护，请单独妥善保管。',

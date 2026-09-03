@@ -13,6 +13,7 @@ export function ExportReport({
   if (operation.state === 'CANCELLED') {
     return (
       <SectionMessage
+        headingLevel="h2"
         title={intl.formatMessage({ id: 'export.result.cancelledTitle' })}
       >
         <Text>
@@ -25,6 +26,7 @@ export function ExportReport({
     return (
       <SectionMessage
         appearance="error"
+        headingLevel="h2"
         title={intl.formatMessage({ id: 'export.result.failedTitle' })}
       >
         <Text>
@@ -35,12 +37,7 @@ export function ExportReport({
   }
   if (operation.kind !== 'NOTE_EXPORT') return null;
   const { report } = operation.result;
-  const format = intl.formatMessage({
-    id:
-      report.format === 'PDF'
-        ? 'export.format.pdf'
-        : 'export.format.markdown',
-  });
+  const format = report.format === 'PDF' ? 'PDF' : 'Markdown';
   const packaging = intl.formatMessage({
     id:
       report.packaging === 'ZIP'
@@ -50,6 +47,7 @@ export function ExportReport({
   return (
     <SectionMessage
       appearance="success"
+      headingLevel="h2"
       title={intl.formatMessage({ id: 'export.result.completedTitle' })}
     >
       <Text>

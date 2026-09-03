@@ -255,8 +255,6 @@ export const englishMessages = Object.freeze({
   'export.action': 'Export',
   'export.title': 'Export',
   'export.format.label': 'Export format',
-  'export.format.markdown': 'Markdown',
-  'export.format.pdf': 'PDF',
   'export.plaintext.title': 'Export creates plaintext files',
   'export.plaintext.description':
     'Exported files are outside Notera encryption and must be protected separately.',

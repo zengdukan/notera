@@ -87,6 +87,7 @@ export function ExportModal({
         <ModalBody>
           <SectionMessage
             appearance="warning"
+            headingLevel="h2"
             title={intl.formatMessage({ id: 'export.saveFailed.title' })}
           >
             {intl.formatMessage({ id: 'export.saveFailed.description' })}
@@ -123,12 +124,12 @@ export function ExportModal({
               {
                 name: 'export-format',
                 value: 'MARKDOWN',
-                label: intl.formatMessage({ id: 'export.format.markdown' }),
+                label: 'Markdown',
               },
               {
                 name: 'export-format',
                 value: 'PDF',
-                label: intl.formatMessage({ id: 'export.format.pdf' }),
+                label: 'PDF',
               },
             ]}
             onChange={(event) =>
@@ -137,6 +138,7 @@ export function ExportModal({
           />
           <SectionMessage
             appearance="warning"
+            headingLevel="h2"
             title={intl.formatMessage({ id: 'export.plaintext.title' })}
           >
             {intl.formatMessage({ id: 'export.plaintext.description' })}
@@ -144,6 +146,7 @@ export function ExportModal({
           {failed ? (
             <SectionMessage
               appearance="error"
+              headingLevel="h2"
               title={intl.formatMessage({ id: 'export.startFailed.title' })}
             >
               {intl.formatMessage({ id: 'export.startFailed.description' })}
