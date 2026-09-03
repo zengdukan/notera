@@ -1,26 +1,29 @@
 import { useState, useSyncExternalStore } from 'react';
 import Button from '@atlaskit/button/new';
+import DownloadIcon from '@atlaskit/icon/core/download';
 import { RadioGroup } from '@atlaskit/radio';
 import SectionMessage from '@atlaskit/section-message';
 import { ModalBody, ModalFooter } from '@atlaskit/modal-dialog';
-import { Box, Stack } from '@atlaskit/primitives';
+import { Box, Stack, Text } from '@atlaskit/primitives';
+import Spinner from '@atlaskit/spinner';
+import { useIntl } from 'react-intl';
 
 import type { ExportController, ExportFormat } from './export-controller';
 import type { ExportOperationStore } from './export-operation';
-import { ExportProgress } from './ExportProgress';
 import { ExportReport } from './ExportReport';
 
 export function ExportModal({
   noteId,
   controller,
   store,
-  onReturnToEdit,
+  onClose,
 }: {
   readonly noteId: string;
   readonly controller: ExportController;
   readonly store: ExportOperationStore;
-  readonly onReturnToEdit: () => void;
+  readonly onClose: () => void;
 }) {
+  const intl = useIntl();
   const operation = useSyncExternalStore(
     store.subscribe,
     store.getSnapshot,
@@ -47,11 +50,18 @@ export function ExportModal({
     return (
       <>
         <ModalBody>
-          <ExportProgress operation={operation} />
+          <Box paddingBlock="space.600">
+            <Stack alignInline="center">
+              <Spinner
+                label={intl.formatMessage({ id: 'export.runningLabel' })}
+                size="large"
+              />
+            </Stack>
+          </Box>
         </ModalBody>
         <ModalFooter>
           <Button onClick={() => void controller.cancel()}>
-            Cancel export
+            {intl.formatMessage({ id: 'export.cancel' })}
           </Button>
         </ModalFooter>
       </>
@@ -59,37 +69,39 @@ export function ExportModal({
   }
   if (operation) {
     return (
-      <ModalBody>
-        <Box paddingBlockEnd="space.300">
+      <>
+        <ModalBody>
           <ExportReport operation={operation} />
-        </Box>
-      </ModalBody>
+        </ModalBody>
+        <ModalFooter>
+          <Button appearance="primary" onClick={onClose}>
+            {intl.formatMessage({ id: 'export.close' })}
+          </Button>
+        </ModalFooter>
+      </>
     );
   }
   if (saveFailed) {
     return (
       <>
         <ModalBody>
-          <div className="notera-export-setup">
-            <Stack space="space.200">
-              <SectionMessage
-                appearance="warning"
-                title="Latest changes could not be saved"
-              >
-                Export the last successfully saved version, or return to editing
-                without exporting.
-              </SectionMessage>
-            </Stack>
-          </div>
+          <SectionMessage
+            appearance="warning"
+            title={intl.formatMessage({ id: 'export.saveFailed.title' })}
+          >
+            {intl.formatMessage({ id: 'export.saveFailed.description' })}
+          </SectionMessage>
         </ModalBody>
         <ModalFooter>
-          <Button onClick={onReturnToEdit}>Return to editing</Button>
+          <Button onClick={onClose}>
+            {intl.formatMessage({ id: 'export.returnToEdit' })}
+          </Button>
           <Button
             appearance="primary"
             isLoading={starting}
             onClick={() => void start('saved')}
           >
-            Export last saved version
+            {intl.formatMessage({ id: 'export.exportSaved' })}
           </Button>
         </ModalFooter>
       </>
@@ -98,41 +110,55 @@ export function ExportModal({
   return (
     <>
       <ModalBody>
-        <div className="notera-export-setup">
-          <Stack space="space.200">
-            <RadioGroup
-              name="export-format"
-              value={format}
-              options={[
-                { name: 'export-format', value: 'MARKDOWN', label: 'Markdown' },
-                { name: 'export-format', value: 'PDF', label: 'PDF' },
-              ]}
-              onChange={(event) =>
-                setFormat(event.currentTarget.value as ExportFormat)
-              }
-            />
+        <Stack space="space.200">
+          <Text id="export-format-label" weight="semibold">
+            {intl.formatMessage({ id: 'export.format.label' })}
+          </Text>
+          <RadioGroup
+            isDisabled={starting}
+            labelId="export-format-label"
+            name="export-format"
+            value={format}
+            options={[
+              {
+                name: 'export-format',
+                value: 'MARKDOWN',
+                label: intl.formatMessage({ id: 'export.format.markdown' }),
+              },
+              {
+                name: 'export-format',
+                value: 'PDF',
+                label: intl.formatMessage({ id: 'export.format.pdf' }),
+              },
+            ]}
+            onChange={(event) =>
+              setFormat(event.currentTarget.value as ExportFormat)
+            }
+          />
+          <SectionMessage
+            appearance="warning"
+            title={intl.formatMessage({ id: 'export.plaintext.title' })}
+          >
+            {intl.formatMessage({ id: 'export.plaintext.description' })}
+          </SectionMessage>
+          {failed ? (
             <SectionMessage
-              appearance="warning"
-              title="Export creates plaintext files"
+              appearance="error"
+              title={intl.formatMessage({ id: 'export.startFailed.title' })}
             >
-              Exported files are outside Notera encryption and must be protected
-              separately.
+              {intl.formatMessage({ id: 'export.startFailed.description' })}
             </SectionMessage>
-            {failed ? (
-              <SectionMessage appearance="error" title="Export could not start">
-                Try again without exposing any output path.
-              </SectionMessage>
-            ) : null}
-          </Stack>
-        </div>
+          ) : null}
+        </Stack>
       </ModalBody>
       <ModalFooter>
         <Button
           appearance="primary"
+          iconBefore={DownloadIcon}
           isLoading={starting}
           onClick={() => void start('try')}
         >
-          Export
+          {intl.formatMessage({ id: 'export.action' })}
         </Button>
       </ModalFooter>
     </>

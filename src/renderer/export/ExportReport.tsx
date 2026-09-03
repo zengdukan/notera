@@ -1,5 +1,6 @@
 import SectionMessage from '@atlaskit/section-message';
-import { Stack, Text } from '@atlaskit/primitives';
+import { Text } from '@atlaskit/primitives';
+import { useIntl } from 'react-intl';
 
 import type { ExportOperation } from './export-operation';
 
@@ -8,41 +9,55 @@ export function ExportReport({
 }: {
   readonly operation: Exclude<ExportOperation, { state: 'RUNNING' }>;
 }) {
+  const intl = useIntl();
   if (operation.state === 'CANCELLED') {
     return (
-      <section aria-label="Export result" className="notera-export-report">
-        <Text>Export cancelled.</Text>
-      </section>
+      <SectionMessage
+        title={intl.formatMessage({ id: 'export.result.cancelledTitle' })}
+      >
+        <Text>
+          {intl.formatMessage({ id: 'export.result.cancelledDescription' })}
+        </Text>
+      </SectionMessage>
     );
   }
   if (operation.state === 'FAILED') {
     return (
-      <section aria-label="Export result" className="notera-export-report">
-        <SectionMessage appearance="error" title="Export failed">
-          No output location or internal error details are shown.
-        </SectionMessage>
-      </section>
+      <SectionMessage
+        appearance="error"
+        title={intl.formatMessage({ id: 'export.result.failedTitle' })}
+      >
+        <Text>
+          {intl.formatMessage({ id: 'export.result.failedDescription' })}
+        </Text>
+      </SectionMessage>
     );
   }
   if (operation.kind !== 'NOTE_EXPORT') return null;
   const { report } = operation.result;
+  const format = intl.formatMessage({
+    id:
+      report.format === 'PDF'
+        ? 'export.format.pdf'
+        : 'export.format.markdown',
+  });
+  const packaging = intl.formatMessage({
+    id:
+      report.packaging === 'ZIP'
+        ? 'export.packaging.zip'
+        : 'export.packaging.direct',
+  });
   return (
-    <section aria-label="Export result" className="notera-export-report">
-      <Stack space="space.150">
-        <SectionMessage appearance="success" title="Export completed">
-          {report.format === 'PDF' ? 'PDF' : 'Markdown'} ·{' '}
-          {report.packaging === 'ZIP' ? 'ZIP archive' : 'Single file'}
-        </SectionMessage>
-        {report.lossyNodeCount > 0 ? (
-          <SectionMessage
-            appearance="warning"
-            title="Some content was simplified"
-          >
-            {report.lossyNodeCount} unsupported nodes were exported with reduced
-            fidelity.
-          </SectionMessage>
-        ) : null}
-      </Stack>
-    </section>
+    <SectionMessage
+      appearance="success"
+      title={intl.formatMessage({ id: 'export.result.completedTitle' })}
+    >
+      <Text>
+        {intl.formatMessage(
+          { id: 'export.result.summary' },
+          { format, packaging },
+        )}
+      </Text>
+    </SectionMessage>
   );
 }

@@ -19,30 +19,6 @@
   min-height: 500px;
 }
 
-.notera-export-setup,
-.notera-export-progress,
-.notera-export-report {
-  min-height: 240px;
-}
-
-.notera-export-stages {
-  display: flex;
-  flex-wrap: wrap;
-  margin: 0;
-  padding: 0;
-  color: var(--notera-modal-text-subtle);
-  font: var(--ds-font-body-small);
-  list-style: none;
-}
-
-.notera-export-stages > li {
-  display: inline-flex;
-}
-
-.notera-export-stages__active {
-  color: var(--notera-modal-text);
-}
-
 @media (max-width: 768px) {
   section[role='dialog'][data-testid^='notera-modal-'] {
     max-width: calc(100vw - 32px);
@@ -54,12 +30,6 @@
   }
 
   [data-testid='notera-modal-history--body'] {
-    min-height: 0;
-  }
-
-  .notera-export-setup,
-  .notera-export-progress,
-  .notera-export-report {
     min-height: 0;
   }
 }

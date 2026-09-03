@@ -73,14 +73,29 @@ describe('application internationalization', () => {
   it('defines localized history and copy messages', () => {
     expect(messagesFor('en')).toMatchObject({
       'history.title': 'History',
-      'history.copy.action': 'Copy as new',
+      'history.copy.action': 'Copy',
       'history.copy.successDescription':
         '{title} was created in the selected folder.',
     });
     expect(messagesFor('zh-CN')).toMatchObject({
       'history.title': '历史版本',
-      'history.copy.action': '复制为新笔记',
+      'history.copy.action': '复制',
       'history.copy.successDescription': '已在所选目录中创建「{title}」。',
+    });
+  });
+
+  it('defines localized export messages', () => {
+    expect(messagesFor('en')).toMatchObject({
+      'export.action': 'Export',
+      'export.format.label': 'Export format',
+      'export.runningLabel': 'Export in progress',
+      'export.result.completedTitle': 'Export completed',
+    });
+    expect(messagesFor('zh-CN')).toMatchObject({
+      'export.action': '导出',
+      'export.format.label': '导出格式',
+      'export.runningLabel': '正在导出',
+      'export.result.completedTitle': '导出完成',
     });
   });
 

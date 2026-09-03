@@ -668,6 +668,30 @@ describe('NavigationWorkspace', () => {
     expect(screen.getByText('Export workspace')).toBeVisible();
   });
 
+  it('localizes the export modal title', async () => {
+    const user = userEvent.setup();
+    const request = jest.fn(async (key: string) => {
+      if (key === 'contentTree.listChildren') return { items: [] };
+      return {};
+    });
+    const client = { request, subscribe: jest.fn() } as unknown as NoteraClient;
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <SessionProvider>
+          <Unlock>
+            <NavigationWorkspace client={client} />
+          </Unlock>
+        </SessionProvider>
+      </QueryClientProvider>,
+      'zh-CN',
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Open first' }));
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+
+    expect(screen.getByRole('dialog', { name: '导出' })).toBeVisible();
+  });
+
   it('closes history without switching the current note after copying as new', async () => {
     const user = userEvent.setup();
     const request = jest.fn(async (key: string) => {

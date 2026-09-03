@@ -109,7 +109,6 @@
     "@atlaskit/platform-feature-flags": "^2.1.1",
     "@atlaskit/popup": "^6.2.1",
     "@atlaskit/primitives": "^22.4.0",
-    "@atlaskit/progress-bar": "^5.2.0",
     "@atlaskit/prosemirror-input-rules": "^4.0.44",
     "@atlaskit/radio": "^10.1.0",
     "@atlaskit/renderer": "^136.0.0",

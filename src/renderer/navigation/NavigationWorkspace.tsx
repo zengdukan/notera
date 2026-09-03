@@ -431,14 +431,14 @@ function UnlockedNavigationWorkspace({
     if (overlay.kind === 'export-note') {
       return {
         kind: overlay.kind,
-        title: 'Export',
+        title: intl.formatMessage({ id: 'export.title' }),
         width: 620,
         content: (
           <ExportModal
             noteId={overlay.note.id}
             controller={exportController}
             store={exportStore}
-            onReturnToEdit={() => setOverlay(undefined)}
+            onClose={() => setOverlay(undefined)}
           />
         ),
       };

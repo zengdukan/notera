@@ -5,6 +5,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { AppProviders } from '../../app/AppProviders';
+import type { AppLocale } from '../../app/i18n';
 import { configureFeatureFlags } from '../../atlassian-editor/feature-flags';
 import { ModalHost } from '../../shared-ui/ModalHost';
 import type { ExportController } from '../export-controller';
@@ -19,13 +20,15 @@ jest.mock('react-scrolllock', () => ({
   TouchScrollable: ({ children }: { children: ReactNode }) => children,
 }));
 
-function renderExportModal(content: ReactNode) {
+const operationId = '10000000-0000-4000-8000-000000000001';
+
+function renderExportModal(content: ReactNode, locale: AppLocale = 'en') {
   render(
-    <AppProviders locale="en">
+    <AppProviders locale={locale}>
       <ModalHost
         modal={{
           kind: 'export-note',
-          title: 'Export',
+          title: locale === 'zh-CN' ? '导出' : 'Export',
           content,
         }}
         onClose={jest.fn()}
@@ -50,10 +53,11 @@ describe('ExportModal', () => {
         noteId="note"
         controller={controller}
         store={new ExportOperationStore()}
-        onReturnToEdit={jest.fn()}
+        onClose={jest.fn()}
       />,
     );
 
+    expect(screen.getByText('Export format')).toBeVisible();
     expect(screen.getByRole('radio', { name: 'Markdown' })).toBeChecked();
     expect(screen.getByText(/outside Notera encryption/iu)).toBeVisible();
     expect(
@@ -84,12 +88,34 @@ describe('ExportModal', () => {
     expect(document.body.textContent).not.toContain('C:\\');
   });
 
-  it('shows the current export stage, the full stage track, and cancellation', async () => {
+  it('shows a localized start failure without exposing a path', async () => {
+    const user = userEvent.setup();
+    renderExportModal(
+      <ExportModal
+        noteId="note"
+        controller={
+          {
+            start: jest.fn().mockRejectedValue(new Error('C:\\private')),
+            cancel: jest.fn(),
+          } as unknown as ExportController
+        }
+        store={new ExportOperationStore()}
+        onClose={jest.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+
+    expect(await screen.findByText('Export could not start')).toBeVisible();
+    expect(document.body.textContent).not.toContain('C:\\private');
+  });
+
+  it('shows only an accessible spinner while running and allows cancellation', async () => {
     const user = userEvent.setup();
     const store = new ExportOperationStore();
-    store.track('10000000-0000-4000-8000-000000000001');
+    store.track(operationId);
     store.applyProgress({
-      operationId: '10000000-0000-4000-8000-000000000001',
+      operationId,
       kind: 'NOTE_EXPORT',
       phase: 'RENDERING',
       progress: 0.5,
@@ -101,21 +127,15 @@ describe('ExportModal', () => {
         noteId="note"
         controller={{ cancel, start: jest.fn() } as unknown as ExportController}
         store={store}
-        onReturnToEdit={jest.fn()}
+        onClose={jest.fn()}
       />,
     );
 
-    const progress = screen.getByRole('region', { name: 'Export progress' });
-    expect(progress).toHaveTextContent('Rendering');
     expect(
-      screen.getByRole('list', { name: 'Export stages' }),
-    ).toHaveTextContent(
-      'Preparing → Reading → Rendering → Writing → Completing',
-    );
-    expect(screen.getByRole('listitem', { name: 'Rendering' })).toHaveAttribute(
-      'aria-current',
-      'step',
-    );
+      screen.getByRole('img', { name: 'Export in progress' }),
+    ).toBeVisible();
+    expect(screen.queryByText('Rendering')).not.toBeInTheDocument();
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
     expect(
       within(screen.getByTestId('notera-modal-export-note--footer')).getByRole(
         'button',
@@ -125,5 +145,132 @@ describe('ExportModal', () => {
 
     await user.click(screen.getByRole('button', { name: 'Cancel export' }));
     expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a compact success report without lossy-node details and closes', async () => {
+    const user = userEvent.setup();
+    const store = new ExportOperationStore();
+    const onClose = jest.fn();
+    store.track(operationId);
+    store.applyCompleted({
+      operationId,
+      kind: 'NOTE_EXPORT',
+      state: 'SUCCEEDED',
+      result: {
+        report: {
+          format: 'PDF',
+          packaging: 'ZIP',
+          attachmentCount: 2,
+          lossyNodeCount: 3,
+          completedAt: 1,
+        },
+      },
+    });
+
+    renderExportModal(
+      <ExportModal
+        noteId="note"
+        controller={{ cancel: jest.fn(), start: jest.fn() } as never}
+        store={store}
+        onClose={onClose}
+      />,
+    );
+
+    expect(screen.getByText('Export completed')).toBeVisible();
+    expect(screen.getByText('PDF · ZIP archive')).toBeVisible();
+    expect(screen.queryByText(/unsupported nodes/iu)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    {
+      state: 'CANCELLED' as const,
+      title: 'Export cancelled',
+    },
+    {
+      state: 'FAILED' as const,
+      title: 'Export failed',
+    },
+  ])('shows and closes the $state result', async ({ state, title }) => {
+    const user = userEvent.setup();
+    const store = new ExportOperationStore();
+    const onClose = jest.fn();
+    store.track(operationId);
+    store.applyCompleted(
+      state === 'FAILED'
+        ? {
+            operationId,
+            kind: 'NOTE_EXPORT',
+            state,
+            error: {
+              code: 'EXPORT_FAILED',
+              message: 'The note could not be exported.',
+            },
+          }
+        : { operationId, kind: 'NOTE_EXPORT', state },
+    );
+
+    renderExportModal(
+      <ExportModal
+        noteId="note"
+        controller={{ cancel: jest.fn(), start: jest.fn() } as never}
+        store={store}
+        onClose={onClose}
+      />,
+    );
+
+    expect(screen.getByText(title)).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('localizes the setup in Chinese', () => {
+    renderExportModal(
+      <ExportModal
+        noteId="note"
+        controller={{ cancel: jest.fn(), start: jest.fn() } as never}
+        store={new ExportOperationStore()}
+        onClose={jest.fn()}
+      />,
+      'zh-CN',
+    );
+
+    expect(screen.getByText('导出格式')).toBeVisible();
+    expect(screen.getByText('导出会创建明文文件')).toBeVisible();
+    expect(screen.getByRole('button', { name: '导出' })).toBeVisible();
+  });
+
+  it('localizes the report in Chinese', () => {
+    const store = new ExportOperationStore();
+    store.track(operationId);
+    store.applyCompleted({
+      operationId,
+      kind: 'NOTE_EXPORT',
+      state: 'SUCCEEDED',
+      result: {
+        report: {
+          format: 'MARKDOWN',
+          packaging: 'DIRECT',
+          attachmentCount: 0,
+          lossyNodeCount: 0,
+          completedAt: 1,
+        },
+      },
+    });
+
+    renderExportModal(
+      <ExportModal
+        noteId="note"
+        controller={{ cancel: jest.fn(), start: jest.fn() } as never}
+        store={store}
+        onClose={jest.fn()}
+      />,
+      'zh-CN',
+    );
+
+    expect(screen.getByText('导出完成')).toBeVisible();
+    expect(screen.getByText('Markdown · 单个文件')).toBeVisible();
+    expect(screen.getByRole('button', { name: '关闭' })).toBeVisible();
   });
 });
