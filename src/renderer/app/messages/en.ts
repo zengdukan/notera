@@ -37,6 +37,7 @@ export const englishMessages = Object.freeze({
   'profile.create.eyebrow': 'Create a local workspace',
   'profile.create.firstTitle': 'Create your first Profile',
   'profile.create.title': 'Create Profile',
+  'profile.create.backToUnlock': 'Back to unlock',
   'profile.create.submit': 'Create and enter workspace',
   'profile.create.submitting': 'Creating Profile…',
   'profile.unlock.eyebrow': 'Open a local workspace',

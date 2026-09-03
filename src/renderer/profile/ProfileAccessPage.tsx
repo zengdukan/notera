@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import Heading from '@atlaskit/heading';
+import Button from '@atlaskit/button/new';
+import ArrowLeftIcon from '@atlaskit/icon/core/arrow-left';
 import { cssMap } from '@atlaskit/css';
-import { Box, Stack, Text } from '@atlaskit/primitives/compiled';
+import { Box, Inline, Stack, Text } from '@atlaskit/primitives/compiled';
 import { FormattedMessage } from 'react-intl';
 
 import { CreateProfileForm } from './CreateProfileForm';
@@ -83,6 +85,15 @@ export function ProfileAccessPage({
     profiles[0],
   );
 
+  const isCreating = creating || selected === undefined;
+
+  const handleBackToUnlock = () => {
+    setCreating(false);
+    if (selected === undefined && profiles.length > 0) {
+      setSelected(profiles[0]);
+    }
+  };
+
   return (
     <Box xcss={styles.root}>
       <ProfileAccessHeader client={client} />
@@ -91,23 +102,28 @@ export function ProfileAccessPage({
         <Box as="section" xcss={styles.panel}>
           <Stack space="space.300">
             <AccessPanelHeader
-              creating={creating || selected === undefined}
+              creating={isCreating}
               isFirstProfile={profiles.length === 0}
               selected={selected}
+              onBackToUnlock={
+                isCreating && profiles.length > 0
+                  ? handleBackToUnlock
+                  : undefined
+              }
             />
-            {profiles.length > 0 ? (
+            {!isCreating && profiles.length > 0 ? (
               <ProfileList
                 profiles={profiles}
                 isDisabled={isBusy}
-                selectedId={creating ? undefined : selected?.localProfileId}
-                onCreate={creating ? undefined : () => setCreating(true)}
+                selectedId={selected?.localProfileId}
+                onCreate={() => setCreating(true)}
                 onSelect={(profile) => {
                   setSelected(profile);
                   setCreating(false);
                 }}
               />
             ) : null}
-            {creating || selected === undefined ? (
+            {isCreating ? (
               <CreateProfileForm isDisabled={isBusy} onCreate={onCreate} />
             ) : (
               <UnlockProfileForm
@@ -128,12 +144,15 @@ function AccessPanelHeader({
   creating,
   isFirstProfile,
   selected,
+  onBackToUnlock,
 }: {
   readonly creating: boolean;
   readonly isFirstProfile: boolean;
   readonly selected?: ProfileListItem;
+  readonly onBackToUnlock?: () => void;
 }) {
   if (creating) {
+    const showBackButton = !isFirstProfile && onBackToUnlock;
     return (
       <Stack space="space.100">
         <Text as="p" color="color.text.brand" weight="semibold">
@@ -145,15 +164,29 @@ function AccessPanelHeader({
             }
           />
         </Text>
-        <Heading size="xlarge">
-          <FormattedMessage
-            id={
-              isFirstProfile
-                ? 'profile.create.firstTitle'
-                : 'profile.create.title'
-            }
-          />
-        </Heading>
+        <Inline
+          alignBlock="center"
+          spread={showBackButton ? 'space-between' : undefined}
+        >
+          <Heading size="xlarge">
+            <FormattedMessage
+              id={
+                isFirstProfile
+                  ? 'profile.create.firstTitle'
+                  : 'profile.create.title'
+              }
+            />
+          </Heading>
+          {showBackButton ? (
+            <Button
+              appearance="subtle"
+              iconBefore={ArrowLeftIcon}
+              onClick={onBackToUnlock}
+            >
+              <FormattedMessage id="profile.create.backToUnlock" />
+            </Button>
+          ) : null}
+        </Inline>
       </Stack>
     );
   }

@@ -32,6 +32,7 @@ export const chineseMessages = Object.freeze({
   'profile.create.eyebrow': '新建本地工作空间',
   'profile.create.firstTitle': '创建第一个 Profile',
   'profile.create.title': '创建 Profile',
+  'profile.create.backToUnlock': '返回解锁',
   'profile.create.submit': '创建并进入工作区',
   'profile.create.submitting': '正在创建…',
   'profile.unlock.eyebrow': '访问本地工作空间',
