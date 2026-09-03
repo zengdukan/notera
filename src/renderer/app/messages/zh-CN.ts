@@ -233,11 +233,8 @@ export const chineseMessages = Object.freeze({
     '导出的文件不受 Notera 加密保护，请单独妥善保管。',
   'export.startFailed.title': '无法开始导出',
   'export.startFailed.description': '请重试；界面不会显示任何输出路径。',
-  'export.saveFailed.title': '无法保存最新更改',
-  'export.saveFailed.description':
-    '你可以导出上次成功保存的版本，或返回编辑而不导出。',
-  'export.returnToEdit': '返回编辑',
-  'export.exportSaved': '导出上次保存的版本',
+  'export.saveFailed.title': '保存失败',
+  'export.saveFailed.description': '最新更改未保存，请关闭此对话框后重试。',
   'export.cancel': '取消导出',
   'export.close': '关闭',
   'export.runningLabel': '正在导出',

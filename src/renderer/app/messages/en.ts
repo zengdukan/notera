@@ -261,11 +261,9 @@ export const englishMessages = Object.freeze({
   'export.startFailed.title': 'Export could not start',
   'export.startFailed.description':
     'Try again without exposing any output path.',
-  'export.saveFailed.title': 'Latest changes could not be saved',
+  'export.saveFailed.title': 'Save failed',
   'export.saveFailed.description':
-    'Export the last successfully saved version, or return to editing without exporting.',
-  'export.returnToEdit': 'Return to editing',
-  'export.exportSaved': 'Export last saved version',
+    'Your latest changes were not saved. Close this dialog and try again.',
   'export.cancel': 'Cancel export',
   'export.close': 'Close',
   'export.runningLabel': 'Export in progress',

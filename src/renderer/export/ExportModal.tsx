@@ -93,18 +93,7 @@ export function ExportModal({
             {intl.formatMessage({ id: 'export.saveFailed.description' })}
           </SectionMessage>
         </ModalBody>
-        <ModalFooter>
-          <Button onClick={onClose}>
-            {intl.formatMessage({ id: 'export.returnToEdit' })}
-          </Button>
-          <Button
-            appearance="primary"
-            isLoading={starting}
-            onClick={() => void start('saved')}
-          >
-            {intl.formatMessage({ id: 'export.exportSaved' })}
-          </Button>
-        </ModalFooter>
+        <ModalFooter />
       </>
     );
   }

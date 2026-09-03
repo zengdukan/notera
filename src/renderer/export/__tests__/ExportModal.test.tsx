@@ -38,12 +38,9 @@ function renderExportModal(content: ReactNode, locale: AppLocale = 'en') {
 }
 
 describe('ExportModal', () => {
-  it('selects a format, warns about plaintext, and offers saved-version fallback', async () => {
+  it('selects a format, warns about plaintext, and reports a save failure', async () => {
     const user = userEvent.setup();
-    const start = jest
-      .fn()
-      .mockResolvedValueOnce('save-failed')
-      .mockResolvedValueOnce('started');
+    const start = jest.fn().mockResolvedValue('save-failed');
     const controller = {
       start,
       cancel: jest.fn(),
@@ -68,22 +65,23 @@ describe('ExportModal', () => {
     ).toBeVisible();
     await user.click(screen.getByRole('radio', { name: 'PDF' }));
     await user.click(screen.getByRole('button', { name: 'Export' }));
+    expect(await screen.findByText('Save failed')).toBeVisible();
     expect(
-      await screen.findByRole('button', { name: 'Export last saved version' }),
-    ).toBeVisible();
-    expect(
-      within(screen.getByTestId('notera-modal-export-note--footer')).getByRole(
-        'button',
-        { name: 'Return to editing' },
+      screen.getByText(
+        'Your latest changes were not saved. Close this dialog and try again.',
       ),
     ).toBeVisible();
-    await user.click(
-      screen.getByRole('button', { name: 'Export last saved version' }),
-    );
-    expect(start).toHaveBeenLastCalledWith({
+    expect(
+      screen.queryByRole('button', { name: 'Return to editing' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Export last saved version' }),
+    ).not.toBeInTheDocument();
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(start).toHaveBeenCalledWith({
       noteId: 'note',
       format: 'PDF',
-      save: 'saved',
+      save: 'try',
     });
     expect(document.body.textContent).not.toContain('C:\\');
   });
