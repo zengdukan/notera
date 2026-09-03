@@ -5,8 +5,6 @@ import ModalDialog, {
   ModalTransition,
 } from '@atlaskit/modal-dialog';
 
-import './ModalHost.css';
-
 export interface HostedModal {
   readonly kind: string;
   readonly title: string;
