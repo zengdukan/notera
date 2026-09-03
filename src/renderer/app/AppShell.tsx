@@ -54,6 +54,24 @@ export function AppShell({
   );
   const [loaded, setLoaded] = useState(false);
   const [profiles, setProfiles] = useState<readonly ProfileListItem[]>([]);
+  const rememberCreatedProfile = (profile: {
+    readonly localProfileId: string;
+    readonly displayName: string;
+  }) => {
+    setProfiles((current) =>
+      [
+        {
+          localProfileId: profile.localProfileId,
+          displayName: profile.displayName,
+          lastUsedAt: Date.now(),
+          isCurrent: true,
+        },
+        ...current.filter(
+          (item) => item.localProfileId !== profile.localProfileId,
+        ),
+      ].slice(0, 50),
+    );
+  };
 
   useEffect(() => {
     let active = true;
@@ -114,7 +132,11 @@ export function AppShell({
     <Box as="main" xcss={shellStyles}>
       {!loaded || state.status === 'booting' ? <StartupView /> : null}
       {loaded && (state.status === 'locked' || state.status === 'unlocking') ? (
-        <ProfileGate client={client} profiles={profiles}>
+        <ProfileGate
+          client={client}
+          profiles={profiles}
+          onProfileCreated={rememberCreatedProfile}
+        >
           {null}
         </ProfileGate>
       ) : null}
@@ -123,7 +145,11 @@ export function AppShell({
         <WorkspaceTransitionView />
       ) : null}
       {loaded && state.status === 'unlocked' ? (
-        <ProfileGate client={client} profiles={profiles}>
+        <ProfileGate
+          client={client}
+          profiles={profiles}
+          onProfileCreated={rememberCreatedProfile}
+        >
           <NavigationWorkspace
             client={client}
             lifecycle={lifecycle}
@@ -159,10 +185,6 @@ function StartupHeader() {
           <FormattedMessage id="app.name" />
         </Heading>
       </Inline>
-      <Text color="color.text.subtle" size="small">
-        <span className="notera-startup-header__status-dot" />
-        <FormattedMessage id="profile.header.localMode" />
-      </Text>
     </header>
   );
 }

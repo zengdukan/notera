@@ -1,14 +1,8 @@
 import { useState } from 'react';
 import Button from '@atlaskit/button/new';
-import Form, {
-  ErrorMessage,
-  Field,
-  HelperMessage,
-  MessageWrapper,
-} from '@atlaskit/form';
+import Form, { ErrorMessage, Field, MessageWrapper } from '@atlaskit/form';
 import { Stack, Text } from '@atlaskit/primitives';
 import SectionMessage from '@atlaskit/section-message';
-import Textfield from '@atlaskit/textfield';
 import { useIntl } from 'react-intl';
 
 import {
@@ -20,6 +14,7 @@ import {
 } from './profile-form';
 
 import type { ProfileListItem } from './ProfileList';
+import { PasswordTextfield } from '../shared-ui/PasswordTextfield';
 
 export function UnlockProfileForm({
   profile,
@@ -91,25 +86,18 @@ export function UnlockProfileForm({
             >
               {({ fieldProps, error, meta }) => (
                 <>
-                  <Textfield
+                  <PasswordTextfield
                     {...fieldProps}
-                    type="password"
                     autoFocus
                     isInvalid={Boolean(
                       error && (meta.touched || meta.submitFailed),
                     )}
                   />
-                  <MessageWrapper>
-                    {error && (meta.touched || meta.submitFailed) ? (
+                  {error && (meta.touched || meta.submitFailed) ? (
+                    <MessageWrapper>
                       <ErrorMessage>{error}</ErrorMessage>
-                    ) : (
-                      <HelperMessage>
-                        {intl.formatMessage({
-                          id: 'profile.form.passwordManager',
-                        })}
-                      </HelperMessage>
-                    )}
-                  </MessageWrapper>
+                    </MessageWrapper>
+                  ) : null}
                 </>
               )}
             </Field>

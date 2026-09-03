@@ -3,7 +3,8 @@ import Heading from '@atlaskit/heading';
 import DevicesIcon from '@atlaskit/icon/core/devices';
 import LockIcon from '@atlaskit/icon/core/lock-locked';
 import ShieldIcon from '@atlaskit/icon/core/shield';
-import { Inline, Stack, Text } from '@atlaskit/primitives';
+import Tile from '@atlaskit/tile';
+import { Hide, Inline, Show, Stack, Text } from '@atlaskit/primitives/compiled';
 import SectionMessage from '@atlaskit/section-message';
 import { FormattedMessage } from 'react-intl';
 
@@ -14,7 +15,7 @@ export function ProfileAccessHero({
 }) {
   return (
     <>
-      <section className="notera-profile-access__hero">
+      <Hide below="md" as="section">
         <Stack space="space.400">
           <Stack space="space.150">
             <Text
@@ -50,8 +51,8 @@ export function ProfileAccessHero({
             />
           </Stack>
         </Stack>
-      </section>
-      <section className="notera-profile-access__narrow-intro">
+      </Hide>
+      <Show below="md" as="section">
         <Stack space="space.250">
           <Stack space="space.100">
             <Heading size="xlarge">
@@ -76,7 +77,7 @@ export function ProfileAccessHero({
             </Text>
           </SectionMessage>
         </Stack>
-      </section>
+      </Show>
     </>
   );
 }
@@ -92,11 +93,17 @@ function Feature({
 }) {
   return (
     <Inline space="space.200" alignBlock="start">
-      <span className="notera-profile-access__feature-icon">{icon}</span>
+      <Tile
+        label=""
+        size="medium"
+        backgroundColor="color.background.accent.blue.subtlest"
+      >
+        {icon}
+      </Tile>
       <Stack space="space.050">
-        <Text as="p" weight="semibold">
+        <Heading size="xsmall">
           <FormattedMessage id={titleId} />
-        </Text>
+        </Heading>
         <Text as="p" color="color.text.subtle">
           <FormattedMessage id={descriptionId} />
         </Text>

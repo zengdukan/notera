@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import Button from '@atlaskit/button/new';
 import Form, { ErrorMessage, Field, MessageWrapper } from '@atlaskit/form';
-import { Stack, Text } from '@atlaskit/primitives';
+import { Stack, Text } from '@atlaskit/primitives/compiled';
 import SectionMessage from '@atlaskit/section-message';
 import Textfield from '@atlaskit/textfield';
 import { useIntl } from 'react-intl';
+import { PasswordTextfield } from '../shared-ui/PasswordTextfield';
 
 import {
   fieldErrorForProfileOperation,
   localizedProfileFormMessages,
   systemErrorForProfileOperation,
-  validatePassword,
+  validateNewProfilePassword,
   validateProfileName,
   type ProfileFormError,
 } from './profile-form';
@@ -30,9 +31,12 @@ export function CreateProfileForm({
   const messages = localizedProfileFormMessages(intl);
 
   return (
-    <Form<{ displayName: string; password: string }>
-      onSubmit={async ({ displayName, password }) => {
+    <Form<{ displayName: string; password: string; confirmPassword: string }>
+      onSubmit={async ({ displayName, password, confirmPassword }) => {
         setSystemError(undefined);
+        if (password !== confirmPassword) {
+          return { confirmPassword: messages.passwordMismatch };
+        }
         try {
           await onCreate({ displayName: displayName.trim(), password });
           return undefined;
@@ -89,13 +93,12 @@ export function CreateProfileForm({
               isRequired
               isDisabled={submitting || isDisabled}
               defaultValue=""
-              validate={(value) => validatePassword(value, messages)}
+              validate={(value) => validateNewProfilePassword(value, messages)}
             >
               {({ fieldProps, error, meta }) => (
                 <>
-                  <Textfield
+                  <PasswordTextfield
                     {...fieldProps}
-                    type="password"
                     isInvalid={Boolean(
                       error && (meta.touched || meta.submitFailed),
                     )}
@@ -106,7 +109,7 @@ export function CreateProfileForm({
                     </MessageWrapper>
                   ) : (
                     <MessageWrapper>
-                      <span className="notera-profile-form__password-help">
+                      <Text as="span" size="small" color="color.text.subtle">
                         {intl.formatMessage({
                           id: 'profile.form.passwordRules',
                         })}
@@ -114,9 +117,34 @@ export function CreateProfileForm({
                         {intl.formatMessage({
                           id: 'profile.form.passwordRecovery',
                         })}
-                      </span>
+                      </Text>
                     </MessageWrapper>
                   )}
+                </>
+              )}
+            </Field>
+            <Field
+              name="confirmPassword"
+              label={intl.formatMessage({
+                id: 'profile.form.confirmPasswordLabel',
+              })}
+              isRequired
+              isDisabled={submitting || isDisabled}
+              defaultValue=""
+            >
+              {({ fieldProps, error, meta }) => (
+                <>
+                  <PasswordTextfield
+                    {...fieldProps}
+                    isInvalid={Boolean(
+                      error && (meta.touched || meta.submitFailed),
+                    )}
+                  />
+                  {error && (meta.touched || meta.submitFailed) ? (
+                    <MessageWrapper>
+                      <ErrorMessage>{error}</ErrorMessage>
+                    </MessageWrapper>
+                  ) : null}
                 </>
               )}
             </Field>
@@ -133,15 +161,6 @@ export function CreateProfileForm({
                   : 'profile.create.submit',
               })}
             </Button>
-            <div className="notera-profile-form__mobile-notice">
-              <SectionMessage
-                title={intl.formatMessage({ id: 'profile.form.noticeTitle' })}
-              >
-                <Text as="p">
-                  {intl.formatMessage({ id: 'profile.form.passwordRecovery' })}
-                </Text>
-              </SectionMessage>
-            </div>
           </Stack>
         </form>
       )}

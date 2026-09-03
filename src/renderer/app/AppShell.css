@@ -59,16 +59,6 @@
   background: url('../../../assets/icon.svg') center / contain no-repeat;
 }
 
-.notera-startup-header__status-dot {
-  width: 6px;
-  height: 6px;
-  display: inline-block;
-  margin-right: var(--ds-space-075);
-  border-radius: var(--ds-radius-full);
-  background: var(--ds-icon-success);
-  vertical-align: middle;
-}
-
 .notera-startup-page__main {
   min-height: calc(100vh - 72px);
   box-sizing: border-box;

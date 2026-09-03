@@ -8,15 +8,18 @@ import { createActivityReporter } from './activity-reporter';
 import { ProfileAccessPage } from './ProfileAccessPage';
 import { createProfileController } from './profile-controller';
 import type { ProfileListItem } from './ProfileList';
+import type { UnlockedSession } from '../app/session';
 
 export function ProfileGate({
   client,
   profiles,
   children,
+  onProfileCreated,
 }: {
   readonly client: NoteraClient;
   readonly profiles: readonly ProfileListItem[];
   readonly children: ReactNode;
+  readonly onProfileCreated?: (profile: UnlockedSession) => void;
 }) {
   const { state, dispatch } = useSession();
   const queryClient = useQueryClient();
@@ -53,9 +56,15 @@ export function ProfileGate({
     return (
       <ProfileAccessPage
         profiles={profiles}
+        client={client}
         isBusy={state.status === 'unlocking'}
-        onCreate={(value) => controller.create(value)}
-        onUnlock={(value) => controller.unlock(value)}
+        onCreate={async (value) => {
+          const profile = await controller.create(value);
+          onProfileCreated?.(profile);
+        }}
+        onUnlock={async (value) => {
+          await controller.unlock(value);
+        }}
       />
     );
   }

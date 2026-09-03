@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Heading from '@atlaskit/heading';
-import { Stack, Text } from '@atlaskit/primitives';
+import { cssMap } from '@atlaskit/css';
+import { Box, Stack, Text } from '@atlaskit/primitives/compiled';
 import { FormattedMessage } from 'react-intl';
 
 import { CreateProfileForm } from './CreateProfileForm';
@@ -8,18 +9,74 @@ import { ProfileAccessHeader } from './ProfileAccessHeader';
 import { ProfileAccessHero } from './ProfileAccessHero';
 import { ProfileList, type ProfileListItem } from './ProfileList';
 import { UnlockProfileForm } from './UnlockProfileForm';
-import './ProfileAccessPage.css';
+
+/* eslint-disable @atlaskit/design-system/no-unsafe-design-token-usage, @atlaskit/design-system/ensure-design-token-usage */
+import type { NoteraClient } from '../platform/notera-client';
+
+const styles = cssMap({
+  root: {
+    minHeight: '100vh',
+    backgroundColor: 'var(--ds-surface-sunken)',
+  },
+  main: {
+    width: '100%',
+    maxWidth: '1120px',
+    marginInline: 'auto',
+    boxSizing: 'border-box',
+    display: 'grid',
+    gridTemplateColumns: 'minmax(360px, 1fr) 552px',
+    alignItems: 'center',
+    gap: 'var(--ds-space-800)',
+    paddingBlock: 'var(--ds-space-600)',
+    paddingInline: 'var(--ds-space-400)',
+    '@media not all and (min-width: 48rem)': {
+      display: 'block',
+      paddingBlock: 'var(--ds-space-400)',
+    },
+    '@media not all and (min-width: 30rem)': {
+      paddingInline: 'var(--ds-space-250)',
+    },
+  },
+  panel: {
+    minHeight: '684px',
+    boxSizing: 'border-box',
+    padding: 'var(--ds-space-600)',
+    borderWidth: 'var(--ds-border-width)',
+    borderStyle: 'solid',
+    borderColor: 'var(--ds-border)',
+    borderRadius: 'var(--ds-radius-large)',
+    backgroundColor: 'var(--ds-surface-raised)',
+    boxShadow: 'var(--ds-shadow-raised)',
+    '@media not all and (min-width: 48rem)': {
+      width: '100%',
+      maxWidth: '600px',
+      minHeight: 'auto',
+      marginInline: 'auto',
+      marginBlockStart: 'var(--ds-space-400)',
+      padding: 'var(--ds-space-500)',
+    },
+    '@media not all and (min-width: 30rem)': {
+      marginBlockStart: '0',
+      padding: '0',
+      borderWidth: '0',
+      backgroundColor: 'transparent',
+      boxShadow: 'initial',
+    },
+  },
+});
 
 export function ProfileAccessPage({
   profiles,
   isBusy = false,
   onCreate,
   onUnlock,
+  client,
 }: {
   readonly profiles: readonly ProfileListItem[];
   readonly isBusy?: boolean;
   readonly onCreate: Parameters<typeof CreateProfileForm>[0]['onCreate'];
   readonly onUnlock: Parameters<typeof UnlockProfileForm>[0]['onUnlock'];
+  readonly client?: NoteraClient;
 }) {
   const [creating, setCreating] = useState(profiles.length === 0);
   const [selected, setSelected] = useState<ProfileListItem | undefined>(
@@ -27,11 +84,11 @@ export function ProfileAccessPage({
   );
 
   return (
-    <div className="notera-profile-access">
-      <ProfileAccessHeader />
-      <main className="notera-profile-access__main">
+    <Box xcss={styles.root}>
+      <ProfileAccessHeader client={client} />
+      <Box as="main" xcss={styles.main}>
         <ProfileAccessHero hasProfiles={profiles.length > 0} />
-        <section className="notera-profile-access__panel">
+        <Box as="section" xcss={styles.panel}>
           <Stack space="space.300">
             <AccessPanelHeader
               creating={creating || selected === undefined}
@@ -61,9 +118,9 @@ export function ProfileAccessPage({
               />
             )}
           </Stack>
-        </section>
-      </main>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 

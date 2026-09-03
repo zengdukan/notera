@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import Button, { IconButton } from '@atlaskit/button/new';
+import Button from '@atlaskit/button/new';
 import Form, {
   ErrorMessage,
   Field,
@@ -9,13 +9,11 @@ import Form, {
 } from '@atlaskit/form';
 import DeleteIcon from '@atlaskit/icon/core/delete';
 import EditIcon from '@atlaskit/icon/core/edit';
-import EyeOpenIcon from '@atlaskit/icon/core/eye-open';
-import EyeOpenStrikethroughIcon from '@atlaskit/icon/core/eye-open-strikethrough';
 import LockUnlockedIcon from '@atlaskit/icon/core/lock-unlocked';
 import { Stack, Text } from '@atlaskit/primitives';
 import SectionMessage from '@atlaskit/section-message';
 import Select from '@atlaskit/select';
-import Textfield, { type TextFieldProps } from '@atlaskit/textfield';
+import Textfield from '@atlaskit/textfield';
 import { useIntl } from 'react-intl';
 
 import { NoteraClientError } from '../platform/notera-client';
@@ -25,6 +23,7 @@ import {
   validatePassword,
   validateProfileName,
 } from '../profile/profile-form';
+import { PasswordTextfield } from '../shared-ui/PasswordTextfield';
 
 export type AutoLockMinutes = 1 | 5 | 15 | 30 | 60;
 export type RemoveProfileResult = 'removed' | 'cancelled';
@@ -41,31 +40,6 @@ type PasswordChangeForm = {
   newPassword: string;
   confirmPassword: string;
 };
-
-function PasswordTextfield(props: TextFieldProps) {
-  const intl = useIntl();
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const visibilityLabel = intl.formatMessage({
-    id: isPasswordVisible ? 'settings.password.hide' : 'settings.password.show',
-  });
-
-  return (
-    <Textfield
-      {...props}
-      type={isPasswordVisible ? 'text' : 'password'}
-      elemAfterInput={
-        <IconButton
-          appearance="subtle"
-          icon={isPasswordVisible ? EyeOpenStrikethroughIcon : EyeOpenIcon}
-          label={visibilityLabel}
-          spacing="compact"
-          type="button"
-          onClick={() => setIsPasswordVisible((visible) => !visible)}
-        />
-      }
-    />
-  );
-}
 
 export function ProfileSecuritySettings({
   autoLockMinutes,

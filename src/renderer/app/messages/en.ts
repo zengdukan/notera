@@ -13,8 +13,6 @@ export const englishMessages = Object.freeze({
   'app.fatalRecovery':
     'Close Notera, then reopen it to try again. No repair or reset action is performed here.',
   'app.close': 'Close app',
-  'profile.header.languages': '简体中文 / English',
-  'profile.header.localMode': 'Local mode',
   'profile.hero.eyebrow': 'NOTERA · LOCAL ENCRYPTED NOTES',
   'profile.hero.title': 'Your notes stay on this device.',
   'profile.hero.description':
@@ -55,12 +53,11 @@ export const englishMessages = Object.freeze({
   'profile.list.create': 'Create Profile',
   'profile.form.nameLabel': 'Profile name',
   'profile.form.passwordLabel': 'Master password',
+  'profile.form.confirmPasswordLabel': 'Confirm master password',
   'profile.form.passwordRules':
-    '1–1,024 characters; there is no complexity requirement.',
+    '8–1,024 characters with uppercase, lowercase, number, and special character.',
   'profile.form.passwordRecovery':
     'Notera cannot recover or reset your master password.',
-  'profile.form.passwordManager':
-    'Supports autofill from your system or browser password manager.',
   'profile.form.noticeTitle': 'Keep your master password safe',
   'profile.form.retry': 'Retry',
   'profile.validation.nameRequired': 'Enter a Profile name.',
@@ -69,6 +66,16 @@ export const englishMessages = Object.freeze({
   'profile.validation.passwordRequired': 'Enter your master password.',
   'profile.validation.passwordTooLong':
     'Master password must be 1,024 characters or fewer.',
+  'profile.validation.passwordTooShort':
+    'Master password must be at least 8 characters long.',
+  'profile.validation.passwordUppercase':
+    'Master password must include an uppercase letter.',
+  'profile.validation.passwordLowercase':
+    'Master password must include a lowercase letter.',
+  'profile.validation.passwordNumber': 'Master password must include a number.',
+  'profile.validation.passwordSpecial':
+    'Master password must include a special character.',
+  'profile.validation.passwordMismatch': 'Passwords do not match.',
   'profile.error.wrongPassword': 'That master password is incorrect.',
   'profile.error.invalidName': 'Choose a different Profile name.',
   'profile.error.createTitle': 'Profile could not be created',
@@ -281,4 +288,5 @@ export const englishMessages = Object.freeze({
   'fabric.media.errorFlagTitle': 'Your file failed to upload',
   'fabric.media.uploadRejectionFlagDescription':
     '{fileName} is too big to upload. Files must be less than {limit}.',
+  'profile.language.error': 'Could not update language.',
 });

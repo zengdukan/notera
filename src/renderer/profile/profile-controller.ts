@@ -1,7 +1,7 @@
 import type { Dispatch } from 'react';
 
 import type { NoteraClient } from '../platform/notera-client';
-import type { SessionAction } from '../app/session';
+import type { SessionAction, UnlockedSession } from '../app/session';
 
 export function createProfileController(input: {
   readonly client: NoteraClient;
@@ -10,7 +10,7 @@ export function createProfileController(input: {
   const unlockWith = async (
     localProfileId: string,
     operation: () => ReturnType<NoteraClient['request']>,
-  ) => {
+  ): Promise<UnlockedSession> => {
     input.dispatch({ type: 'unlocking', localProfileId });
     try {
       const profile = await operation();
@@ -18,6 +18,7 @@ export function createProfileController(input: {
         throw new Error('Invalid unlocked profile response.');
       }
       input.dispatch({ type: 'transitioning', profile });
+      return profile;
     } catch (error) {
       input.dispatch({ type: 'locked' });
       throw error;

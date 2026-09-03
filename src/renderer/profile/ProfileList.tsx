@@ -1,13 +1,24 @@
 import Button from '@atlaskit/button/new';
+import Avatar from '@atlaskit/avatar';
 import AddIcon from '@atlaskit/icon/core/add';
 import CheckMarkIcon from '@atlaskit/icon/core/check-mark';
 import { ButtonItem } from '@atlaskit/menu';
-import { Stack, Text } from '@atlaskit/primitives';
+import { cssMap } from '@atlaskit/css';
+import { Box, Stack, Text } from '@atlaskit/primitives/compiled';
 import VisuallyHidden from '@atlaskit/visually-hidden';
 import { useId } from 'react';
 import { useIntl } from 'react-intl';
+import Tile from '@atlaskit/tile';
 
 const VISIBLE_PROFILE_COUNT = 3;
+
+const listStyles = cssMap({
+  root: {
+    maxBlockSize: '168px',
+    overflowY: 'auto',
+    overscrollBehaviorBlock: 'contain',
+  },
+});
 
 export interface ProfileListItem {
   readonly localProfileId: string;
@@ -41,48 +52,40 @@ export function ProfileList({
           {intl.formatMessage({ id: 'profile.list.scrollHint' })}
         </VisuallyHidden>
       ) : null}
-      <div
+      <Box
         aria-describedby={isScrollable ? scrollHintId : undefined}
         aria-label={intl.formatMessage({ id: 'profile.list.ariaLabel' })}
-        className={`notera-profile-list${
-          isScrollable ? ' notera-profile-list--scrollable' : ''
-        }`}
         role="listbox"
+        xcss={isScrollable ? listStyles.root : undefined}
       >
         {profiles.map((profile) => (
-          <div
-            className="notera-profile-list__item"
+          <ButtonItem
+            aria-selected={selectedId === profile.localProfileId}
+            description={intl.formatMessage({
+              id: 'profile.list.description',
+            })}
+            iconAfter={
+              selectedId === profile.localProfileId ? (
+                <CheckMarkIcon
+                  label={intl.formatMessage({ id: 'profile.list.selected' })}
+                />
+              ) : undefined
+            }
+            iconBefore={
+              <Tile label="" hasBorder>
+                {Array.from(profile.displayName.trim())[0]?.toUpperCase()}
+              </Tile>
+            }
+            isDisabled={isDisabled}
+            isSelected={selectedId === profile.localProfileId}
             key={profile.localProfileId}
+            onClick={() => onSelect(profile)}
+            role="option"
           >
-            <ButtonItem
-              aria-selected={selectedId === profile.localProfileId}
-              description={intl.formatMessage({
-                id: 'profile.list.description',
-              })}
-              iconAfter={
-                selectedId === profile.localProfileId ? (
-                  <CheckMarkIcon label="Selected" />
-                ) : undefined
-              }
-              iconBefore={
-                <span
-                  aria-hidden
-                  className="notera-profile-list__avatar-initial"
-                >
-                  {Array.from(profile.displayName.trim())[0]?.toUpperCase() ??
-                    '?'}
-                </span>
-              }
-              isDisabled={isDisabled}
-              isSelected={selectedId === profile.localProfileId}
-              onClick={() => onSelect(profile)}
-              role="option"
-            >
-              {profile.displayName}
-            </ButtonItem>
-          </div>
+            {profile.displayName}
+          </ButtonItem>
         ))}
-      </div>
+      </Box>
       {onCreate ? (
         <Button
           appearance="subtle"

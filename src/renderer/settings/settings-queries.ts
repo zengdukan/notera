@@ -16,6 +16,16 @@ export function useDeviceSettings(client: NoteraClient) {
   });
 }
 
+export async function updateDeviceSettings(
+  client: NoteraClient,
+  queryClient: import('@tanstack/react-query').QueryClient,
+  value: Partial<DeviceSettings>,
+) {
+  const device = await client.request('settings.updateDevice', value);
+  queryClient.setQueryData(deviceSettingsKey(), device);
+  return device;
+}
+
 export function useProfileSettings(client: NoteraClient, profileId: string) {
   return useQuery({
     queryKey: profileSettingsKey(profileId),

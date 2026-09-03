@@ -13,8 +13,6 @@ export const chineseMessages = Object.freeze({
   'app.fatalRecovery':
     '关闭 Notera 后重新打开即可重试。此处不会执行修复或重置操作。',
   'app.close': '关闭应用',
-  'profile.header.languages': '简体中文 / English',
-  'profile.header.localMode': '本地模式',
   'profile.hero.eyebrow': 'NOTERA · 本地加密笔记',
   'profile.hero.title': '你的笔记，留在这台设备。',
   'profile.hero.description':
@@ -48,15 +46,22 @@ export const chineseMessages = Object.freeze({
   'profile.list.create': '创建 Profile',
   'profile.form.nameLabel': 'Profile 名称',
   'profile.form.passwordLabel': '主密码',
-  'profile.form.passwordRules': '1–1,024 个字符；当前没有复杂度要求。',
+  'profile.form.confirmPasswordLabel': '确认主密码',
+  'profile.form.passwordRules':
+    '8–1,024 个字符，包含大写字母、小写字母、数字和特殊字符。',
   'profile.form.passwordRecovery': 'Notera 无法找回或重置主密码。',
-  'profile.form.passwordManager': '支持系统或浏览器密码管理器填充。',
   'profile.form.noticeTitle': '请妥善保管主密码',
   'profile.form.retry': '重试',
   'profile.validation.nameRequired': '请输入 Profile 名称。',
   'profile.validation.nameTooLong': 'Profile 名称不能超过 100 个字符。',
   'profile.validation.passwordRequired': '请输入主密码。',
   'profile.validation.passwordTooLong': '主密码不能超过 1,024 个字符。',
+  'profile.validation.passwordTooShort': '主密码至少需要 8 个字符。',
+  'profile.validation.passwordUppercase': '主密码必须包含大写字母。',
+  'profile.validation.passwordLowercase': '主密码必须包含小写字母。',
+  'profile.validation.passwordNumber': '主密码必须包含数字。',
+  'profile.validation.passwordSpecial': '主密码必须包含特殊字符。',
+  'profile.validation.passwordMismatch': '两次输入的密码不一致。',
   'profile.error.wrongPassword': '主密码不正确，请重试。',
   'profile.error.invalidName': '请使用其他 Profile 名称。',
   'profile.error.createTitle': '无法创建 Profile',
@@ -251,4 +256,5 @@ export const chineseMessages = Object.freeze({
   'fabric.media.errorFlagTitle': '文件上传失败',
   'fabric.media.uploadRejectionFlagDescription':
     '{fileName} 太大，无法上传。文件必须小于 {limit}。',
+  'profile.language.error': '语言更新失败。',
 });
