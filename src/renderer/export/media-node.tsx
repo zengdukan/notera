@@ -10,6 +10,8 @@ interface ExportMediaNodeProps {
   readonly width?: unknown;
 }
 
+const EXPORT_ASSET_SCHEME = 'notera-export-asset:';
+
 function dimension(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) && value > 0
     ? value
@@ -33,15 +35,20 @@ export function createExportMediaNodeComponents(
       typeof props.alt === 'string' && props.alt.length > 0
         ? props.alt
         : attachment?.fileName || 'Attachment';
-    if (
-      props.type !== 'file' ||
-      attachment === undefined ||
-      !attachment.mimeType.startsWith('image/')
-    ) {
+    if (props.type !== 'file' || attachment === undefined) {
       return (
         <span data-export-lossy="true" data-export-media-id={id}>
           {label}
         </span>
+      );
+    }
+    if (!attachment.mimeType.startsWith('image/')) {
+      return (
+        // Chromium must emit a standard PDF link annotation for post-processing.
+        // eslint-disable-next-line @atlaskit/design-system/no-html-anchor
+        <a data-export-media-id={id} href={`${EXPORT_ASSET_SCHEME}${id}`}>
+          {label}
+        </a>
       );
     }
     const style: CSSProperties | undefined = inline

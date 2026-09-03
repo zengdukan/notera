@@ -157,6 +157,40 @@ describe('read-only export document', () => {
     );
   });
 
+  it('renders non-image attachments as links for PDF asset rewriting', () => {
+    const attachmentId = '20000000-0000-4000-8000-000000000003';
+    const payload = {
+      ...basePayload,
+      attachments: [
+        {
+          id: attachmentId,
+          fileName: 'lecture.mp4',
+          mimeType: 'video/mp4',
+          byteLength: 42,
+          relativePath: 'assets/lecture.mp4' as const,
+        },
+      ],
+    };
+    render(
+      <ReadOnlyDocument
+        payload={payload}
+        readiness={createExportReadiness(payload.document)}
+      />,
+    );
+    const rendererProps = mockReactRenderer.mock.calls[0][0] as {
+      nodeComponents?: Record<string, React.ComponentType<any>>;
+    };
+    const Media = rendererProps.nodeComponents?.media;
+    if (Media === undefined) throw new Error('Export media renderer missing');
+
+    render(<Media id={attachmentId} type="file" />);
+
+    const link = screen.getByRole('link', { name: 'lecture.mp4' });
+    expect(link).toHaveAttribute('href', `notera-export-asset:${attachmentId}`);
+    expect(link).toHaveAttribute('data-export-media-id', attachmentId);
+    expect(link).not.toHaveAttribute('data-export-lossy');
+  });
+
   it('renders valid math and explicit source-preserving invalid placeholders', () => {
     const unknownDocument = {
       ...basePayload.document,
