@@ -257,22 +257,20 @@ describe('atomic export writer', () => {
     expect(await readdir(root)).toEqual([]);
   });
 
-  it('preserves a target created before the final publish', async () => {
+  it('atomically replaces the selected existing target', async () => {
     const target = join(root, 'Project.pdf');
     await writeFile(target, 'existing');
 
-    await expect(
-      writeExportEntries({
-        target,
-        packaging: 'DIRECT',
-        partId: 'id',
-        entries: [entry('Project.pdf', [1, 2])],
-        signal: new AbortController().signal,
-        onBytes: () => undefined,
-      }),
-    ).rejects.toMatchObject({ code: 'EXPORT_FAILED' });
+    await writeExportEntries({
+      target,
+      packaging: 'DIRECT',
+      partId: 'id',
+      entries: [entry('Project.pdf', [1, 2])],
+      signal: new AbortController().signal,
+      onBytes: () => undefined,
+    });
 
-    expect(await readFile(target, 'utf8')).toBe('existing');
+    expect([...(await readFile(target))]).toEqual([1, 2]);
     expect(await readdir(root)).toEqual(['Project.pdf']);
   });
 });

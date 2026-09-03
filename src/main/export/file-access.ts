@@ -1,8 +1,6 @@
-import { readdir } from 'node:fs/promises';
 import { basename, dirname, extname, join } from 'node:path';
 
 import {
-  allocateUniqueName,
   sanitizeWindowsBaseName,
   type ExportFormat,
   type ExportPackaging,
@@ -56,16 +54,10 @@ export function createExportFileAccess(input: {
       try {
         const parent = dirname(selected);
         const base = selectedBaseName(selected);
-        const used = new Set(
-          (await readdir(parent)).map((name) =>
-            name.toLocaleLowerCase('en-US'),
-          ),
-        );
-        const fileName = allocateUniqueName(`${base}.${extension}`, used, 220);
+        const fileName = `${base}.${extension}`;
         const target = join(parent, fileName);
-        const finalBaseName = fileName.slice(0, -(extension.length + 1));
         return Object.freeze({
-          baseName: finalBaseName,
+          baseName: base,
           packaging: value.packaging,
           write: (writeInput: Parameters<ExportSelection['write']>[0]) =>
             writeExportEntries({

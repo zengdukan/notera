@@ -50,9 +50,9 @@ describe('export file access', () => {
     expect(await readdir(root)).toEqual([]);
   });
 
-  it('allocates a non-overwriting target and publishes a direct file', async () => {
+  it('publishes to the selected path after the user confirms overwrite', async () => {
     selectedPath = join(root, 'Report.pdf');
-    await writeFile(join(root, 'REPORT.PDF'), 'old');
+    await writeFile(selectedPath, 'old');
     const selection = await create().choose({
       suggestedBaseName: 'Report',
       format: 'PDF',
@@ -60,11 +60,11 @@ describe('export file access', () => {
     });
     if (selection === null) throw new Error('selection missing');
 
-    expect(selection.baseName).toBe('Report (2)');
+    expect(selection.baseName).toBe('Report');
     await selection.write({
       entries: [
         {
-          archivePath: 'Report (2).pdf',
+          archivePath: 'Report.pdf',
           byteLength: 3,
           open: source([1, 2, 3]),
         },
@@ -73,14 +73,8 @@ describe('export file access', () => {
       onBytes: () => undefined,
     });
 
-    expect(await readFile(join(root, 'REPORT.PDF'), 'utf8')).toBe('old');
-    expect([...(await readFile(join(root, 'Report (2).pdf')))]).toEqual([
-      1, 2, 3,
-    ]);
-    expect((await readdir(root)).sort()).toEqual([
-      'REPORT.PDF',
-      'Report (2).pdf',
-    ]);
+    expect([...(await readFile(selectedPath))]).toEqual([1, 2, 3]);
+    expect(await readdir(root)).toEqual(['Report.pdf']);
   });
 
   it.each([

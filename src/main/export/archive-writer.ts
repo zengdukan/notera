@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-syntax */
 import { createWriteStream } from 'node:fs';
-import { link, open, rm, type FileHandle } from 'node:fs/promises';
+import { open, rename, rm, type FileHandle } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
 import { Readable } from 'node:stream';
 
@@ -231,8 +231,7 @@ export async function writeExportEntries(input: {
       });
     }
     if (input.signal.aborted) throw new ApplicationError('OPERATION_ABORTED');
-    await link(part, input.target);
-    await rm(part);
+    await rename(part, input.target);
   } catch (error) {
     await rm(part, { force: true }).catch(() => undefined);
     throw mapped(error, input.signal);
