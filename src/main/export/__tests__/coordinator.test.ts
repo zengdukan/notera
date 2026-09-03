@@ -23,6 +23,7 @@ function setup(input?: {
   readonly document?: any;
   readonly attachments?: readonly any[];
   readonly selection?: ExportSelection | null | Promise<ExportSelection | null>;
+  readonly locale?: 'en' | 'zh-CN';
 }) {
   const terminal = deferred<any>();
   const progress: unknown[] = [];
@@ -128,6 +129,7 @@ function setup(input?: {
     pdfHost,
     operations,
     gate,
+    getLocale: () => input?.locale ?? 'en',
     now: () => 123,
   });
   return {
@@ -217,6 +219,32 @@ describe('note export coordinator', () => {
     ]);
     expect(state.attachments.openReader).toHaveBeenCalledTimes(1);
     expect(state.readers[0].close).toHaveBeenCalledTimes(1);
+  });
+
+  it('formats Markdown dates with the current Notera language', async () => {
+    const state = setup({
+      locale: 'zh-CN',
+      document: {
+        type: 'doc',
+        version: 1,
+        content: [
+          {
+            type: 'paragraph',
+            content: [{ type: 'date', attrs: { timestamp: '1788393600000' } }],
+          },
+        ],
+      },
+    });
+
+    await state.coordinator.start({ noteId, format: 'MARKDOWN' });
+    await state.terminal;
+
+    expect(state.written).toEqual([
+      {
+        path: 'Chosen.md',
+        bytes: Array.from(Buffer.from('`2026年9月3日`\n', 'utf8')),
+      },
+    ]);
   });
 
   it('rejects unavailable referenced attachments before opening the dialog', async () => {

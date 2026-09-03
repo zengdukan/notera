@@ -235,6 +235,7 @@ export async function createMainRuntime(input: {
     pdfHost,
     operations,
     gate: lifecycle,
+    getLocale: () => manager.preferences.getDevice().language,
     now: input.electron.now,
   });
   const autoLock = new AutoLockController({

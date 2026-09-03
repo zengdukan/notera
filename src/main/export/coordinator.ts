@@ -6,6 +6,7 @@ import {
   createNoteExportPlan,
   renderMarkdown,
   type ExportFormat,
+  type MarkdownLocale,
   type PlannedAsset,
 } from '@notera/export';
 
@@ -110,6 +111,7 @@ export function createNoteExportCoordinator(input: {
   readonly pdfHost: PdfRenderHost;
   readonly operations: OperationRegistry;
   readonly gate: SessionCommandGate;
+  readonly getLocale: () => MarkdownLocale;
   readonly now: () => number;
 }): NoteExportCoordinator {
   let busy = false;
@@ -135,6 +137,7 @@ export function createNoteExportCoordinator(input: {
       const snapshot = await input.gate.run(async () => ({
         note: await input.notes.getNote(value.noteId as never),
         attachments: await listAllAttachments(input.attachments, value.noteId),
+        locale: input.getLocale(),
       }));
       const plan = createNoteExportPlan({
         requestedBaseName: snapshot.note.title,
@@ -183,6 +186,7 @@ export function createNoteExportCoordinator(input: {
             const core = renderMarkdown({
               document: snapshot.note.document,
               assetsById,
+              locale: snapshot.locale,
             });
             let documentBytes: Uint8Array;
             let { lossyNodeCount } = core;

@@ -7,9 +7,11 @@ import {
 import type { MarkdownResult, PlannedAsset } from './types';
 
 type JsonRecord = Readonly<Record<string, unknown>>;
+export type MarkdownLocale = 'en' | 'zh-CN';
 
 interface RenderState {
   readonly assetsById: ReadonlyMap<AttachmentId, PlannedAsset>;
+  readonly locale: MarkdownLocale;
   lossyNodeCount: number;
 }
 
@@ -29,6 +31,22 @@ function attrs(node: JsonRecord): JsonRecord {
 
 function escapeInline(value: string): string {
   return value.replace(/([\\`*_[\]<>|])/gu, '\\$1');
+}
+
+function inlineCode(value: string): string {
+  const longestRun = Math.max(
+    0,
+    ...(value.match(/`+/gu) ?? []).map((run) => run.length),
+  );
+  const fence = '`'.repeat(longestRun + 1);
+  const content =
+    value.startsWith('`') || value.endsWith('`') ? ` ${value} ` : value;
+  return `${fence}${content}${fence}`;
+}
+
+function unsupportedInline(type: string, state: RenderState): string {
+  state.lossyNodeCount += 1;
+  return `[不支持的内容：${type}]`;
 }
 
 function renderText(node: JsonRecord): string {
@@ -62,7 +80,7 @@ function extension(node: JsonRecord, state: RenderState): string {
   const key = properties.extensionKey;
   const parameters = record(properties.parameters) ?? {};
   if (key === 'math:inline' && typeof parameters.latex === 'string') {
-    return `$${parameters.latex}$`;
+    return `$\`${parameters.latex}\`$`;
   }
   if (key === 'math:block' && typeof parameters.latex === 'string') {
     return `$$\n${parameters.latex}\n$$\n\n`;
@@ -72,6 +90,14 @@ function extension(node: JsonRecord, state: RenderState): string {
   }
   state.lossyNodeCount += 1;
   return `[不支持的内容：${String(node.type)}]\n\n`;
+}
+
+function indent(value: string, spaces = 4): string {
+  const prefix = ' '.repeat(spaces);
+  return value
+    .split('\n')
+    .map((line) => (line.length > 0 ? `${prefix}${line}` : line))
+    .join('\n');
 }
 
 function media(node: JsonRecord, state: RenderState): string {
@@ -98,11 +124,74 @@ function list(node: JsonRecord, state: RenderState, ordered: boolean): string {
   return `${children(node)
     .map((item, index) => {
       const itemNode = record(item);
-      const value = itemNode ? renderChildren(itemNode, state).trim() : '';
+      const value = itemNode ? renderListItem(itemNode, state) : '';
       const marker = ordered ? `${start + index}.` : '-';
-      return `${marker} ${value.replace(/\n/gu, '\n  ')}`;
+      return `${marker} ${value.replace(/\n/gu, '\n    ')}`;
     })
     .join('\n')}\n\n`;
+}
+
+function renderListItem(node: JsonRecord, state: RenderState): string {
+  return children(node)
+    .reduce<string>((result, child) => {
+      const childNode = record(child);
+      const rendered = renderNode(child, state).trim();
+      if (rendered.length === 0) return result;
+      if (result.length === 0) return rendered;
+      const isNestedList =
+        childNode?.type === 'bulletList' ||
+        childNode?.type === 'orderedList' ||
+        childNode?.type === 'taskList';
+      return `${result}${isNestedList ? '\n' : '\n\n'}${rendered}`;
+    }, '')
+    .trim();
+}
+
+function taskList(node: JsonRecord, state: RenderState): string {
+  const rendered = children(node)
+    .map((item) => {
+      const itemNode = record(item);
+      if (itemNode?.type === 'taskList') {
+        return indent(taskList(itemNode, state).trimEnd());
+      }
+      return renderNode(item, state).trimEnd();
+    })
+    .filter((value) => value.length > 0);
+  return `${rendered.join('\n')}\n\n`;
+}
+
+function taskItem(node: JsonRecord, state: RenderState): string {
+  const marker = attrs(node).state === 'DONE' ? 'x' : ' ';
+  const value = renderChildren(node, state).trim();
+  return `- [${marker}] ${value.replace(/\n/gu, '\n    ')}`;
+}
+
+function decisionList(node: JsonRecord, state: RenderState): string {
+  return `${children(node)
+    .map((item) => {
+      const itemNode = record(item);
+      return itemNode === undefined
+        ? ''
+        : `- ${renderChildren(itemNode, state).trim()}`;
+    })
+    .filter((value) => value.length > 0)
+    .join('\n')}\n\n`;
+}
+
+function localizedDate(node: JsonRecord, state: RenderState): string {
+  const { timestamp } = attrs(node);
+  const date = new Date(Number(timestamp));
+  if (typeof timestamp !== 'string' || Number.isNaN(date.getTime())) {
+    return unsupportedInline('date', state);
+  }
+  const text = new Intl.DateTimeFormat(state.locale, {
+    timeZone: 'UTC',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    formatMatcher: 'best fit',
+  }).format(date);
+  return inlineCode(text);
 }
 
 function table(node: JsonRecord, state: RenderState): string {
@@ -145,6 +234,23 @@ function renderNode(value: unknown, state: RenderState): string {
       return renderChildren(node, state);
     case 'text':
       return renderText(node);
+    case 'emoji': {
+      const properties = attrs(node);
+      if (typeof properties.text === 'string' && properties.text.length > 0) {
+        return properties.text;
+      }
+      return typeof properties.shortName === 'string'
+        ? escapeInline(properties.shortName)
+        : unsupportedInline('emoji', state);
+    }
+    case 'status': {
+      const { text } = attrs(node);
+      return typeof text === 'string'
+        ? inlineCode(text)
+        : unsupportedInline('status', state);
+    }
+    case 'date':
+      return localizedDate(node, state);
     case 'paragraph':
       return `${renderChildren(node, state)}\n\n`;
     case 'heading': {
@@ -162,11 +268,14 @@ function renderNode(value: unknown, state: RenderState): string {
     case 'listItem':
       return renderChildren(node, state);
     case 'taskList':
-      return `${children(node)
-        .map((item) => renderNode(item, state))
-        .join('')}\n`;
+      return taskList(node, state);
     case 'taskItem':
-      return `- [${attrs(node).state === 'DONE' ? 'x' : ' '}] ${renderChildren(node, state).trim()}\n`;
+    case 'blockTaskItem':
+      return taskItem(node, state);
+    case 'decisionList':
+      return decisionList(node, state);
+    case 'decisionItem':
+      return renderChildren(node, state);
     case 'blockquote':
       return `${renderChildren(node, state)
         .trim()
@@ -192,6 +301,8 @@ function renderNode(value: unknown, state: RenderState): string {
       return extension(node, state);
     case 'panel':
     case 'expand':
+    case 'layoutSection':
+    case 'layoutColumn':
       return renderChildren(node, state);
     default:
       state.lossyNodeCount += 1;
@@ -202,9 +313,11 @@ function renderNode(value: unknown, state: RenderState): string {
 export function renderMarkdown(input: {
   readonly document: AdfDocument;
   readonly assetsById: ReadonlyMap<AttachmentId, PlannedAsset>;
+  readonly locale: MarkdownLocale;
 }): MarkdownResult {
   const state: RenderState = {
     assetsById: input.assetsById,
+    locale: input.locale,
     lossyNodeCount: 0,
   };
   const markdown = `${renderNode(input.document, state).trimEnd()}\n`;
