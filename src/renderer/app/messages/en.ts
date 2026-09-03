@@ -40,6 +40,11 @@ export const englishMessages = Object.freeze({
   'profile.create.backToUnlock': 'Back to unlock',
   'profile.create.submit': 'Create and enter workspace',
   'profile.create.submitting': 'Creating Profile…',
+  'profile.create.confirmTitle': 'Keep your master password safe',
+  'profile.create.confirmMessage':
+    'Notera cannot recover or reset your master password. Make sure to remember it.',
+  'profile.create.confirmCancel': 'Cancel',
+  'profile.create.confirmOk': 'Create profile',
   'profile.unlock.eyebrow': 'Open a local workspace',
   'profile.unlock.title': 'Unlock “{profile}”',
   'profile.unlock.description':

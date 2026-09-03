@@ -35,6 +35,11 @@ export const chineseMessages = Object.freeze({
   'profile.create.backToUnlock': '返回解锁',
   'profile.create.submit': '创建并进入工作区',
   'profile.create.submitting': '正在创建…',
+  'profile.create.confirmTitle': '请妥善保管主密码',
+  'profile.create.confirmMessage':
+    'Notera 无法找回或重置主密码，请务必记住密码。',
+  'profile.create.confirmCancel': '取消',
+  'profile.create.confirmOk': '确认创建',
   'profile.unlock.eyebrow': '访问本地工作空间',
   'profile.unlock.title': '解锁「{profile}」',
   'profile.unlock.description': '输入主密码以访问加密笔记。',
