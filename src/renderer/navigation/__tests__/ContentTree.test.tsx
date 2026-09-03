@@ -152,6 +152,33 @@ describe('ContentTree', () => {
     expect(screen.getByRole('menuitem', { name: 'Rename' })).toBeVisible();
   });
 
+  it('localizes the export action in Chinese', async () => {
+    const user = userEvent.setup();
+    const onExport = jest.fn();
+    render(
+      <AppProviders locale="zh-CN">
+        <ContentTree
+          nodes={[note]}
+          expandedIds={new Set()}
+          selected={undefined}
+          onOpen={jest.fn()}
+          onToggle={jest.fn()}
+          onCreateNote={jest.fn()}
+          onCreateFolder={jest.fn()}
+          getActions={(entry) =>
+            createContentActions(entry, { export: onExport })
+          }
+        />
+      </AppProviders>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Roadmap' }));
+    await user.keyboard('{Shift>}{F10}{/Shift}');
+    await user.click(screen.getByRole('menuitem', { name: '导出' }));
+
+    expect(onExport).toHaveBeenCalledWith(note.entry);
+  });
+
   it('does nothing when the blank tree area receives a context menu', async () => {
     const user = userEvent.setup();
     const action = jest.fn();

@@ -159,7 +159,7 @@ describe('StickyNoteHeader', () => {
     expect(screen.getByRole('textbox', { name: 'Note title' })).toHaveFocus();
   });
 
-  it('localizes the history actions in Chinese', async () => {
+  it('localizes the history and export actions in Chinese', async () => {
     const user = userEvent.setup();
     renderHeader(
       <StickyNoteHeader
@@ -182,5 +182,6 @@ describe('StickyNoteHeader', () => {
       await screen.findByRole('menuitem', { name: '创建版本' }),
     ).toBeVisible();
     expect(screen.getByRole('menuitem', { name: '历史版本' })).toBeVisible();
+    expect(screen.getByRole('menuitem', { name: '导出' })).toBeVisible();
   });
 });

@@ -28,7 +28,6 @@ describe('content actions', () => {
       ]);
 
     expect(iconNames(folder)).toEqual([
-      ['open', 'EyeOpenIcon'],
       ['create-note', 'NoteIcon'],
       ['create-folder', 'FolderClosedIcon'],
       ['rename', 'EditIcon'],
@@ -36,7 +35,6 @@ describe('content actions', () => {
       ['trash', 'DeleteIcon'],
     ]);
     expect(iconNames(note)).toEqual([
-      ['open', 'EyeOpenIcon'],
       ['rename', 'EditIcon'],
       ['move', 'ArrowRightIcon'],
       ['copy', 'CopyIcon'],
@@ -49,7 +47,6 @@ describe('content actions', () => {
   it('uses one ordered action matrix for context and overflow menus', () => {
     const controller = new Proxy({}, { get: () => jest.fn() }) as never;
     expect(actionIdsFor(createContentActions(folder, controller))).toEqual([
-      'open',
       'create-note',
       'create-folder',
       'rename',
@@ -57,7 +54,6 @@ describe('content actions', () => {
       'trash',
     ]);
     expect(actionIdsFor(createContentActions(note, controller))).toEqual([
-      'open',
       'rename',
       'move',
       'copy',
@@ -70,6 +66,18 @@ describe('content actions', () => {
     ).toEqual(
       actionIdsFor(createContentActions(folder, controller, 'overflow')),
     );
+  });
+
+  it('marks the export action for runtime localization', () => {
+    const exportAction = createContentActions(note, {
+      export: jest.fn(),
+    }).find(({ id }) => id === 'export');
+
+    expect(exportAction).toMatchObject({
+      label: 'Export',
+      messageId: 'export.action',
+      isDisabled: false,
+    });
   });
 
   it('labels the favorite action from the note favorite state', () => {

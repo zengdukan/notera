@@ -24,6 +24,7 @@ export type ContentActionId =
 export interface ContentAction {
   readonly id: ContentActionId;
   readonly label: string;
+  readonly messageId?: string;
   readonly icon: typeof EditIcon;
   readonly isDisabled: boolean;
   run(): unknown;
@@ -52,10 +53,12 @@ export function createContentActions(
     label: string,
     icon: typeof EditIcon,
     run: (() => unknown) | undefined,
+    messageId?: string,
   ): ContentAction =>
     Object.freeze({
       id,
       label,
+      messageId,
       icon,
       run: () => run?.(),
       isDisabled: run === undefined,
@@ -123,6 +126,7 @@ export function createContentActions(
       'Export',
       DownloadIcon,
       controller.export ? () => controller.export?.(entry) : undefined,
+      'export.action',
     ),
     trash,
   ]);

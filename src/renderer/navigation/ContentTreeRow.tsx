@@ -15,6 +15,7 @@ import {
   ExpandableMenuItemContent,
   ExpandableMenuItemTrigger,
 } from '@atlaskit/side-nav-items/expandable-menu-item';
+import { useIntl } from 'react-intl';
 
 import type { ContentEntry } from './content-controller';
 import type { ContentAction } from './content-actions';
@@ -40,6 +41,7 @@ export function ContentTreeRow({
   readonly actions: readonly ContentAction[];
   readonly children?: ReactNode;
 }) {
+  const intl = useIntl();
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
   const [pointerInside, setPointerInside] = useState(false);
@@ -171,7 +173,9 @@ export function ContentTreeRow({
                   isDisabled={action.isDisabled}
                   onClick={() => action.run()}
                 >
-                  {action.label}
+                  {action.messageId
+                    ? intl.formatMessage({ id: action.messageId })
+                    : action.label}
                 </DropdownItem>
               );
             })}

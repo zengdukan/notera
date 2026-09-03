@@ -65,7 +65,12 @@ const MORE_ACTIONS: readonly {
     messageId: 'history.title',
     icon: ClockIcon,
   },
-  { id: 'export', label: 'Export', icon: DownloadIcon },
+  {
+    id: 'export',
+    label: 'Export',
+    messageId: 'export.action',
+    icon: DownloadIcon,
+  },
   { id: 'move', label: 'Move', icon: ArrowRightIcon },
   { id: 'copy', label: 'Copy', icon: CopyIcon },
   { id: 'trash', label: 'Move to trash', icon: DeleteIcon },
