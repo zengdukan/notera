@@ -87,7 +87,7 @@ export const englishMessages = Object.freeze({
   'profile.error.missing':
     'This Profile is no longer available on this device. Select another Profile.',
   'favorites.title': 'Favorites',
-  'favorites.sortDescription': 'Sorted by favorite order',
+  'favorites.sortDescription': 'Newest favorites first',
   'favorites.untitled': 'Untitled',
   'favorites.removeLabel': 'Remove {title} from favorites',
   'favorites.loadingLabel': 'Loading favorites',

@@ -122,23 +122,29 @@ describe('LocalNotesService note relations', () => {
       [first, second, third].map(({ id, updatedAt }) => [id, updatedAt]),
     );
 
+    const dateNow = jest
+      .spyOn(Date, 'now')
+      .mockReturnValueOnce(100)
+      .mockReturnValueOnce(200)
+      .mockReturnValue(300);
     await localNotes.addFavorite(first.id);
     await localNotes.addFavorite(second.id);
     await localNotes.addFavorite(third.id);
+    dateNow.mockRestore();
     await localNotes.addFavorite(first.id);
 
     const page = await localNotes.listFavorites({ limit: 2 });
     expect(
       page.items.map(({ id, favoriteSortOrder }) => [id, favoriteSortOrder]),
     ).toEqual([
-      [first.id, 0],
+      [third.id, 2],
       [second.id, 1],
     ]);
     expect(page.nextCursor).toEqual(expect.any(String));
     await expect(
       localNotes.listFavorites({ limit: 2, cursor: page.nextCursor }),
     ).resolves.toMatchObject({
-      items: [{ id: third.id, favoriteSortOrder: 2 }],
+      items: [{ id: first.id, favoriteSortOrder: 0 }],
     });
 
     await localNotes.reorderFavorite({
@@ -147,7 +153,7 @@ describe('LocalNotesService note relations', () => {
     });
     expect(
       (await localNotes.listFavorites({ limit: 10 })).items.map(({ id }) => id),
-    ).toEqual([third.id, first.id, second.id]);
+    ).toEqual([third.id, second.id, first.id]);
     await localNotes.reorderFavorite({
       noteId: third.id,
       beforeNoteId: third.id,

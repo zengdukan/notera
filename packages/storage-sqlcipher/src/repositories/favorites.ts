@@ -49,7 +49,7 @@ export class FavoriteRepository implements FavoriteWriter {
     const parameters: unknown[] = [this.vaultId, this.vaultId];
     let keyset = '';
     if (cursor) {
-      keyset = 'AND (f.sort_order > ? OR (f.sort_order = ? AND f.note_id > ?))';
+      keyset = 'AND (f.created_at < ? OR (f.created_at = ? AND f.note_id < ?))';
       parameters.push(cursor.sortOrder, cursor.sortOrder, cursor.lastId);
     }
     parameters.push(page.limit + 1);
@@ -61,7 +61,7 @@ export class FavoriteRepository implements FavoriteWriter {
            SELECT 1 FROM trash_entries tr WHERE tr.vault_id = ?
              AND tr.object_type = 'NOTE' AND tr.object_id = f.note_id
          ) ${keyset}
-       ORDER BY f.sort_order, f.note_id LIMIT ?`,
+       ORDER BY f.created_at DESC, f.note_id DESC LIMIT ?`,
       )
       .all(...parameters);
     const items = rows.slice(0, page.limit).map(hydrateFavorite);
@@ -71,7 +71,7 @@ export class FavoriteRepository implements FavoriteWriter {
       ...(rows.length > page.limit && last
         ? {
             nextCursor: encodeCursor(FAVORITE_CURSOR, `vault:${this.vaultId}`, {
-              sortOrder: last.sortOrder,
+              sortOrder: last.createdAt,
               lastId: last.noteId,
             }),
           }

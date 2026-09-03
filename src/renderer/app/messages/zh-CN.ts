@@ -69,7 +69,7 @@ export const chineseMessages = Object.freeze({
   'profile.error.migrationFailed': '无法完成 Profile 升级，请重启后重试。',
   'profile.error.missing': '这台设备上已找不到此 Profile，请选择其他项。',
   'favorites.title': '收藏',
-  'favorites.sortDescription': '按收藏顺序排列',
+  'favorites.sortDescription': '按收藏时间倒序排列',
   'favorites.untitled': '无标题',
   'favorites.removeLabel': '取消收藏「{title}」',
   'favorites.loadingLabel': '正在加载收藏',

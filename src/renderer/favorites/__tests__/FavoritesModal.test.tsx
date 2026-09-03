@@ -93,7 +93,7 @@ describe('FavoritesModal', () => {
     const client = { request, subscribe: jest.fn() } as unknown as NoteraClient;
     const { onOpen } = renderFavorites({ client, locale: 'zh-CN' });
 
-    expect(await screen.findByText('按收藏顺序排列')).toBeVisible();
+    expect(await screen.findByText('按收藏时间倒序排列')).toBeVisible();
     expect(screen.getByRole('list')).toBeVisible();
     expect(screen.getByTestId('notera-modal-favorites--body')).toBeVisible();
     expect(
@@ -139,6 +139,7 @@ describe('FavoritesModal', () => {
     const client = { request, subscribe: jest.fn() } as unknown as NoteraClient;
     const { onOpen } = renderFavorites({ client, queryClient });
 
+    expect(await screen.findByText('Newest favorites first')).toBeVisible();
     const item = await screen.findByRole('button', { name: /^First / });
     await user.hover(item);
     const remove = screen.getByRole('button', {

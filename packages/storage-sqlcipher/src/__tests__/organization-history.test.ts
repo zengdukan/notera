@@ -233,9 +233,20 @@ describe('organization and immutable history repositories', () => {
     expect(database.tags.list({ limit: 1 }).items).toEqual([firstTag]);
     expect(database.tags.listForNote(storedNote.id)).toEqual([firstTag]);
     expect(database.favorites.list({ limit: 10 }).items).toEqual([
-      firstFavorite,
       secondFavorite,
+      firstFavorite,
     ]);
+    const favoritePage = database.favorites.list({ limit: 1 });
+    expect(favoritePage).toMatchObject({
+      items: [secondFavorite],
+      nextCursor: expect.any(String),
+    });
+    expect(
+      database.favorites.list({
+        limit: 1,
+        cursor: favoritePage.nextCursor,
+      }).items,
+    ).toEqual([firstFavorite]);
 
     const renamed = createTag({
       ...firstTag,
@@ -265,6 +276,51 @@ describe('organization and immutable history repositories', () => {
     });
     expect(database.tags.get(firstTag.id)).toBeUndefined();
     expect(database.favorites.list({ limit: 10 }).items).toEqual([]);
+  });
+
+  it('orders favorites by newest event with stable cross-page ties', () => {
+    const { database } = createVault();
+    const firstNote = note(1);
+    const secondNote = note(2);
+    const thirdNote = note(3);
+    const firstFavorite = createFavorite({
+      vaultId: TEST_VAULT_ID,
+      noteId: firstNote.id,
+      sortOrder: asSortOrder(2),
+      createdAt: asTimestamp(1),
+    });
+    const secondFavorite = createFavorite({
+      vaultId: TEST_VAULT_ID,
+      noteId: secondNote.id,
+      sortOrder: asSortOrder(1),
+      createdAt: asTimestamp(2),
+    });
+    const thirdFavorite = createFavorite({
+      vaultId: TEST_VAULT_ID,
+      noteId: thirdNote.id,
+      sortOrder: asSortOrder(0),
+      createdAt: asTimestamp(2),
+    });
+    database.transaction((transaction) => {
+      transaction.notes.insert(firstNote);
+      transaction.notes.insert(secondNote);
+      transaction.notes.insert(thirdNote);
+      transaction.favorites.insert(firstFavorite);
+      transaction.favorites.insert(secondFavorite);
+      transaction.favorites.insert(thirdFavorite);
+    });
+
+    const firstPage = database.favorites.list({ limit: 2 });
+    expect(firstPage).toMatchObject({
+      items: [thirdFavorite, secondFavorite],
+      nextCursor: expect.any(String),
+    });
+    expect(
+      database.favorites.list({
+        limit: 2,
+        cursor: firstPage.nextCursor,
+      }).items,
+    ).toEqual([firstFavorite]);
   });
 
   it('rejects missing and trashed relation targets without partial writes', () => {
