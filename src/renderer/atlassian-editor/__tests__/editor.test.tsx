@@ -46,9 +46,12 @@ const diffStep = {
 
 jest.mock('@atlaskit/editor-core/composable-editor', () => ({
   ComposableEditor: (props: {
+    allowUndoRedoButtons?: boolean;
     appearance: string;
     defaultValue: unknown;
     disabled?: boolean;
+    emojiProvider?: unknown;
+    featureFlags?: { twoLineEditorToolbar?: boolean };
     onChange(): void;
     onEditorReady(actions: typeof mockEditorActions): void;
     quickInsert?: boolean;
@@ -58,9 +61,14 @@ jest.mock('@atlaskit/editor-core/composable-editor', () => ({
     return (
       <div
         data-appearance={props.appearance}
+        data-emoji-provider={String(Boolean(props.emojiProvider))}
         data-disabled={String(props.disabled ?? false)}
         data-document={JSON.stringify(props.defaultValue)}
         data-quick-insert={String(props.quickInsert ?? false)}
+        data-two-line-toolbar={String(
+          props.featureFlags?.twoLineEditorToolbar ?? false,
+        )}
+        data-undo-redo={String(props.allowUndoRedoButtons ?? false)}
         data-testid="composable-editor"
       >
         <button type="button" onClick={props.onChange}>
@@ -192,6 +200,44 @@ describe('Atlaskit product editor', () => {
           },
         }),
       }),
+    );
+  });
+
+  it('enables undo, redo, and emoji in the preset and visible toolbar', () => {
+    render(
+      <Editor
+        mediaProvider={mediaProvider}
+        document={initialDocument}
+        onChange={jest.fn()}
+      />,
+    );
+
+    expect(mockUseUniversalPreset).toHaveBeenCalledWith(
+      expect.objectContaining({
+        props: expect.objectContaining({
+          allowUndoRedoButtons: true,
+          emojiProvider: expect.any(Promise),
+        }),
+        initialPluginConfiguration: expect.objectContaining({
+          insertBlockPlugin: expect.objectContaining({
+            toolbarButtons: expect.objectContaining({
+              emoji: { enabled: true },
+            }),
+          }),
+        }),
+      }),
+    );
+    expect(screen.getByTestId('composable-editor')).toHaveAttribute(
+      'data-undo-redo',
+      'true',
+    );
+    expect(screen.getByTestId('composable-editor')).toHaveAttribute(
+      'data-emoji-provider',
+      'true',
+    );
+    expect(screen.getByTestId('composable-editor')).toHaveAttribute(
+      'data-two-line-toolbar',
+      'false',
     );
   });
 

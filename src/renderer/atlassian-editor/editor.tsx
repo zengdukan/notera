@@ -137,7 +137,9 @@ export function Editor({
     allowTasksAndDecisions: true,
     allowTextAlignment: true,
     allowTextColor: true,
+    allowUndoRedoButtons: true,
     codeBlock: { allowCopyToClipboard: true },
+    emojiProvider,
     extensionHandlers: {
       ...mathExtensionHandlers,
       ...mermaidExtensionHandlers,
@@ -233,12 +235,12 @@ export function Editor({
         />
       ) : null}
       <ComposableEditor
+        allowUndoRedoButtons
         appearance={appearance}
         defaultValue={document}
         disabled={disabled}
         emojiProvider={emojiProvider}
         extensionProviders={[mathExtensionProvider, mermaidExtensionProvider]}
-        featureFlags={{ twoLineEditorToolbar: false }}
         media={mediaOptions}
         onChange={handleChange}
         onEditorReady={handleEditorReady}
