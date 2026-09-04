@@ -1,4 +1,4 @@
-const { notarize } = import('@electron/notarize');
+const { notarize } = require('@electron/notarize');
 const { build } = require('../../package.json');
 
 exports.default = async function notarizeMacos(context) {
