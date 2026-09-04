@@ -68,18 +68,21 @@ export function createContentActions(
     'Rename',
     EditIcon,
     controller.rename ? () => controller.rename?.(entry) : undefined,
+    'navigation.rename',
   );
   const move = action(
     'move',
     'Move',
     ArrowRightIcon,
     controller.openMove ? () => controller.openMove?.(entry) : undefined,
+    'navigation.move',
   );
   const trash = action(
     'trash',
     'Move to trash',
     DeleteIcon,
     controller.openTrash ? () => controller.openTrash?.(entry) : undefined,
+    'navigation.moveToTrash',
   );
   if (entry.kind === 'folder') {
     return Object.freeze([
@@ -90,6 +93,7 @@ export function createContentActions(
         controller.createNote
           ? () => controller.createNote?.(entry.id)
           : undefined,
+        'navigation.newNote',
       ),
       action(
         'create-folder',
@@ -98,6 +102,7 @@ export function createContentActions(
         controller.openCreateFolder
           ? () => controller.openCreateFolder?.(entry)
           : undefined,
+        'navigation.newSubfolder',
       ),
       rename,
       move,
@@ -112,6 +117,7 @@ export function createContentActions(
       'Copy',
       CopyIcon,
       controller.openCopy ? () => controller.openCopy?.(entry) : undefined,
+      'navigation.copy',
     ),
     action(
       'toggle-favorite',
@@ -120,6 +126,7 @@ export function createContentActions(
       controller.toggleFavorite
         ? () => controller.toggleFavorite?.(entry)
         : undefined,
+      entry.isFavorite ? 'navigation.removeFromFavorites' : 'navigation.addToFavorites',
     ),
     action(
       'export',

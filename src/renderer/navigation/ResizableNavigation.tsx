@@ -141,6 +141,7 @@ function ProfileMenu({
   readonly onLock: () => void;
   readonly onSettings: () => void;
 }) {
+  const intl = useIntl();
   const profileInitial = Array.from(profileName.trim())[0]?.toLocaleUpperCase();
 
   return (
@@ -202,13 +203,13 @@ function ProfileMenu({
             elemBefore={<LockIcon label="" color="currentColor" />}
             onClick={onLock}
           >
-            Lock profile
+            {intl.formatMessage({ id: 'navigation.lockProfile' })}
           </DropdownItem>
           <DropdownItem
             elemBefore={<SettingsIcon label="" color="currentColor" />}
             onClick={onSettings}
           >
-            Settings
+            {intl.formatMessage({ id: 'settings.title' })}
           </DropdownItem>
         </DropdownItemGroup>
       </DropdownMenu>
@@ -266,7 +267,7 @@ function QuickNavigation({
     >
       <Stack alignInline="center" space="space.100">
         <QuickAction
-          label="Expand sidebar"
+          label={intl.formatMessage({ id: 'navigation.expandSidebar' })}
           icon={SidebarExpandIcon}
           onClick={toggleSideNav}
         />
@@ -276,9 +277,21 @@ function QuickNavigation({
           onLock={onLock}
           onSettings={onSettings}
         />
-        <QuickAction label="Search" icon={SearchIcon} onClick={onSearch} />
-        <QuickAction label="Favorites" icon={StarIcon} onClick={onFavorites} />
-        <QuickAction label="Recent" icon={ClockIcon} onClick={onRecent} />
+        <QuickAction
+          label={intl.formatMessage({ id: 'navigation.search' })}
+          icon={SearchIcon}
+          onClick={onSearch}
+        />
+        <QuickAction
+          label={intl.formatMessage({ id: 'navigation.favorites' })}
+          icon={StarIcon}
+          onClick={onFavorites}
+        />
+        <QuickAction
+          label={intl.formatMessage({ id: 'navigation.recent' })}
+          icon={ClockIcon}
+          onClick={onRecent}
+        />
         <QuickAction
           label={intl.formatMessage({ id: 'trash.title' })}
           icon={DeleteIcon}
@@ -352,8 +365,8 @@ export function ResizableNavigation({
               onSettings={onSettings}
             />
             <SideNavToggleButton
-              collapseLabel="Collapse sidebar"
-              expandLabel="Expand sidebar"
+              collapseLabel={intl.formatMessage({ id: 'navigation.collapseSidebar' })}
+              expandLabel={intl.formatMessage({ id: 'navigation.expandSidebar' })}
             />
           </Inline>
         </SideNavHeader>
@@ -366,19 +379,19 @@ export function ResizableNavigation({
                     elemBefore={<SearchIcon label="" color="currentColor" />}
                     onClick={onSearch}
                   >
-                    Search
+                    {intl.formatMessage({ id: 'navigation.search' })}
                   </ButtonMenuItem>
                   <ButtonMenuItem
                     elemBefore={<StarIcon label="" color="currentColor" />}
                     onClick={onFavorites}
                   >
-                    Favorites
+                    {intl.formatMessage({ id: 'navigation.favorites' })}
                   </ButtonMenuItem>
                   <ButtonMenuItem
                     elemBefore={<ClockIcon label="" color="currentColor" />}
                     onClick={onRecent}
                   >
-                    Recent
+                    {intl.formatMessage({ id: 'navigation.recent' })}
                   </ButtonMenuItem>
                   <ButtonMenuItem
                     elemBefore={<DeleteIcon label="" color="currentColor" />}
@@ -398,7 +411,7 @@ export function ResizableNavigation({
                   spread="space-between"
                 >
                   <MenuSectionHeading headingLevel={2}>
-                    Notes
+                    {intl.formatMessage({ id: 'navigation.notes' })}
                   </MenuSectionHeading>
                   <DropdownMenu<HTMLButtonElement>
                     shouldRenderToParent
@@ -416,10 +429,10 @@ export function ResizableNavigation({
                   >
                     <DropdownItemGroup>
                       <DropdownItem onClick={onCreateNote}>
-                        New Note
+                        {intl.formatMessage({ id: 'navigation.newNote' })}
                       </DropdownItem>
                       <DropdownItem onClick={onCreateFolder}>
-                        New folder
+                        {intl.formatMessage({ id: 'navigation.newFolder' })}
                       </DropdownItem>
                     </DropdownItemGroup>
                   </DropdownMenu>

@@ -337,7 +337,7 @@ function UnlockedNavigationWorkspace({
     if (overlay.kind === 'search') {
       return {
         kind: overlay.kind,
-        title: 'Search',
+        title: intl.formatMessage({ id: 'navigation.search' }),
         width: 720,
         content: (
           <SearchModal
@@ -368,7 +368,7 @@ function UnlockedNavigationWorkspace({
     if (overlay.kind === 'recent') {
       return {
         kind: overlay.kind,
-        title: '最近浏览',
+        title: intl.formatMessage({ id: 'navigation.recent' }),
         content: (
           <RecentModal
             client={client}
@@ -455,7 +455,7 @@ function UnlockedNavigationWorkspace({
         content: (
           <ModalBody>
             <Box paddingBlockEnd="space.300">
-              <Text>Available in this offline workspace.</Text>
+              <Text>{intl.formatMessage({ id: 'navigation.offlineWorkspace' })}</Text>
             </Box>
           </ModalBody>
         ),
@@ -464,7 +464,7 @@ function UnlockedNavigationWorkspace({
     if (overlay.kind === 'create-folder') {
       return {
         kind: overlay.kind,
-        title: 'Create folder',
+        title: intl.formatMessage({ id: 'navigation.newFolder' }),
         content: (
           <CreateFolderModal
             onCreate={async (name) => {
@@ -478,7 +478,7 @@ function UnlockedNavigationWorkspace({
     if (overlay.kind === 'rename') {
       return {
         kind: overlay.kind,
-        title: 'Rename',
+        title: intl.formatMessage({ id: 'navigation.rename' }),
         content: (
           <RenameContentModal
             initialName={
@@ -519,7 +519,9 @@ function UnlockedNavigationWorkspace({
     if (overlay.kind === 'folder-operation') {
       return {
         kind: overlay.kind,
-        title: overlay.operation === 'move' ? 'Move' : 'Copy',
+        title: overlay.operation === 'move'
+          ? intl.formatMessage({ id: 'navigation.move' })
+          : intl.formatMessage({ id: 'navigation.copy' }),
         content: (
           <MoveContentModal
             operation={overlay.operation}

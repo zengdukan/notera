@@ -130,9 +130,9 @@ export function ContentTreeRow({
             )}
           >
             <DropdownItemGroup>
-              <DropdownItem onClick={onCreateNote}>New note</DropdownItem>
+              <DropdownItem onClick={onCreateNote}>{intl.formatMessage({ id: 'navigation.newNote' })}</DropdownItem>
               <DropdownItem onClick={onCreateFolder}>
-                New subfolder
+                {intl.formatMessage({ id: 'navigation.newSubfolder' })}
               </DropdownItem>
             </DropdownItemGroup>
           </DropdownMenu>

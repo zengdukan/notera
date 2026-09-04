@@ -1,6 +1,7 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { ButtonMenuItem } from '@atlaskit/side-nav-items/button-menu-item';
 import { MenuList } from '@atlaskit/side-nav-items/menu-list';
+import { useIntl } from 'react-intl';
 
 import { treeKey } from '../app/query-keys';
 import type { NoteraClient } from '../platform/notera-client';
@@ -55,6 +56,7 @@ function QueryLevel({
   ) => void;
   readonly getActions: (entry: ContentEntry) => readonly ContentAction[];
 }) {
+  const intl = useIntl();
   const query = useTreeChildren({ client, profileId, parentFolderId });
   const entries = query.data?.pages.flatMap((page) => page.items) ?? [];
   return (
@@ -98,7 +100,7 @@ function QueryLevel({
       })}
       {query.hasNextPage ? (
         <ButtonMenuItem onClick={() => void query.fetchNextPage()}>
-          Load more
+          {intl.formatMessage({ id: 'navigation.loadMore' })}
         </ButtonMenuItem>
       ) : null}
     </>
