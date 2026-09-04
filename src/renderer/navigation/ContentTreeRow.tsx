@@ -109,34 +109,6 @@ export function ContentTreeRow({
   const rowActions = (
     <div role="presentation" onClick={(event) => event.stopPropagation()}>
       <Inline alignBlock="center" space="space.025">
-        {entry.kind === 'folder' ? (
-          <DropdownMenu<HTMLButtonElement>
-            shouldRenderToParent
-            onOpenChange={({ isOpen }) => setCreateMenuOpen(isOpen)}
-            placement="bottom-end"
-            trigger={({ triggerRef, onClick, ...props }) => (
-              <IconButton
-                {...props}
-                ref={triggerRef}
-                label={`Create in ${name}`}
-                icon={AddIcon}
-                appearance="subtle"
-                spacing="compact"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onClick?.(event);
-                }}
-              />
-            )}
-          >
-            <DropdownItemGroup>
-              <DropdownItem onClick={onCreateNote}>{intl.formatMessage({ id: 'navigation.newNote' })}</DropdownItem>
-              <DropdownItem onClick={onCreateFolder}>
-                {intl.formatMessage({ id: 'navigation.newSubfolder' })}
-              </DropdownItem>
-            </DropdownItemGroup>
-          </DropdownMenu>
-        ) : null}
         <DropdownMenu<HTMLButtonElement>
           shouldRenderToParent
           isOpen={actionMenuOpen}
