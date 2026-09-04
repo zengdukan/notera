@@ -22,7 +22,7 @@ const styles = cssMap({
   },
   main: {
     width: '100%',
-    maxWidth: '1120px',
+    maxWidth: '1200px',
     marginInline: 'auto',
     boxSizing: 'border-box',
     display: 'grid',
