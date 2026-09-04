@@ -29,6 +29,22 @@ const shellStyles = xcss({
 
 const WORKSPACE_TRANSITION_MS = 800;
 
+async function listAllProfiles(
+  client: NoteraClient,
+): Promise<readonly ProfileListItem[]> {
+  const items: ProfileListItem[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await client.request('profile.list', {
+      limit: 100,
+      ...(cursor === undefined ? {} : { cursor }),
+    });
+    items.push(...page.items);
+    cursor = page.nextCursor ?? undefined;
+  } while (cursor !== undefined);
+  return items;
+}
+
 export function AppShell({
   client,
   documentCloseGuard,
@@ -58,19 +74,17 @@ export function AppShell({
     readonly localProfileId: string;
     readonly displayName: string;
   }) => {
-    setProfiles((current) =>
-      [
-        {
-          localProfileId: profile.localProfileId,
-          displayName: profile.displayName,
-          lastUsedAt: Date.now(),
-          isCurrent: true,
-        },
-        ...current.filter(
-          (item) => item.localProfileId !== profile.localProfileId,
-        ),
-      ].slice(0, 50),
-    );
+    setProfiles((current) => [
+      {
+        localProfileId: profile.localProfileId,
+        displayName: profile.displayName,
+        lastUsedAt: Date.now(),
+        isCurrent: true,
+      },
+      ...current.filter(
+        (item) => item.localProfileId !== profile.localProfileId,
+      ),
+    ]);
   };
 
   const forgetRemovedProfile = (localProfileId: string) => {
@@ -82,12 +96,12 @@ export function AppShell({
   useEffect(() => {
     let active = true;
     Promise.all([
-      client.request('profile.list', { limit: 50 }),
+      listAllProfiles(client),
       client.request('profile.getSessionState', {}),
     ])
-      .then(([profilePage, session]) => {
+      .then(([allProfiles, session]) => {
         if (!active) return undefined;
-        setProfiles(profilePage.items);
+        setProfiles(allProfiles);
         if (session.state === 'UNLOCKED') {
           dispatch({ type: 'unlocked', profile: session });
         } else {
