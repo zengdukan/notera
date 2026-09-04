@@ -73,6 +73,12 @@ export function AppShell({
     );
   };
 
+  const forgetRemovedProfile = (localProfileId: string) => {
+    setProfiles((current) =>
+      current.filter((item) => item.localProfileId !== localProfileId),
+    );
+  };
+
   useEffect(() => {
     let active = true;
     Promise.all([
@@ -136,6 +142,7 @@ export function AppShell({
           client={client}
           profiles={profiles}
           onProfileCreated={rememberCreatedProfile}
+          onProfileRemoved={forgetRemovedProfile}
         >
           {null}
         </ProfileGate>
@@ -149,6 +156,7 @@ export function AppShell({
           client={client}
           profiles={profiles}
           onProfileCreated={rememberCreatedProfile}
+          onProfileRemoved={forgetRemovedProfile}
         >
           <NavigationWorkspace
             client={client}

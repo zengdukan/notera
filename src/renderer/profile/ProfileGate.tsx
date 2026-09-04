@@ -1,4 +1,10 @@
-import { type ReactNode, useEffect, useMemo } from 'react';
+import {
+  createContext,
+  useContext,
+  type ReactNode,
+  useEffect,
+  useMemo,
+} from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { clearProfileQueries } from '../app/query-client';
@@ -10,16 +16,26 @@ import { createProfileController } from './profile-controller';
 import type { ProfileListItem } from './ProfileList';
 import type { UnlockedSession } from '../app/session';
 
+const ProfileRemovalContext = createContext<
+  ((localProfileId: string) => void) | undefined
+>(undefined);
+
+export function useProfileRemoval() {
+  return useContext(ProfileRemovalContext);
+}
+
 export function ProfileGate({
   client,
   profiles,
   children,
   onProfileCreated,
+  onProfileRemoved,
 }: {
   readonly client: NoteraClient;
   readonly profiles: readonly ProfileListItem[];
   readonly children: ReactNode;
   readonly onProfileCreated?: (profile: UnlockedSession) => void;
+  readonly onProfileRemoved?: (localProfileId: string) => void;
 }) {
   const { state, dispatch } = useSession();
   const queryClient = useQueryClient();
@@ -68,6 +84,12 @@ export function ProfileGate({
       />
     );
   }
-  if (state.status === 'unlocked') return children;
+  if (state.status === 'unlocked') {
+    return (
+      <ProfileRemovalContext.Provider value={onProfileRemoved}>
+        {children}
+      </ProfileRemovalContext.Provider>
+    );
+  }
   return null;
 }

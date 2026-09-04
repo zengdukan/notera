@@ -44,6 +44,7 @@ import {
   type LoadedFolderPickerItem,
 } from '../notes/folder-picker-data';
 import { SettingsModal } from '../settings/SettingsModal';
+import { useProfileRemoval } from '../profile/ProfileGate';
 import {
   deviceSettingsKey,
   updateDeviceSettings,
@@ -153,6 +154,7 @@ function UnlockedNavigationWorkspace({
 }) {
   const intl = useIntl();
   const queryClient = useQueryClient();
+  const onProfileRemoved = useProfileRemoval();
   const [selection, setSelection] = useState<ContentEntry>();
   const [editingNoteId, setEditingNoteId] = useState<string>();
   const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(
@@ -590,7 +592,10 @@ function UnlockedNavigationWorkspace({
             const result = await client.request('profile.removeFromDevice', {
               localProfileId: profile.localProfileId,
             });
-            if (result.status === 'removed') setOverlay(undefined);
+            if (result.status === 'removed') {
+              onProfileRemoved?.(profile.localProfileId);
+              setOverlay(undefined);
+            }
             return result.status;
           }}
         />
@@ -604,6 +609,7 @@ function UnlockedNavigationWorkspace({
     exportStore,
     historyController,
     intl,
+    onProfileRemoved,
     openListedNote,
     overlay,
     profile,
