@@ -6,7 +6,7 @@ const { join } = require('node:path');
 const { spawnSync } = require('node:child_process');
 const { DatabaseSync } = require('node:sqlite');
 
-const Database = require('@notera/sqlcipher');
+const Database = require('notera-sqlcipher');
 
 function fail(message) {
   throw new Error(message);

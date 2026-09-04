@@ -16,6 +16,6 @@
   "dependencies": {
     "@ar-nelson/foldcase": "1.0.1",
     "@notera/domain": "0.0.0",
-    "@notera/sqlcipher": "file:D:/programs/vendor/build/ci-run-32264792724-verify/extracted/dist/notera-sqlcipher-13.0.3-sqlcipher.4.17.0.tgz"
+    "notera-sqlcipher": "^1.0.0"
   }
 }
