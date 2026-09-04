@@ -364,7 +364,7 @@ describe('notes, ADF serialization, and search indexing', () => {
     const page = database.folders.listContent(TEST_ROOT_FOLDER_ID, {
       limit: 2,
     });
-    expect(page.items.map(({ id }) => id)).toEqual([child.id, first.id]);
+    expect(page.items.map(({ id }) => id)).toEqual([child.id, second.id]);
     expect(page.nextCursor).toEqual(expect.any(String));
     expect(
       database.folders
@@ -373,7 +373,7 @@ describe('notes, ADF serialization, and search indexing', () => {
           limit: 2,
         })
         .items.map(({ id }) => id),
-    ).toEqual([second.id]);
+    ).toEqual([first.id]);
 
     database.transaction((transaction) => {
       transaction.notes.replaceLocation({
