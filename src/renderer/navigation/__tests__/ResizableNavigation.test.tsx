@@ -207,7 +207,7 @@ describe('ResizableNavigation', () => {
     await user.click(
       screen.getByRole('button', { name: 'Create note or folder' }),
     );
-    await user.click(screen.getByRole('menuitem', { name: 'New Note' }));
+    await user.click(screen.getByRole('menuitem', { name: 'New note' }));
 
     expect(callbacks.onCreateNote).toHaveBeenCalledTimes(1);
     expect(callbacks.onCreateFolder).not.toHaveBeenCalled();
