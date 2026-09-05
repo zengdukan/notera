@@ -130,7 +130,7 @@ describe('HistoryCompare', () => {
         disabled: true,
         document: currentDocument,
         diff: expect.objectContaining({
-          colorScheme: 'standard',
+          colorScheme: 'traditional',
           originalDocument: historicalDocument,
         }),
       }),
