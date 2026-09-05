@@ -25,7 +25,7 @@ describe('FolderPicker', () => {
       </AppProviders>,
     );
 
-    const root = screen.getByRole('button', { name: 'Root' });
+    const root = screen.getByRole('button', { name: '/' });
     const folder = screen.getByRole('button', { name: 'Folder' });
     const child = screen.getByRole('button', { name: 'Child' });
     const other = screen.getByRole('button', { name: 'Other' });
