@@ -70,6 +70,7 @@ describe('ContentTree', () => {
   it('keeps folder creation and pointer action menus wired', async () => {
     const user = userEvent.setup();
     const onCreateNote = jest.fn();
+    const onCreateFolder = jest.fn();
     const rename = jest.fn();
     const onToggle = jest.fn();
     render(
@@ -81,8 +82,14 @@ describe('ContentTree', () => {
           onOpen={jest.fn()}
           onToggle={onToggle}
           onCreateNote={onCreateNote}
-          onCreateFolder={jest.fn()}
-          getActions={(entry) => createContentActions(entry, { rename })}
+          onCreateFolder={onCreateFolder}
+          getActions={(entry) =>
+            createContentActions(entry, {
+              rename,
+              createNote: () => onCreateNote(folder.entry),
+              openCreateFolder: () => onCreateFolder(folder.entry),
+            })
+          }
         />
       </AppProviders>,
     );
@@ -90,15 +97,13 @@ describe('ContentTree', () => {
     await user.click(screen.getByRole('button', { name: 'Projects' }));
     onToggle.mockClear();
     await user.click(
-      screen.getByRole('button', { name: 'Create in Projects' }),
+      screen.getByRole('button', { name: 'More actions for Projects' }),
     );
     expect(screen.getByRole('menuitem', { name: 'New note' })).toBeVisible();
     expect(
       screen.getByRole('menuitem', { name: 'New subfolder' }),
     ).toBeVisible();
-    expect(
-      screen.queryByRole('menuitem', { name: 'Rename' }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Rename' })).toBeVisible();
     await user.click(screen.getByRole('menuitem', { name: 'New note' }));
     expect(onCreateNote).toHaveBeenCalledWith(folder.entry);
     expect(
@@ -223,17 +228,17 @@ describe('ContentTree', () => {
     const folderRow = screen.getByRole('button', { name: 'Projects' });
 
     expect(
-      screen.queryByRole('button', { name: 'Create in Projects' }),
+      screen.queryByRole('button', { name: 'More actions for Projects' }),
     ).not.toBeInTheDocument();
 
     await user.hover(folderRow);
     expect(
-      screen.getByRole('button', { name: 'Create in Projects' }),
+      screen.getByRole('button', { name: 'More actions for Projects' }),
     ).toBeVisible();
 
     await user.unhover(folderRow);
     expect(
-      screen.queryByRole('button', { name: 'Create in Projects' }),
+      screen.queryByRole('button', { name: 'More actions for Projects' }),
     ).not.toBeInTheDocument();
   });
 
@@ -255,13 +260,13 @@ describe('ContentTree', () => {
     const folderRow = screen.getByRole('button', { name: 'Projects' });
 
     expect(
-      screen.queryByRole('button', { name: 'Create in Projects' }),
+      screen.queryByRole('button', { name: 'More actions for Projects' }),
     ).not.toBeInTheDocument();
 
     await user.tab();
     expect(folderRow).toHaveFocus();
     expect(
-      screen.getByRole('button', { name: 'Create in Projects' }),
+      screen.getByRole('button', { name: 'More actions for Projects' }),
     ).toBeVisible();
   });
 
