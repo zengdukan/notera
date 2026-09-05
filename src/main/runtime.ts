@@ -84,6 +84,7 @@ export interface MainElectronPorts {
   readonly confirmation: ProfileRemovalConfirmation;
   readonly logger: AutoLockLogger;
   readonly diagnostics?: FileLogger;
+  readonly diagnosticSessionId?: string;
   readonly randomUUID: () => string;
   readonly randomBytes: () => Uint8Array;
   readonly now: () => number;
@@ -311,6 +312,7 @@ export async function createMainRuntime(input: {
           bindings,
           logger: input.electron.diagnostics,
           now: input.electron.now,
+          sessionId: input.electron.diagnosticSessionId,
         });
         autoLock.start();
         input.window.on('close', onWindowClose);

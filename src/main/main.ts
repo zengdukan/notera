@@ -50,6 +50,21 @@ let mediaAdapter: MediaAdapterServer | undefined;
 let shutdown: Promise<void> | undefined;
 let exitAllowed = false;
 let diagnostics: FileLogger | undefined;
+let diagnosticSessionId: string | undefined;
+
+process.on('uncaughtExceptionMonitor', (error: unknown) => {
+  diagnostics?.error('MAIN_UNCAUGHT_EXCEPTION', {
+    sessionId: diagnosticSessionId ?? null,
+    errorType: error instanceof Error ? error.name : typeof error,
+  });
+});
+
+process.on('unhandledRejection', (reason: unknown) => {
+  diagnostics?.error('MAIN_UNHANDLED_REJECTION', {
+    sessionId: diagnosticSessionId ?? null,
+    errorType: reason instanceof Error ? reason.name : typeof reason,
+  });
+});
 
 function rendererLogLevel(level: number): 'INFO' | 'WARN' | 'ERROR' {
   if (level >= 2) return 'ERROR';
@@ -63,8 +78,10 @@ function fixedLog(code: string): void {
 }
 
 async function start(): Promise<void> {
+  diagnosticSessionId = randomUUID();
   diagnostics = createFileLogger({ directory: app.getPath('logs') });
   diagnostics.log('INFO', 'APP_START', {
+    sessionId: diagnosticSessionId,
     version: app.getVersion(),
     electronVersion: process.versions.electron,
     platform: process.platform,
@@ -91,6 +108,7 @@ async function start(): Promise<void> {
     randomUUID,
     now: Date.now,
     logger: diagnostics,
+    sessionId: diagnosticSessionId,
   });
   diagnostics.log('INFO', 'MEDIA_ADAPTER_STARTED', {
     started: true,
@@ -110,12 +128,19 @@ async function start(): Promise<void> {
   }) as BrowserWindow;
   mainWindow.webContents.on('console-message', (_event, level, message) => {
     diagnostics?.log(rendererLogLevel(level), 'RENDERER_CONSOLE', {
+      sessionId: diagnosticSessionId ?? null,
       level,
+      severity: rendererLogLevel(level),
       message: String(message).slice(0, 512),
     });
   });
   mainWindow.webContents.on('did-fail-load', (_event, errorCode) => {
     diagnostics?.error('WINDOW_DID_FAIL_LOAD', { errorCode });
+  });
+  mainWindow.webContents.on('did-finish-load', () => {
+    diagnostics?.log('INFO', 'WINDOW_DID_FINISH_LOAD', {
+      sessionId: diagnosticSessionId ?? null,
+    });
   });
   mainWindow.webContents.on('preload-error', (_event, _preloadPath, error) => {
     diagnostics?.error('PRELOAD_LOAD_FAILED', {
@@ -131,6 +156,11 @@ async function start(): Promise<void> {
   });
   mainWindow.on('closed', () => {
     mainWindow = undefined;
+  });
+  mainWindow.on('ready-to-show', () => {
+    diagnostics?.log('INFO', 'WINDOW_READY_TO_SHOW', {
+      sessionId: diagnosticSessionId ?? null,
+    });
   });
   new MenuBuilder(mainWindow).buildMenu();
 
@@ -204,18 +234,25 @@ async function start(): Promise<void> {
       },
       logger: { error: fixedLog },
       diagnostics,
+      diagnosticSessionId,
       randomUUID,
       randomBytes: () => randomBytes(32),
       now: Date.now,
     },
   });
   await runtime.start();
+  diagnostics.log('INFO', 'RUNTIME_STARTED', {
+    sessionId: diagnosticSessionId,
+  });
 }
 
 app.on('before-quit', (event) => {
   if (exitAllowed) return;
   event.preventDefault();
   if (shutdown !== undefined) return;
+  diagnostics?.log('INFO', 'SHUTDOWN_STARTED', {
+    sessionId: diagnosticSessionId ?? null,
+  });
   shutdown = Promise.all([
     Promise.resolve(runtime?.close()).catch((error: unknown) => {
       diagnostics?.error('SHUTDOWN_RUNTIME_FAILED', {
@@ -235,6 +272,10 @@ app.on('before-quit', (event) => {
         })
       : Promise.resolve(),
   ]).then(async () => {
+    await Promise.resolve(diagnostics?.flush()).catch(() => undefined);
+    diagnostics?.log('INFO', 'SHUTDOWN_COMPLETED', {
+      sessionId: diagnosticSessionId ?? null,
+    });
     await Promise.resolve(diagnostics?.flush()).catch(() => undefined);
     await Promise.resolve(diagnostics?.close()).catch(() => undefined);
     exitAllowed = true;

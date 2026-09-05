@@ -85,6 +85,24 @@ function bindEvent<E extends EventContractShape>(
     subscribe(contract, listener as (value: unknown) => void);
 }
 
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (event) => {
+    console.error(
+      `[Notera] renderer uncaught error type=${
+        event.error instanceof Error ? event.error.name : 'Error'
+      } message=${String(event.message).slice(0, 512)}`,
+    );
+  });
+  window.addEventListener('unhandledrejection', (event) => {
+    const { reason } = event;
+    console.error(
+      `[Notera] renderer unhandled rejection type=${
+        reason instanceof Error ? reason.name : typeof reason
+      }`,
+    );
+  });
+}
+
 const noteraApi = {
   profile: {
     list: bindRequest(requestContracts['profile.list']),

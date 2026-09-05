@@ -137,25 +137,32 @@ describe('validated preload bridge', () => {
       ret: true,
       data: { items: [{ id: folderId, name: 'Projects' }] },
     });
-    await expect(api.contentTree.getFolderPath({ folderId })).resolves.toMatchObject({
+    await expect(
+      api.contentTree.getFolderPath({ folderId }),
+    ).resolves.toMatchObject({
       ret: true,
     });
-    expect(mockInvoke).toHaveBeenLastCalledWith('notera:content-tree:get-folder-path', {
-      folderId,
-    });
+    expect(mockInvoke).toHaveBeenLastCalledWith(
+      'notera:content-tree:get-folder-path',
+      {
+        folderId,
+      },
+    );
 
     mockInvoke.mockResolvedValueOnce({
       ret: true,
       data: {
-          kind: 'note',
-          id: noteId,
+        kind: 'note',
+        id: noteId,
         folderId,
         title: 'Renamed',
         contentVersion: 2,
         updatedAt: 2,
       },
     });
-    await expect(api.note.rename({ noteId, title: 'Renamed' })).resolves.toMatchObject({
+    await expect(
+      api.note.rename({ noteId, title: 'Renamed' }),
+    ).resolves.toMatchObject({
       ret: true,
     });
     expect(mockInvoke).toHaveBeenLastCalledWith('notera:note:rename', {
@@ -203,6 +210,44 @@ describe('validated preload bridge', () => {
 
     unsubscribe();
     expect(mockRemoveListener).toHaveBeenCalledWith(channel, wrapped);
+  });
+
+  it('forwards renderer uncaught errors and rejections to console.error', () => {
+    const originalWindow = (global as { window?: unknown }).window;
+    const windowMock = { addEventListener: jest.fn() };
+    Object.defineProperty(global, 'window', {
+      configurable: true,
+      value: windowMock,
+    });
+    const { addEventListener } = windowMock;
+    const consoleError = jest.spyOn(console, 'error').mockImplementation();
+    loadPreload();
+
+    const errorListener = addEventListener.mock.calls.find(
+      ([event]) => event === 'error',
+    )?.[1] as (event: Event) => void;
+    const rejectionListener = addEventListener.mock.calls.find(
+      ([event]) => event === 'unhandledrejection',
+    )?.[1] as (event: Event) => void;
+    errorListener({
+      error: new TypeError('private content'),
+      message: 'failed at C:\\private\\note.txt',
+    } as unknown as Event);
+    rejectionListener({
+      reason: new RangeError('private content'),
+    } as unknown as Event);
+
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringContaining('renderer uncaught error type=TypeError'),
+    );
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringContaining('renderer unhandled rejection type=RangeError'),
+    );
+    consoleError.mockRestore();
+    Object.defineProperty(global, 'window', {
+      configurable: true,
+      value: originalWindow,
+    });
   });
 
   it('removes the ipc-example boilerplate from main and renderer startup', () => {
