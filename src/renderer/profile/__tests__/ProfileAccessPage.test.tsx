@@ -65,6 +65,7 @@ describe('ProfileAccessPage', () => {
     expect(
       screen.queryByRole('button', { name: 'Cancel' }),
     ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Back to unlock' }));
     await user.click(screen.getByRole('option', { name: /Personal/ }));
     expect(
       screen.getByRole('button', { name: 'Unlock Profile' }),
@@ -72,11 +73,7 @@ describe('ProfileAccessPage', () => {
     expect(
       screen.getByRole('button', { name: 'Create Profile' }),
     ).toBeVisible();
-    expect(
-      screen.getByText(
-        'Supports autofill from your system or browser password manager.',
-      ),
-    ).toBeVisible();
+    expect(screen.getByLabelText(/Master password/)).toBeVisible();
   });
 
   it('shows the create form by default when no profiles exist', () => {
@@ -169,7 +166,8 @@ describe('ProfileAccessPage', () => {
       screen.getByRole('heading', { name: '创建第一个 Profile' }),
     ).toBeVisible();
     expect(screen.getByLabelText(/Profile 名称/)).toBeVisible();
-    expect(screen.getByLabelText(/主密码/)).toBeVisible();
+    expect(screen.getAllByLabelText(/主密码/)).toHaveLength(2);
+    expect(screen.getAllByLabelText(/主密码/)[0]).toBeVisible();
     expect(
       screen.getByRole('button', { name: '创建并进入工作区' }),
     ).toBeVisible();
@@ -212,14 +210,19 @@ describe('ProfileAccessPage', () => {
       screen.getByLabelText(/Profile name/),
       `  ${'😀'.repeat(100)}  `,
     );
-    await user.type(screen.getByLabelText(/Master password/), 'secret');
+    await user.type(screen.getByLabelText(/Master password/), 'Secret1!');
+    await user.type(
+      screen.getByLabelText(/Confirm master password/),
+      'Secret1!',
+    );
     await user.click(
       screen.getByRole('button', { name: 'Create and enter workspace' }),
     );
+    await user.click(screen.getByRole('button', { name: 'Create profile' }));
 
     expect(onCreate).toHaveBeenCalledWith({
       displayName: '😀'.repeat(100),
-      password: 'secret',
+      password: 'Secret1!',
     });
   });
 
@@ -323,10 +326,15 @@ describe('ProfileAccessPage', () => {
     );
 
     await user.type(screen.getByLabelText(/Profile name/), 'Personal');
-    await user.type(screen.getByLabelText(/Master password/), 'secret');
+    await user.type(screen.getByLabelText(/Master password/), 'Secret1!');
+    await user.type(
+      screen.getByLabelText(/Confirm master password/),
+      'Secret1!',
+    );
     await user.click(
       screen.getByRole('button', { name: 'Create and enter workspace' }),
     );
+    await user.click(screen.getByRole('button', { name: 'Create profile' }));
 
     expect(
       await screen.findByText('Profile could not be created'),
