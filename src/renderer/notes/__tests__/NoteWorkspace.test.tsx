@@ -3,9 +3,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { IntlProvider } from 'react-intl';
 
 import type { NoteraClient } from '../../platform/notera-client';
 import { noteKey } from '../../app/query-keys';
+import { messagesFor } from '../../app/i18n';
 import { configureFeatureFlags } from '../../atlassian-editor/feature-flags';
 import { ActiveDocumentLifecycle } from '../document-lifecycle';
 import { NoteWriteCoordinator } from '../note-write-coordinator';
@@ -103,9 +105,11 @@ function setup(
     onMore: jest.fn(),
   };
   const view = render(
-    <QueryClientProvider client={queryClient}>
-      <NoteWorkspace {...props} />
-    </QueryClientProvider>,
+    <IntlProvider locale="en" messages={messagesFor('en')}>
+      <QueryClientProvider client={queryClient}>
+        <NoteWorkspace {...props} />
+      </QueryClientProvider>
+    </IntlProvider>,
   );
   return { request, lifecycle, props, queryClient, container: view.container };
 }
