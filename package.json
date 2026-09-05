@@ -274,7 +274,7 @@
       "provider": "github",
       "owner": "zengdukan",
       "repo": "notera",
-      "draft": false
+      "releaseType": "release"
     }
   },
   "collective": {
