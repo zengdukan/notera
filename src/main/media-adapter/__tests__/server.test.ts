@@ -590,6 +590,7 @@ describe('production Media Adapter server', () => {
       randomUUID: () => fileId,
       now: () => 1_000,
       logger,
+      sessionId: 'session-1',
     });
     servers.push(server);
     const response = await fetch(
@@ -610,6 +611,8 @@ describe('production Media Adapter server', () => {
         method: 'POST',
         status: 401,
         failureCategory: 'application:ENTITY_NOT_FOUND',
+        sessionId: 'session-1',
+        requestId: fileId,
       }),
     );
     const details = (logger.log.mock.calls.at(-1)?.[2] ?? {}) as Record<

@@ -10,6 +10,7 @@ export function startElectronMediaAdapter(input: {
   readonly randomUUID: () => string;
   readonly now: () => number;
   readonly logger?: IpcDiagnosticLogger;
+  readonly sessionId?: string;
 }) {
   return startMediaAdapterServer({
     allowedOrigin: input.allowedOrigin,
@@ -30,5 +31,6 @@ export function startElectronMediaAdapter(input: {
     randomUUID: input.randomUUID,
     now: input.now,
     logger: input.logger,
+    sessionId: input.sessionId,
   });
 }

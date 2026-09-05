@@ -176,4 +176,37 @@ describe('validated Main IPC router', () => {
     const details = logger.error.mock.calls[0]?.[1] as Record<string, unknown>;
     expect(details).not.toHaveProperty('input');
   });
+
+  it('logs only configured critical IPC successes with the session ID', async () => {
+    const ipcMain = new FakeIpcMain();
+    const logger = { log: jest.fn(), error: jest.fn() };
+    const noteId = '10000000-0000-4000-8000-000000000001';
+    registerIpcBindings({
+      ipcMain,
+      senderPolicy: { allows: () => true },
+      bindings: [
+        defineIpcBinding('note.saveDraft', () => ({
+          noteId,
+          contentVersion: 2,
+          savedAt: 100,
+        })),
+      ],
+      logger,
+      sessionId: 'session-1',
+      now: () => 100,
+    });
+    await expect(
+      ipcMain.invoke(requestContracts['note.saveDraft'].channel, allowedEvent, {
+        noteId,
+        title: '',
+        document: { type: 'doc', version: 1 },
+      }),
+    ).resolves.toMatchObject({ ret: true });
+    expect(logger.log).toHaveBeenCalledWith('INFO', 'IPC_REQUEST_SUCCEEDED', {
+      sessionId: 'session-1',
+      key: 'note.saveDraft',
+      channel: requestContracts['note.saveDraft'].channel,
+      durationMs: 0,
+    });
+  });
 });

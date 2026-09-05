@@ -75,6 +75,7 @@ export function registerIpcBindings(input: {
   readonly bindings: readonly IpcBinding[];
   readonly logger?: IpcDiagnosticLogger;
   readonly now?: () => number;
+  readonly sessionId?: string;
 }): () => void {
   const keys = new Set<string>();
   const channels = new Set<string>();
@@ -97,6 +98,9 @@ export function registerIpcBindings(input: {
       const startedAt = input.now?.() ?? Date.now();
       const logFailure = (code: string, errorType?: string) => {
         input.logger?.error('IPC_REQUEST_FAILED', {
+          ...(input.sessionId === undefined
+            ? {}
+            : { sessionId: input.sessionId }),
           key: binding.key,
           channel: binding.contract.channel,
           errorCode: code,
@@ -124,7 +128,25 @@ export function registerIpcBindings(input: {
         const data = await binding.invoke(request.data);
         const response: IpcResponse<unknown> = { ret: true, data };
         const parsed = binding.contract.response.safeParse(response);
-        if (parsed.success) return parsed.data;
+        if (parsed.success) {
+          if (
+            binding.key === 'note.saveDraft' ||
+            binding.key === 'app.completeClose'
+          ) {
+            input.logger?.log('INFO', 'IPC_REQUEST_SUCCEEDED', {
+              ...(input.sessionId === undefined
+                ? {}
+                : { sessionId: input.sessionId }),
+              key: binding.key,
+              channel: binding.contract.channel,
+              durationMs: Math.max(
+                0,
+                (input.now?.() ?? Date.now()) - startedAt,
+              ),
+            });
+          }
+          return parsed.data;
+        }
         logFailure('IPC_OPERATION_FAILED', 'RESPONSE_VALIDATION');
         return ipcFailure('IPC_OPERATION_FAILED');
       } catch (error) {

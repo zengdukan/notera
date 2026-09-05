@@ -284,6 +284,7 @@ export async function startMediaAdapterServer(input: {
   readonly randomUUID: () => string;
   readonly now: () => number;
   readonly logger?: IpcDiagnosticLogger;
+  readonly sessionId?: string;
 }): Promise<MediaAdapterServer> {
   const app = express();
   app.disable('x-powered-by');
@@ -304,12 +305,17 @@ export async function startMediaAdapterServer(input: {
 
   app.use((request, response, next) => {
     const startedAt = input.now();
+    const requestId = input.randomUUID();
     response.once('finish', () => {
       const status = response.statusCode;
       input.logger?.log(
         status >= 500 ? 'ERROR' : status >= 400 ? 'WARN' : 'INFO',
         'MEDIA_HTTP',
         {
+          ...(input.sessionId === undefined
+            ? {}
+            : { sessionId: input.sessionId }),
+          requestId,
           operation: operationFor(request),
           method: request.method,
           status,
