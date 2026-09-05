@@ -44,7 +44,12 @@ async function invoke(
     return response.success
       ? (response.data as IpcResponse<unknown>)
       : ipcFailure('INVALID_IPC_RESPONSE');
-  } catch {
+  } catch (error) {
+    console.error(
+      `[Notera] IPC invoke failed channel=${contract.channel} errorType=${
+        error instanceof Error ? error.name : typeof error
+      }`,
+    );
     return ipcFailure('IPC_OPERATION_FAILED');
   }
 }

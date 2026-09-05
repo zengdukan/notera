@@ -3,10 +3,11 @@ import { createCipheriv, createDecipheriv, createHash } from 'node:crypto';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import type {
-  AttachmentContentReader,
-  AttachmentSummary,
-  ImportAttachmentInput,
+import {
+  ApplicationError,
+  type AttachmentContentReader,
+  type AttachmentSummary,
+  type ImportAttachmentInput,
 } from '@notera/application';
 import express, {
   type NextFunction,
@@ -16,6 +17,7 @@ import express, {
 
 import { MAX_ATTACHMENT_BYTES } from '../../shared';
 import { parseRangeHeader, RangeNotSatisfiableError } from './range';
+import type { IpcDiagnosticLogger } from '../ipc/router';
 import {
   createMediaSessionRegistry,
   MediaAuthorizationError,
@@ -146,6 +148,24 @@ function blank(response: Response, status: number): void {
   response.status(status).end();
 }
 
+function mediaFailureCategory(error: unknown): string {
+  if (error instanceof ApplicationError) return `application:${error.code}`;
+  if (error instanceof MediaAuthorizationError) return 'authorization';
+  if (error instanceof RangeError) return 'size';
+  if (error instanceof Error) return error.name;
+  return typeof error;
+}
+
+function originSummary(value: string | undefined): string {
+  if (value === undefined) return 'missing';
+  if (value === 'null') return 'opaque';
+  try {
+    return new URL(value).protocol.replace(':', '');
+  } catch {
+    return 'invalid';
+  }
+}
+
 function sourceOrigin(request: Request): string | undefined {
   const origin = request.get('origin');
   if (origin !== undefined) return origin;
@@ -158,9 +178,12 @@ function sourceOrigin(request: Request): string | undefined {
   }
 }
 
-function requestFor(request: Request): globalThis.Request {
+function requestFor(
+  request: Request,
+  fallbackOrigin?: string,
+): globalThis.Request {
   const headers = new Headers();
-  const origin = sourceOrigin(request);
+  const origin = sourceOrigin(request) ?? fallbackOrigin;
   if (origin !== undefined) headers.set('origin', origin);
   ['authorization', 'x-client-id'].forEach((name) => {
     const value = request.get(name);
@@ -260,15 +283,60 @@ export async function startMediaAdapterServer(input: {
   readonly randomBytes: () => Uint8Array;
   readonly randomUUID: () => string;
   readonly now: () => number;
+  readonly logger?: IpcDiagnosticLogger;
 }): Promise<MediaAdapterServer> {
   const app = express();
   app.disable('x-powered-by');
   const uploads = new Map<string, PendingUpload>();
   let registry: MediaSessionRegistry;
 
+  const operationFor = (request: Request): string => {
+    const { path: requestPath } = request;
+    if (requestPath.endsWith('/auth')) return 'auth';
+    if (requestPath.endsWith('/upload/createWithFiles')) return 'upload-create';
+    if (/\/chunk\/[^/]+$/u.test(requestPath)) return 'upload-chunk';
+    if (/\/upload\/[^/]+\/chunks$/u.test(requestPath)) return 'upload-commit';
+    if (requestPath.endsWith('/file/upload')) return 'file-upload';
+    if (requestPath.endsWith('/file/binary')) return 'file-binary';
+    if (requestPath.includes('/file/')) return 'file-read';
+    return 'other';
+  };
+
+  app.use((request, response, next) => {
+    const startedAt = input.now();
+    response.once('finish', () => {
+      const status = response.statusCode;
+      input.logger?.log(
+        status >= 500 ? 'ERROR' : status >= 400 ? 'WARN' : 'INFO',
+        'MEDIA_HTTP',
+        {
+          operation: operationFor(request),
+          method: request.method,
+          status,
+          durationMs: Math.max(0, input.now() - startedAt),
+          ...(typeof response.locals.mediaFailure === 'string'
+            ? { failureCategory: response.locals.mediaFailure }
+            : {}),
+          ...(typeof response.locals.mediaOrigin === 'string'
+            ? { origin: response.locals.mediaOrigin }
+            : {}),
+          ...(typeof response.locals.mediaAllowedOrigin === 'string'
+            ? { allowedOrigin: response.locals.mediaAllowedOrigin }
+            : {}),
+        },
+      );
+    });
+    next();
+  });
+
   app.use((request, response, next) => {
     const origin = sourceOrigin(request);
-    if (origin !== input.allowedOrigin) {
+    const opaqueOriginWithoutHeader =
+      origin === undefined && input.allowedOrigin === 'null';
+    if (origin !== input.allowedOrigin && !opaqueOriginWithoutHeader) {
+      response.locals.mediaFailure = 'origin';
+      response.locals.mediaOrigin = originSummary(origin);
+      response.locals.mediaAllowedOrigin = originSummary(input.allowedOrigin);
       blank(response, 401);
       return;
     }
@@ -277,6 +345,7 @@ export async function startMediaAdapterServer(input: {
       .map((value) => value.trim().toLowerCase())
       .filter(Boolean);
     if (requested.some((value) => !allowedHeaders.has(value))) {
+      response.locals.mediaFailure = 'headers';
       blank(response, 401);
       return;
     }
@@ -295,7 +364,7 @@ export async function startMediaAdapterServer(input: {
 
   const json = express.json({ limit: '2mb' });
   const authorize = (request: Request) =>
-    registry.authorize(requestFor(request));
+    registry.authorize(requestFor(request, input.allowedOrigin));
 
   app.post(`${API_PATH}/auth`, json, async (request, response) => {
     try {
@@ -312,7 +381,8 @@ export async function startMediaAdapterServer(input: {
         noteId,
       });
       response.json(auth);
-    } catch {
+    } catch (error) {
+      response.locals.mediaFailure = mediaFailureCategory(error);
       blank(response, 401);
     }
   });
@@ -373,6 +443,7 @@ export async function startMediaAdapterServer(input: {
         data: { created, ...(rejected.length === 0 ? {} : { rejected }) },
       });
     } catch (error) {
+      response.locals.mediaFailure = mediaFailureCategory(error);
       blank(
         response,
         error instanceof MediaAuthorizationError ? error.status : 400,
@@ -416,6 +487,7 @@ export async function startMediaAdapterServer(input: {
         }),
       });
     } catch (error) {
+      response.locals.mediaFailure = mediaFailureCategory(error);
       blank(
         response,
         error instanceof MediaAuthorizationError ? error.status : 500,
@@ -455,6 +527,7 @@ export async function startMediaAdapterServer(input: {
       upload.chunks.set(etag, chunk);
       response.sendStatus(201);
     } catch (error) {
+      response.locals.mediaFailure = mediaFailureCategory(error);
       blank(
         response,
         error instanceof MediaAuthorizationError ? error.status : 413,
@@ -481,6 +554,7 @@ export async function startMediaAdapterServer(input: {
       upload.order = Object.freeze([...upload.order, ...chunks]);
       response.sendStatus(200);
     } catch (error) {
+      response.locals.mediaFailure = mediaFailureCategory(error);
       blank(
         response,
         error instanceof MediaAuthorizationError ? error.status : 400,
@@ -541,6 +615,7 @@ export async function startMediaAdapterServer(input: {
         }),
       });
     } catch (error) {
+      response.locals.mediaFailure = mediaFailureCategory(error);
       blank(
         response,
         error instanceof MediaAuthorizationError
@@ -576,6 +651,7 @@ export async function startMediaAdapterServer(input: {
         range = parseRangeHeader(request.get('range'), reader.byteLength);
       } catch (error) {
         if (error instanceof RangeNotSatisfiableError) {
+          response.locals.mediaFailure = 'range';
           response.set('Content-Range', `bytes */${reader.byteLength}`);
           blank(response, 416);
           return;
@@ -625,6 +701,7 @@ export async function startMediaAdapterServer(input: {
       }
       response.end();
     } catch (error) {
+      response.locals.mediaFailure = mediaFailureCategory(error);
       blank(
         response,
         error instanceof MediaAuthorizationError ? error.status : 404,
@@ -644,6 +721,7 @@ export async function startMediaAdapterServer(input: {
       reader = await openScoped(request, auth);
       const type = mediaType(reader.mimeType);
       if (!canServeImagePreview(reader.mimeType)) {
+        response.locals.mediaFailure = 'unsupported-type';
         blank(response, 404);
         return;
       }
@@ -674,6 +752,7 @@ export async function startMediaAdapterServer(input: {
       }
       response.end();
     } catch (error) {
+      response.locals.mediaFailure = mediaFailureCategory(error);
       blank(
         response,
         error instanceof MediaAuthorizationError ? error.status : 404,
@@ -716,6 +795,7 @@ export async function startMediaAdapterServer(input: {
         }),
       });
     } catch (error) {
+      response.locals.mediaFailure = mediaFailureCategory(error);
       blank(
         response,
         error instanceof MediaAuthorizationError ? error.status : 404,
@@ -756,6 +836,7 @@ export async function startMediaAdapterServer(input: {
       }
       response.json({ data: { items } });
     } catch (error) {
+      response.locals.mediaFailure = mediaFailureCategory(error);
       blank(
         response,
         error instanceof MediaAuthorizationError ? error.status : 401,
@@ -786,6 +867,7 @@ export async function startMediaAdapterServer(input: {
           },
         });
       } catch (error) {
+        response.locals.mediaFailure = mediaFailureCategory(error);
         blank(
           response,
           error instanceof MediaAuthorizationError ? error.status : 404,

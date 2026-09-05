@@ -20,6 +20,7 @@ import { createMainRuntime, type MainRuntime } from './runtime';
 import { createMediaApiArgument } from '../shared/atlassian-editor/media-runtime';
 import { resolveHtmlPath } from './util';
 import { createSecureWindow } from './window';
+import { createFileLogger, type FileLogger } from './file-logger';
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -48,12 +49,28 @@ let manager: ProfileManager | undefined;
 let mediaAdapter: MediaAdapterServer | undefined;
 let shutdown: Promise<void> | undefined;
 let exitAllowed = false;
+let diagnostics: FileLogger | undefined;
+
+function rendererLogLevel(level: number): 'INFO' | 'WARN' | 'ERROR' {
+  if (level >= 2) return 'ERROR';
+  if (level === 1) return 'WARN';
+  return 'INFO';
+}
 
 function fixedLog(code: string): void {
   process.stderr.write(`[Notera] ${code}\n`);
+  diagnostics?.error(code);
 }
 
 async function start(): Promise<void> {
+  diagnostics = createFileLogger({ directory: app.getPath('logs') });
+  diagnostics.log('INFO', 'APP_START', {
+    version: app.getVersion(),
+    electronVersion: process.versions.electron,
+    platform: process.platform,
+    arch: process.arch,
+    packaged: app.isPackaged,
+  });
   const appDataRoot = app.getPath('userData');
   const preloadPath = app.isPackaged
     ? path.join(__dirname, 'preload.js')
@@ -73,6 +90,11 @@ async function start(): Promise<void> {
     randomBytes: () => randomBytes(32),
     randomUUID,
     now: Date.now,
+    logger: diagnostics,
+  });
+  diagnostics.log('INFO', 'MEDIA_ADAPTER_STARTED', {
+    started: true,
+    port: Number(new URL(mediaAdapter.apiBaseUrl).port),
   });
   mainWindow = createSecureWindow({
     factory: {
@@ -84,7 +106,29 @@ async function start(): Promise<void> {
     entryUrl,
     iconPath,
     additionalArguments: [createMediaApiArgument(mediaAdapter.apiBaseUrl)],
+    logger: diagnostics,
   }) as BrowserWindow;
+  mainWindow.webContents.on('console-message', (_event, level, message) => {
+    diagnostics?.log(rendererLogLevel(level), 'RENDERER_CONSOLE', {
+      level,
+      message: String(message).slice(0, 512),
+    });
+  });
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode) => {
+    diagnostics?.error('WINDOW_DID_FAIL_LOAD', { errorCode });
+  });
+  mainWindow.webContents.on('preload-error', (_event, _preloadPath, error) => {
+    diagnostics?.error('PRELOAD_LOAD_FAILED', {
+      errorType: error instanceof Error ? error.name : typeof error,
+    });
+  });
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    const reason =
+      details && typeof details === 'object' && 'reason' in details
+        ? String((details as { reason?: unknown }).reason)
+        : 'unknown';
+    diagnostics?.error('RENDERER_PROCESS_GONE', { reason });
+  });
   mainWindow.on('closed', () => {
     mainWindow = undefined;
   });
@@ -159,6 +203,7 @@ async function start(): Promise<void> {
         },
       },
       logger: { error: fixedLog },
+      diagnostics,
       randomUUID,
       randomBytes: () => randomBytes(32),
       now: Date.now,
@@ -172,12 +217,26 @@ app.on('before-quit', (event) => {
   event.preventDefault();
   if (shutdown !== undefined) return;
   shutdown = Promise.all([
-    Promise.resolve(runtime?.close()).catch(() => undefined),
-    Promise.resolve(mediaAdapter?.close()).catch(() => undefined),
+    Promise.resolve(runtime?.close()).catch((error: unknown) => {
+      diagnostics?.error('SHUTDOWN_RUNTIME_FAILED', {
+        errorType: error instanceof Error ? error.name : typeof error,
+      });
+    }),
+    Promise.resolve(mediaAdapter?.close()).catch((error: unknown) => {
+      diagnostics?.error('SHUTDOWN_MEDIA_FAILED', {
+        errorType: error instanceof Error ? error.name : typeof error,
+      });
+    }),
     runtime === undefined
-      ? Promise.resolve(manager?.close()).catch(() => undefined)
+      ? Promise.resolve(manager?.close()).catch((error: unknown) => {
+          diagnostics?.error('SHUTDOWN_MANAGER_FAILED', {
+            errorType: error instanceof Error ? error.name : typeof error,
+          });
+        })
       : Promise.resolve(),
-  ]).then(() => {
+  ]).then(async () => {
+    await Promise.resolve(diagnostics?.flush()).catch(() => undefined);
+    await Promise.resolve(diagnostics?.close()).catch(() => undefined);
     exitAllowed = true;
     app.exit(0);
     return undefined;
@@ -189,11 +248,15 @@ app.on('window-all-closed', () => app.quit());
 app
   .whenReady()
   .then(start)
-  .catch(async () => {
+  .catch(async (error: unknown) => {
     await Promise.all([
       Promise.resolve(mediaAdapter?.close()).catch(() => undefined),
       Promise.resolve(manager?.close()).catch(() => undefined),
     ]);
     fixedLog('START_FAILED');
+    diagnostics?.error('STARTUP_FAILURE', {
+      errorType: error instanceof Error ? error.name : typeof error,
+    });
+    await Promise.resolve(diagnostics?.flush()).catch(() => undefined);
     app.exit(1);
   });

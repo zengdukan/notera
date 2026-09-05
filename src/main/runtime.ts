@@ -39,6 +39,7 @@ import {
   type IpcInvokeEventLike,
   type IpcMainPort,
 } from './ipc/router';
+import type { FileLogger } from './file-logger';
 import {
   AutoLockController,
   type AutoLockLogger,
@@ -82,6 +83,7 @@ export interface MainElectronPorts {
   readonly scheduler: SchedulerPort & PdfHostSchedulerPort;
   readonly confirmation: ProfileRemovalConfirmation;
   readonly logger: AutoLockLogger;
+  readonly diagnostics?: FileLogger;
   readonly randomUUID: () => string;
   readonly randomBytes: () => Uint8Array;
   readonly now: () => number;
@@ -307,6 +309,8 @@ export async function createMainRuntime(input: {
           ipcMain: input.electron.ipcMain,
           senderPolicy: senderPolicy(input.window),
           bindings,
+          logger: input.electron.diagnostics,
+          now: input.electron.now,
         });
         autoLock.start();
         input.window.on('close', onWindowClose);

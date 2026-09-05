@@ -3,6 +3,22 @@ import type { z } from 'zod';
 import { ipcFailure, requestContracts, type IpcResponse } from '../../shared';
 import { mapIpcError, type ErrorContract } from './errors';
 
+export interface IpcDiagnosticLogger {
+  log(
+    level: 'INFO' | 'WARN' | 'ERROR',
+    event: string,
+    details?: Readonly<
+      Record<string, string | number | boolean | null | undefined>
+    >,
+  ): void;
+  error(
+    event: string,
+    details?: Readonly<
+      Record<string, string | number | boolean | null | undefined>
+    >,
+  ): void;
+}
+
 export interface IpcInvokeEventLike {
   readonly sender: { readonly id: number };
   readonly senderFrame?: {
@@ -57,6 +73,8 @@ export function registerIpcBindings(input: {
   readonly ipcMain: IpcMainPort;
   readonly senderPolicy: IpcSenderPolicy;
   readonly bindings: readonly IpcBinding[];
+  readonly logger?: IpcDiagnosticLogger;
+  readonly now?: () => number;
 }): () => void {
   const keys = new Set<string>();
   const channels = new Set<string>();
@@ -76,26 +94,46 @@ export function registerIpcBindings(input: {
 
   input.bindings.forEach((binding) => {
     input.ipcMain.handle(binding.contract.channel, async (event, rawInput) => {
+      const startedAt = input.now?.() ?? Date.now();
+      const logFailure = (code: string, errorType?: string) => {
+        input.logger?.error('IPC_REQUEST_FAILED', {
+          key: binding.key,
+          channel: binding.contract.channel,
+          errorCode: code,
+          ...(errorType === undefined ? {} : { errorType }),
+          durationMs: Math.max(0, (input.now?.() ?? Date.now()) - startedAt),
+        });
+      };
       try {
         if (!input.senderPolicy.allows(event)) {
+          logFailure('IPC_OPERATION_FAILED', 'SENDER_POLICY');
           return ipcFailure('IPC_OPERATION_FAILED');
         }
       } catch {
+        logFailure('IPC_OPERATION_FAILED', 'SENDER_POLICY');
         return ipcFailure('IPC_OPERATION_FAILED');
       }
 
       const request = binding.contract.request.safeParse(rawInput);
-      if (!request.success) return ipcFailure('INVALID_IPC_REQUEST');
+      if (!request.success) {
+        logFailure('INVALID_IPC_REQUEST', 'VALIDATION');
+        return ipcFailure('INVALID_IPC_REQUEST');
+      }
 
       try {
         const data = await binding.invoke(request.data);
         const response: IpcResponse<unknown> = { ret: true, data };
         const parsed = binding.contract.response.safeParse(response);
-        return parsed.success
-          ? parsed.data
-          : ipcFailure('IPC_OPERATION_FAILED');
+        if (parsed.success) return parsed.data;
+        logFailure('IPC_OPERATION_FAILED', 'RESPONSE_VALIDATION');
+        return ipcFailure('IPC_OPERATION_FAILED');
       } catch (error) {
-        return mapIpcError(binding.contract, error);
+        const mapped = mapIpcError(binding.contract, error);
+        logFailure(
+          mapped.error.code,
+          error instanceof Error ? error.name : typeof error,
+        );
+        return mapped;
       }
     });
   });

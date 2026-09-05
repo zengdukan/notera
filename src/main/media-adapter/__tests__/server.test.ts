@@ -1,6 +1,7 @@
-import type {
-  AttachmentContentReader,
-  ImportAttachmentInput,
+import {
+  ApplicationError,
+  type AttachmentContentReader,
+  type ImportAttachmentInput,
 } from '@notera/application';
 
 import { startMediaAdapterServer, type MediaAdapterServer } from '../server';
@@ -572,5 +573,70 @@ describe('production Media Adapter server', () => {
     expect(response.headers.get('access-control-allow-headers')).toContain(
       'X-B3-TraceId',
     );
+  });
+
+  it('records sanitized request outcomes without query parameters', async () => {
+    const logger = { log: jest.fn(), error: jest.fn() };
+    const server = await startMediaAdapterServer({
+      allowedOrigin: origin,
+      getSessionState: () => ({ state: 'UNLOCKED', localProfileId: profileId }),
+      notes: {
+        getNote: jest.fn(async () => {
+          throw new ApplicationError('ENTITY_NOT_FOUND');
+        }),
+      },
+      attachments: { importAttachment: jest.fn(), openReader: jest.fn() },
+      randomBytes: () => new Uint8Array(32).fill(1),
+      randomUUID: () => fileId,
+      now: () => 1_000,
+      logger,
+    });
+    servers.push(server);
+    const response = await fetch(
+      `${server.apiBaseUrl}/auth?token=do-not-log&collection=private`,
+      {
+        method: 'POST',
+        headers: { Origin: origin, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ noteId }),
+      },
+    );
+    expect(response.status).toBe(401);
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(logger.log).toHaveBeenCalledWith(
+      'WARN',
+      'MEDIA_HTTP',
+      expect.objectContaining({
+        operation: 'auth',
+        method: 'POST',
+        status: 401,
+        failureCategory: 'application:ENTITY_NOT_FOUND',
+      }),
+    );
+    const details = (logger.log.mock.calls.at(-1)?.[2] ?? {}) as Record<
+      string,
+      unknown
+    >;
+    expect(details).not.toHaveProperty('path');
+    expect(details).not.toHaveProperty('token');
+    expect(JSON.stringify(details)).not.toContain('private');
+  });
+
+  it('accepts file-origin requests that omit Origin and Referer headers', async () => {
+    const server = await startMediaAdapterServer({
+      allowedOrigin: 'null',
+      getSessionState: () => ({ state: 'UNLOCKED', localProfileId: profileId }),
+      notes: { getNote: jest.fn(async () => ({ id: noteId })) },
+      attachments: { importAttachment: jest.fn(), openReader: jest.fn() },
+      randomBytes: () => new Uint8Array(32).fill(1),
+      randomUUID: () => fileId,
+      now: () => 1_000,
+    });
+    servers.push(server);
+    const response = await fetch(`${server.apiBaseUrl}/auth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ noteId }),
+    });
+    expect(response.status).toBe(200);
   });
 });

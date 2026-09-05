@@ -21,7 +21,17 @@ export interface SecureWindowPort {
     setWindowOpenHandler(
       handler: (input: { readonly url: string }) => { action: 'deny' },
     ): void;
+    on(event: string, listener: (...args: readonly unknown[]) => void): void;
   };
+}
+
+export interface WindowDiagnosticLogger {
+  error(
+    event: string,
+    details?: Readonly<
+      Record<string, string | number | boolean | null | undefined>
+    >,
+  ): void;
 }
 
 export interface BrowserWindowFactory {
@@ -68,6 +78,7 @@ export function createSecureWindow(input: {
   readonly entryUrl: string;
   readonly iconPath?: string;
   readonly additionalArguments?: readonly string[];
+  readonly logger?: WindowDiagnosticLogger;
 }): SecureWindowPort {
   const window = input.factory.create({
     show: false,
@@ -107,6 +118,10 @@ export function createSecureWindow(input: {
     if (process.env.START_MINIMIZED) window.minimize();
     else window.show();
   });
-  Promise.resolve(window.loadURL(input.entryUrl)).catch(() => undefined);
+  Promise.resolve(window.loadURL(input.entryUrl)).catch((error: unknown) => {
+    input.logger?.error('WINDOW_LOAD_FAILED', {
+      errorType: error instanceof Error ? error.name : typeof error,
+    });
+  });
   return window;
 }

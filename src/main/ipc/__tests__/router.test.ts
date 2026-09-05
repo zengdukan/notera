@@ -146,4 +146,34 @@ describe('validated Main IPC router', () => {
     dispose();
     expect(ipcMain.removed).toEqual([requestContracts['profile.list'].channel]);
   });
+
+  it('logs IPC validation and handler failures without request data', async () => {
+    const ipcMain = new FakeIpcMain();
+    const logger = { log: jest.fn(), error: jest.fn() };
+    registerIpcBindings({
+      ipcMain,
+      senderPolicy: { allows: () => true },
+      bindings: [
+        defineIpcBinding('profile.list', () => {
+          throw new Error('private note content');
+        }),
+      ],
+      logger,
+      now: () => 100,
+    });
+    await ipcMain.invoke(
+      requestContracts['profile.list'].channel,
+      allowedEvent,
+      { limit: 0, password: 'secret' },
+    );
+    expect(logger.error).toHaveBeenCalledWith(
+      'IPC_REQUEST_FAILED',
+      expect.objectContaining({
+        key: 'profile.list',
+        errorCode: 'INVALID_IPC_REQUEST',
+      }),
+    );
+    const details = logger.error.mock.calls[0]?.[1] as Record<string, unknown>;
+    expect(details).not.toHaveProperty('input');
+  });
 });

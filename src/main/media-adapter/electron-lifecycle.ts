@@ -1,6 +1,7 @@
 import type { ProfileManager } from '@notera/application';
 
 import { startMediaAdapterServer } from './server';
+import type { IpcDiagnosticLogger } from '../ipc/router';
 
 export function startElectronMediaAdapter(input: {
   readonly manager: ProfileManager;
@@ -8,6 +9,7 @@ export function startElectronMediaAdapter(input: {
   readonly randomBytes: () => Uint8Array;
   readonly randomUUID: () => string;
   readonly now: () => number;
+  readonly logger?: IpcDiagnosticLogger;
 }) {
   return startMediaAdapterServer({
     allowedOrigin: input.allowedOrigin,
@@ -27,5 +29,6 @@ export function startElectronMediaAdapter(input: {
     randomBytes: input.randomBytes,
     randomUUID: input.randomUUID,
     now: input.now,
+    logger: input.logger,
   });
 }
