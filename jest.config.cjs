@@ -12,6 +12,6 @@ module.exports = {
   testMatch: ['**/*.test.[jt]s?(x)'],
   testPathIgnorePatterns: ['release/app/dist', '.erb/dll'],
   transform: {
-    '\\.(ts|tsx|js|jsx)$': 'ts-jest',
+    '\\.(ts|tsx|js|jsx)$': '<rootDir>/.erb/jest/compiled-transformer.cjs',
   },
 };
