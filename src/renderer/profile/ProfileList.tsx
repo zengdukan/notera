@@ -66,9 +66,7 @@ export function ProfileList({
             })}
             iconAfter={
               selectedId === profile.localProfileId ? (
-                <CheckMarkIcon
-                  label={intl.formatMessage({ id: 'profile.list.selected' })}
-                />
+                <CheckMarkIcon label="" />
               ) : undefined
             }
             iconBefore={
