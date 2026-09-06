@@ -48,8 +48,8 @@ const bodyStyles = xcss({
   flexGrow: '1',
   minHeight: '0',
   maxWidth: '100%',
-  paddingBlock: 'space.300',
-  paddingInline: 'space.400',
+  // paddingBlock: 'space.300',
+  // paddingInline: 'space.400',
 });
 const editBodyStyles = xcss({ overflow: 'hidden' });
 const previewBodyStyles = xcss({ overflow: 'auto' });
