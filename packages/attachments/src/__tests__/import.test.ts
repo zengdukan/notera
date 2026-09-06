@@ -24,6 +24,15 @@ async function testRoot(): Promise<string> {
   return root;
 }
 
+function expectBytesEqual(actual: Uint8Array, expected: Uint8Array): void {
+  expect(actual.byteLength).toBe(expected.byteLength);
+  expect(
+    Buffer.from(actual.buffer, actual.byteOffset, actual.byteLength).equals(
+      Buffer.from(expected.buffer, expected.byteOffset, expected.byteLength),
+    ),
+  ).toBe(true);
+}
+
 afterEach(async () => {
   await Promise.all(roots.splice(0).map(removeTestProfile));
 });
@@ -140,9 +149,7 @@ describe('streaming attachment import', () => {
       });
 
       expect(imported.plaintextLength).toBe(length);
-      await expect(decryptImportedBlob(root, imported)).resolves.toEqual(
-        plaintext,
-      );
+      expectBytesEqual(await decryptImportedBlob(root, imported), plaintext);
       expect(await readdir(join(root, 'staging'))).toEqual([]);
       const encrypted = await readFile(blobPath(root, imported.blobId));
       expect(
