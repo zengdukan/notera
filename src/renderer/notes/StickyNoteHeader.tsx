@@ -52,7 +52,11 @@ const pageHeaderStyles = xcss({
   marginBlockStart: 'space.negative.300',
   marginBlockEnd: 'space.negative.200',
 });
-const titleStyles = xcss({ minWidth: '160px', maxWidth: '560px', flexGrow: 1 });
+const editTitleStyles = xcss({
+  // InlineEditableTextfield renders its Field with an 8px top margin.
+  // Compensate for that internal spacing so the title aligns with Breadcrumbs.
+  marginBlockStart: 'space.negative.100',
+});
 
 function NoteHeaderTitle({
   mode,
@@ -68,14 +72,14 @@ function NoteHeaderTitle({
   readonly onTitleChange: (title: string) => void;
 }) {
   return (
-    <Box xcss={titleStyles}>
+    <Box xcss={mode === 'edit' ? editTitleStyles : ''}>
       {mode === 'edit' ? (
         <InlineEditableTextfield
           defaultValue={title}
           aria-label="Note title"
           onConfirm={(value) => onTitleChange(value)}
           placeholder={displayTitle}
-          isCompact
+          hideActionButtons
           startWithEditViewOpen={autoFocusTitle}
           testId="note-title-inline-edit"
         />
