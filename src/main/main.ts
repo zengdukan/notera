@@ -5,6 +5,7 @@ import { createProfileManager, type ProfileManager } from '@notera/application';
 import {
   app,
   BrowserWindow,
+  clipboard,
   dialog,
   ipcMain,
   powerMonitor,
@@ -130,6 +131,16 @@ async function start(): Promise<void> {
     additionalArguments: [createMediaApiArgument(mediaAdapter.apiBaseUrl)],
     logger: diagnostics,
   }) as BrowserWindow;
+  ipcMain.handle('notera:clipboard.writeText', (_event, text: string) => {
+    clipboard.writeText(text);
+  });
+  ipcMain.handle('notera:clipboard.readText', () => clipboard.readText());
+  ipcMain.handle(
+    'notera:clipboard.write',
+    (_event, data: { text?: string; html?: string }) => {
+      clipboard.write(data);
+    },
+  );
   mainWindow.webContents.on('console-message', (details) => {
     const consoleDetails = rendererConsoleDetails(
       details.message,

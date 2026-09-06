@@ -12,7 +12,9 @@ export interface SecureWindowPort {
           callback: (allowed: boolean) => void,
         ) => void,
       ): void;
-      setPermissionCheckHandler(handler: () => boolean): void;
+      setPermissionCheckHandler(
+        handler: (webContents: unknown, permission: string) => boolean,
+      ): void;
     };
     on(
       event: 'will-navigate',
@@ -111,9 +113,16 @@ export function createSecureWindow(input: {
     return { action: 'deny' };
   });
   window.webContents.session.setPermissionRequestHandler(
-    (_webContents, _permission, callback) => callback(false),
+    (_webContents, permission, callback) => {
+      const allowed =
+        permission === 'clipboard-read' || permission === 'clipboard-write';
+      callback(allowed);
+    },
   );
-  window.webContents.session.setPermissionCheckHandler(() => false);
+  window.webContents.session.setPermissionCheckHandler(
+    (_webContents, permission) =>
+      permission === 'clipboard-read' || permission === 'clipboard-write',
+  );
   window.on('ready-to-show', () => {
     if (process.env.START_MINIMIZED) window.minimize();
     else window.show();

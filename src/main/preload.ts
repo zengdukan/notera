@@ -217,3 +217,13 @@ contextBridge.exposeInMainWorld(
     mediaApiBaseUrl: parseMediaApiArgument(process.argv),
   } satisfies AtlassianEditorRuntime),
 );
+contextBridge.exposeInMainWorld(
+  'noteraClipboard',
+  Object.freeze({
+    writeText: (text: string) =>
+      ipcRenderer.invoke('notera:clipboard.writeText', text),
+    readText: () => ipcRenderer.invoke('notera:clipboard.readText'),
+    write: (data: { text?: string; html?: string }) =>
+      ipcRenderer.invoke('notera:clipboard.write', data),
+  }),
+);

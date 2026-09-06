@@ -18,7 +18,9 @@ function setup() {
         callback: (allowed: boolean) => void,
       ) => void)
     | undefined;
-  let permissionCheck: (() => boolean) | undefined;
+  let permissionCheck:
+    | ((webContents: unknown, permission: string) => boolean)
+    | undefined;
   const session = {
     setPermissionRequestHandler: jest.fn((handler) => {
       permissionRequest = handler;
@@ -155,6 +157,17 @@ describe('secure BrowserWindow', () => {
     const callback = jest.fn();
     state.permissionRequest({}, 'camera', callback);
     expect(callback).toHaveBeenCalledWith(false);
-    expect(state.permissionCheck()).toBe(false);
+    expect(state.permissionCheck({}, 'camera')).toBe(false);
+  });
+
+  it('allows clipboard-read and clipboard-write permissions', () => {
+    const state = setup();
+    const callback = jest.fn();
+    state.permissionRequest({}, 'clipboard-read', callback);
+    expect(callback).toHaveBeenCalledWith(true);
+    state.permissionRequest({}, 'clipboard-write', callback);
+    expect(callback).toHaveBeenCalledWith(true);
+    expect(state.permissionCheck({}, 'clipboard-read')).toBe(true);
+    expect(state.permissionCheck({}, 'clipboard-write')).toBe(true);
   });
 });
