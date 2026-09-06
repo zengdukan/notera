@@ -67,9 +67,11 @@ process.on('unhandledRejection', (reason: unknown) => {
   });
 });
 
-function rendererLogLevel(level: number): 'INFO' | 'WARN' | 'ERROR' {
-  if (level >= 2) return 'ERROR';
-  if (level === 1) return 'WARN';
+function rendererLogLevel(
+  level: 'info' | 'warning' | 'error' | 'debug',
+): 'INFO' | 'WARN' | 'ERROR' {
+  if (level === 'error') return 'ERROR';
+  if (level === 'warning') return 'WARN';
   return 'INFO';
 }
 
@@ -127,18 +129,19 @@ async function start(): Promise<void> {
     additionalArguments: [createMediaApiArgument(mediaAdapter.apiBaseUrl)],
     logger: diagnostics,
   }) as BrowserWindow;
-  mainWindow.webContents.on(
-    'console-message',
-    (_event, level, message, line, sourceId) => {
-      const consoleDetails = rendererConsoleDetails(message, line, sourceId);
-      diagnostics?.log(rendererLogLevel(level), 'RENDERER_CONSOLE', {
-        sessionId: diagnosticSessionId ?? null,
-        level,
-        severity: rendererLogLevel(level),
-        ...consoleDetails,
-      });
-    },
-  );
+  mainWindow.webContents.on('console-message', (details) => {
+    const consoleDetails = rendererConsoleDetails(
+      details.message,
+      details.lineNumber,
+      details.sourceId,
+    );
+    diagnostics?.log(rendererLogLevel(details.level), 'RENDERER_CONSOLE', {
+      sessionId: diagnosticSessionId ?? null,
+      level: details.level,
+      severity: rendererLogLevel(details.level),
+      ...consoleDetails,
+    });
+  });
   mainWindow.webContents.on('did-fail-load', (_event, errorCode) => {
     diagnostics?.error('WINDOW_DID_FAIL_LOAD', { errorCode });
   });
