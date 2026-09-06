@@ -97,6 +97,7 @@
     "@atlaskit/menu": "^10.1.0",
     "@atlaskit/modal-dialog": "^16.5.3",
     "@atlaskit/navigation-system": "^10.16.3",
+    "@atlaskit/page-header": "^13.3.0",
     "@atlaskit/platform-feature-flags": "^2.1.1",
     "@atlaskit/popup": "^6.2.1",
     "@atlaskit/primitives": "^22.4.0",

@@ -21,6 +21,7 @@ import StarStarredIcon from '@atlaskit/icon/core/star-starred';
 import StarUnstarredIcon from '@atlaskit/icon/core/star-unstarred';
 import StatusErrorIcon from '@atlaskit/icon/core/status-error';
 import StatusWarningIcon from '@atlaskit/icon/core/status-warning';
+import PageHeader from '@atlaskit/page-header';
 import { Box, Inline, xcss } from '@atlaskit/primitives';
 import Textfield from '@atlaskit/textfield';
 import { token } from '@atlaskit/tokens';
@@ -39,8 +40,6 @@ export type NoteMoreAction =
 
 const headerStyles = xcss({
   flexShrink: '0',
-  position: 'sticky',
-  top: 'space.0',
   zIndex: 'navigation',
   backgroundColor: 'elevation.surface',
   borderBlockEndColor: 'color.border',
@@ -50,6 +49,40 @@ const headerStyles = xcss({
   paddingInline: 'space.200',
 });
 const titleStyles = xcss({ minWidth: '160px', maxWidth: '560px', flexGrow: 1 });
+
+function NoteHeaderTitle({
+  mode,
+  title,
+  displayTitle,
+  autoFocusTitle,
+  titleLabel,
+  onTitleChange,
+}: {
+  readonly mode: 'preview' | 'edit';
+  readonly title: string;
+  readonly displayTitle: string;
+  readonly autoFocusTitle: boolean;
+  readonly titleLabel: string;
+  readonly onTitleChange: (title: string) => void;
+}) {
+  return (
+    <Box xcss={titleStyles}>
+      {mode === 'edit' ? (
+        <Textfield
+          aria-label={titleLabel}
+          autoFocus={autoFocusTitle}
+          appearance="none"
+          value={title}
+          onChange={(event) => onTitleChange(event.currentTarget.value)}
+        />
+      ) : (
+        <Heading size="medium" as="h1">
+          {displayTitle}
+        </Heading>
+      )}
+    </Box>
+  );
+}
 
 const saveStatus = Object.freeze({
   clean: {
@@ -142,10 +175,70 @@ export function StickyNoteHeader({
   const ModeIcon = mode === 'edit' ? EyeOpenIcon : EditIcon;
   const FavoriteIcon = isFavorite ? StarStarredIcon : StarUnstarredIcon;
   const moreLabel = intl.formatMessage({ id: 'notes.header.more' });
+  const titleLabel = intl.formatMessage({ id: 'notes.header.titleLabel' });
 
   return (
-    <Box as="header" xcss={headerStyles}>
-      <Inline alignBlock="center" space="space.100" shouldWrap={false}>
+    <Box as="header" xcss={headerStyles} testId="sticky-note-header">
+      <PageHeader
+        disableTitleStyles
+        actions={
+          <Inline alignBlock="center" space="space.050" shouldWrap={false}>
+            {saveState === 'failed' && onRetry ? (
+              <IconButton
+                appearance="subtle"
+                icon={RefreshIcon}
+                label={intl.formatMessage({ id: 'notes.header.retry' })}
+                onClick={onRetry}
+              />
+            ) : null}
+            <IconButton
+              appearance="subtle"
+              icon={FavoriteIcon}
+              label={favoriteLabel}
+              onClick={onToggleFavorite}
+            />
+            <IconButton
+              appearance={mode === 'edit' ? 'primary' : 'subtle'}
+              icon={ModeIcon}
+              label={modeLabel}
+              onClick={mode === 'edit' ? onPreview : onEdit}
+            />
+            <DropdownMenu<HTMLButtonElement>
+              shouldRenderToParent
+              trigger={({ triggerRef, ...props }) => (
+                <IconButton
+                  {...props}
+                  ref={triggerRef}
+                  appearance="subtle"
+                  icon={ShowMoreHorizontalIcon}
+                  label={moreLabel}
+                />
+              )}
+            >
+              <DropdownItemGroup>
+                {MORE_ACTIONS.map((action) => {
+                  const ActionIcon = action.icon;
+                  return (
+                    <DropdownItem
+                      key={action.id}
+                      elemBefore={
+                        <ActionIcon
+                          label=""
+                          color="currentColor"
+                          testId={`note-more-action-icon-${action.id}`}
+                        />
+                      }
+                      onClick={() => onMore(action.id)}
+                    >
+                      {intl.formatMessage({ id: action.messageId })}
+                    </DropdownItem>
+                  );
+                })}
+              </DropdownItemGroup>
+            </DropdownMenu>
+          </Inline>
+        }
+      >
         <Inline
           alignBlock="center"
           space="space.100"
@@ -160,21 +253,14 @@ export function StickyNoteHeader({
               <BreadcrumbsItem key={item.id} text={item.name} />
             ))}
           </Breadcrumbs>
-          <Box xcss={titleStyles}>
-            {mode === 'edit' ? (
-              <Textfield
-                aria-label={intl.formatMessage({
-                  id: 'notes.header.titleLabel',
-                })}
-                autoFocus={autoFocusTitle}
-                appearance="none"
-                value={title}
-                onChange={(event) => onTitleChange(event.currentTarget.value)}
-              />
-            ) : (
-              <Heading size="medium">{displayTitle}</Heading>
-            )}
-          </Box>
+          <NoteHeaderTitle
+            mode={mode}
+            title={title}
+            displayTitle={displayTitle}
+            autoFocusTitle={autoFocusTitle}
+            titleLabel={titleLabel}
+            onTitleChange={onTitleChange}
+          />
           <Tooltip content={saveLabel}>
             <Box
               as="span"
@@ -191,62 +277,7 @@ export function StickyNoteHeader({
             </Box>
           </Tooltip>
         </Inline>
-        <Inline alignBlock="center" space="space.050" shouldWrap={false}>
-          {saveState === 'failed' && onRetry ? (
-            <IconButton
-              appearance="subtle"
-              icon={RefreshIcon}
-              label={intl.formatMessage({ id: 'notes.header.retry' })}
-              onClick={onRetry}
-            />
-          ) : null}
-          <IconButton
-            appearance="subtle"
-            icon={FavoriteIcon}
-            label={favoriteLabel}
-            onClick={onToggleFavorite}
-          />
-          <IconButton
-            appearance={mode === 'edit' ? 'primary' : 'subtle'}
-            icon={ModeIcon}
-            label={modeLabel}
-            onClick={mode === 'edit' ? onPreview : onEdit}
-          />
-          <DropdownMenu<HTMLButtonElement>
-            shouldRenderToParent
-            trigger={({ triggerRef, ...props }) => (
-              <IconButton
-                {...props}
-                ref={triggerRef}
-                appearance="subtle"
-                icon={ShowMoreHorizontalIcon}
-                label={moreLabel}
-              />
-            )}
-          >
-            <DropdownItemGroup>
-              {MORE_ACTIONS.map((action) => {
-                const ActionIcon = action.icon;
-                return (
-                  <DropdownItem
-                    key={action.id}
-                    elemBefore={
-                      <ActionIcon
-                        label=""
-                        color="currentColor"
-                        testId={`note-more-action-icon-${action.id}`}
-                      />
-                    }
-                    onClick={() => onMore(action.id)}
-                  >
-                    {intl.formatMessage({ id: action.messageId })}
-                  </DropdownItem>
-                );
-              })}
-            </DropdownItemGroup>
-          </DropdownMenu>
-        </Inline>
-      </Inline>
+      </PageHeader>
     </Box>
   );
 }

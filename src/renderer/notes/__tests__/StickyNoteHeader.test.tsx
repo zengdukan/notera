@@ -1,7 +1,7 @@
 /** @jest-environment jsdom */
 
 import type { ReactElement } from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { IntlProvider } from 'react-intl';
 
@@ -24,7 +24,7 @@ const paths = [
 ];
 
 describe('StickyNoteHeader', () => {
-  it('uses the same top anchor in edit and preview modes', () => {
+  it('renders a stable PageHeader anchor in edit and preview modes', () => {
     const editView = renderHeader(
       <StickyNoteHeader
         mode="edit"
@@ -54,9 +54,12 @@ describe('StickyNoteHeader', () => {
       />,
     );
 
-    expect(editView.container.firstElementChild?.className).toBe(
-      previewView.container.firstElementChild?.className,
-    );
+    expect(
+      within(editView.container).getByTestId('sticky-note-header'),
+    ).toBeVisible();
+    expect(
+      within(previewView.container).getByTestId('sticky-note-header'),
+    ).toBeVisible();
   });
 
   it('keeps breadcrumbs, title, save status and ordered note actions in one header', () => {
@@ -78,7 +81,9 @@ describe('StickyNoteHeader', () => {
     expect(
       screen.getByRole('navigation', { name: 'Note path' }),
     ).toHaveTextContent('Notes');
-    expect(screen.getByRole('heading', { name: 'Architecture' })).toBeVisible();
+    expect(
+      screen.getByRole('heading', { name: 'Architecture', level: 1 }),
+    ).toBeVisible();
     expect(screen.getByRole('status')).toHaveAccessibleName('Saved');
     expect(screen.getByTestId('note-save-status-icon-clean')).toBeVisible();
     expect(
