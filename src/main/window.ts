@@ -58,6 +58,16 @@ export interface ExternalShellPort {
   openExternal(url: string): Promise<unknown>;
 }
 
+function isClipboardPermission(permission: string): boolean {
+  // Chromium/Electron use `clipboard-sanitized-write`; retain the legacy
+  // `clipboard-write` name for older Electron releases and test doubles.
+  return (
+    permission === 'clipboard-read' ||
+    permission === 'clipboard-sanitized-write' ||
+    permission === 'clipboard-write'
+  );
+}
+
 function allowsNavigation(entryUrl: string, candidateUrl: string): boolean {
   try {
     const entry = new URL(entryUrl);
@@ -114,14 +124,11 @@ export function createSecureWindow(input: {
   });
   window.webContents.session.setPermissionRequestHandler(
     (_webContents, permission, callback) => {
-      const allowed =
-        permission === 'clipboard-read' || permission === 'clipboard-write';
-      callback(allowed);
+      callback(isClipboardPermission(permission));
     },
   );
   window.webContents.session.setPermissionCheckHandler(
-    (_webContents, permission) =>
-      permission === 'clipboard-read' || permission === 'clipboard-write',
+    (_webContents, permission) => isClipboardPermission(permission),
   );
   window.on('ready-to-show', () => {
     if (process.env.START_MINIMIZED) window.minimize();

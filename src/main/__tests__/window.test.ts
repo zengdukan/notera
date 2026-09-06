@@ -160,14 +160,17 @@ describe('secure BrowserWindow', () => {
     expect(state.permissionCheck({}, 'camera')).toBe(false);
   });
 
-  it('allows clipboard-read and clipboard-write permissions', () => {
+  it('allows supported clipboard permissions', () => {
     const state = setup();
     const callback = jest.fn();
     state.permissionRequest({}, 'clipboard-read', callback);
     expect(callback).toHaveBeenCalledWith(true);
+    state.permissionRequest({}, 'clipboard-sanitized-write', callback);
+    expect(callback).toHaveBeenCalledWith(true);
     state.permissionRequest({}, 'clipboard-write', callback);
     expect(callback).toHaveBeenCalledWith(true);
     expect(state.permissionCheck({}, 'clipboard-read')).toBe(true);
+    expect(state.permissionCheck({}, 'clipboard-sanitized-write')).toBe(true);
     expect(state.permissionCheck({}, 'clipboard-write')).toBe(true);
   });
 });
