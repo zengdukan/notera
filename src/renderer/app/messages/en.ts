@@ -170,7 +170,7 @@ export const englishMessages = Object.freeze({
   'notes.header.save.saving': 'Saving',
   'notes.header.save.failed': 'Not saved',
   'notes.header.retry': 'Retry save',
-  'notes.header.mode.view': 'View',
+  'notes.header.mode.view': 'Preview',
   'notes.header.mode.edit': 'Edit',
   'notes.header.more': 'More',
   'settings.title': 'Settings',

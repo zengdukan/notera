@@ -62,7 +62,7 @@ describe('StickyNoteHeader', () => {
     ).toBeVisible();
   });
 
-  it('keeps breadcrumbs, title, save status and ordered note actions in one header', () => {
+  it('keeps breadcrumbs, title and ordered note actions in one header in preview mode', () => {
     renderHeader(
       <StickyNoteHeader
         mode="preview"
@@ -84,8 +84,10 @@ describe('StickyNoteHeader', () => {
     expect(
       screen.getByRole('heading', { name: 'Architecture', level: 1 }),
     ).toBeVisible();
-    expect(screen.getByRole('status')).toHaveAccessibleName('Saved');
-    expect(screen.getByTestId('note-save-status-icon-clean')).toBeVisible();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('note-save-status-icon-clean'),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Add to favorites' }),
     ).toBeVisible();
@@ -128,7 +130,7 @@ describe('StickyNoteHeader', () => {
     (saveState, label) => {
       renderHeader(
         <StickyNoteHeader
-          mode="preview"
+          mode="edit"
           title="Architecture"
           path={paths}
           saveState={saveState}
@@ -149,35 +151,35 @@ describe('StickyNoteHeader', () => {
     },
   );
 
-  it('places the save indicator after the title and wires icon actions', async () => {
+  it('places the save indicator after the title and wires icon actions in edit mode', async () => {
     const user = userEvent.setup();
     const onToggleFavorite = jest.fn();
-    const onEdit = jest.fn();
+    const onPreview = jest.fn();
     renderHeader(
       <StickyNoteHeader
-        mode="preview"
+        mode="edit"
         title="Architecture"
         path={paths}
         saveState="clean"
         isFavorite={false}
         onTitleChange={jest.fn()}
         onToggleFavorite={onToggleFavorite}
-        onEdit={onEdit}
-        onPreview={jest.fn()}
+        onEdit={jest.fn()}
+        onPreview={onPreview}
         onMore={jest.fn()}
       />,
     );
 
-    const heading = screen.getByRole('heading', { name: 'Architecture' });
+    const title = screen.getByTestId('read-view-note-title-inline-edit');
     const status = screen.getByRole('status');
-    expect(heading.compareDocumentPosition(status)).toBe(
+    expect(title.compareDocumentPosition(status)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
 
     await user.click(screen.getByRole('button', { name: 'Add to favorites' }));
-    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    await user.click(screen.getByRole('button', { name: 'View' }));
     expect(onToggleFavorite).toHaveBeenCalledTimes(1);
-    expect(onEdit).toHaveBeenCalledTimes(1);
+    expect(onPreview).toHaveBeenCalledTimes(1);
   });
 
   it('edits the title and exposes the complete product menu in edit mode', async () => {

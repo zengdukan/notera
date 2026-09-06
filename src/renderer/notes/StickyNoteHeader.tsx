@@ -23,6 +23,7 @@ import { Box, Inline, xcss } from '@atlaskit/primitives';
 import Tooltip from '@atlaskit/tooltip';
 import { useIntl } from 'react-intl';
 
+import Button from '@atlaskit/button/default/button';
 import type { SaveState } from './document-session';
 
 export type NoteMoreAction =
@@ -189,18 +190,21 @@ export function StickyNoteHeader({
                   onClick={onRetry}
                 />
               ) : null}
-              <IconButton
-                appearance="subtle"
-                icon={FavoriteIcon}
-                label={favoriteLabel}
-                onClick={onToggleFavorite}
-              />
-              <IconButton
-                appearance={mode === 'edit' ? 'primary' : 'subtle'}
-                icon={ModeIcon}
-                label={modeLabel}
+              <Button
+                appearance="primary"
+                iconBefore={ModeIcon}
                 onClick={mode === 'edit' ? onPreview : onEdit}
-              />
+              >
+                {modeLabel}
+              </Button>
+              <Tooltip content={favoriteLabel}>
+                <IconButton
+                  appearance="subtle"
+                  icon={FavoriteIcon}
+                  label=""
+                  onClick={onToggleFavorite}
+                />
+              </Tooltip>
               <DropdownMenu<HTMLButtonElement>
                 shouldRenderToParent
                 trigger={({ triggerRef, ...props }) => (

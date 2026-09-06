@@ -105,7 +105,7 @@ describe('application internationalization', () => {
       'notes.header.save.dirty': 'Unsaved changes',
       'notes.header.save.saving': 'Saving',
       'notes.header.save.failed': 'Not saved',
-      'notes.header.mode.view': 'View',
+      'notes.header.mode.view': 'Preview',
       'notes.header.mode.edit': 'Edit',
     });
     expect(messagesFor('zh-CN')).toMatchObject({
