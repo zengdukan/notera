@@ -13,17 +13,24 @@ import { ActiveDocumentLifecycle } from '../document-lifecycle';
 import { NoteWriteCoordinator } from '../note-write-coordinator';
 
 import { NoteWorkspace } from '../NoteWorkspace';
+import type { NotePageSize } from '../NoteWorkspace';
 
 configureFeatureFlags();
 jest.mock('../../editor/EditorSurface', () => ({
   EditorSurface: ({
     document,
+    pageSize,
     onChange,
   }: {
     document: unknown;
+    pageSize?: string;
     onChange(value: unknown): void;
   }) => (
-    <div aria-label="Editor surface">
+    <div
+      aria-label="Editor surface"
+      data-page-size={pageSize}
+      data-testid="note-editor-surface"
+    >
       {JSON.stringify(document)}
       <button
         type="button"
@@ -68,7 +75,11 @@ const document = {
 };
 
 function setup(
-  options: { saveRejects?: boolean; initiallyEditing?: boolean } = {},
+  options: {
+    saveRejects?: boolean;
+    initiallyEditing?: boolean;
+    initialPageSize?: NotePageSize;
+  } = {},
 ) {
   const request = jest.fn(async (key: string) => {
     if (key === 'note.get') {
@@ -100,6 +111,7 @@ function setup(
     profileId: 'profile',
     note: noteEntry,
     initiallyEditing: options.initiallyEditing,
+    initialPageSize: options.initialPageSize,
     lifecycle,
     writeCoordinator: new NoteWriteCoordinator(),
     onMore: jest.fn(),
@@ -115,20 +127,47 @@ function setup(
 }
 
 describe('NoteWorkspace', () => {
-  it('delegates edit-mode scrolling to the full-width editor', async () => {
+  it('keeps the toolbar outside the edit-mode scroll container', async () => {
     const { container } = setup({ initiallyEditing: true });
     const editor = await screen.findByLabelText('Editor surface');
 
     expect(container.firstElementChild).toHaveStyle({ overflow: 'hidden' });
-    expect(editor.parentElement).toHaveStyle({ overflow: 'hidden' });
+    expect(editor.parentElement).toHaveStyle({
+      overflow: 'hidden',
+      backgroundColor: 'var(--ds-surface-sunken)',
+    });
+    expect(editor).toHaveAttribute('data-page-size', 'A4');
   });
 
   it('keeps the note body scrollable in preview mode', async () => {
     const { container } = setup();
     const renderer = await screen.findByLabelText('Renderer surface');
+    const paper = screen.getByTestId('note-paper-surface');
 
     expect(container.firstElementChild).toHaveStyle({ overflow: 'hidden' });
-    expect(renderer.parentElement).toHaveStyle({ overflow: 'auto' });
+    expect(paper.parentElement).toHaveStyle({ overflow: 'auto' });
+    expect(paper).toHaveStyle({
+      width: '210mm',
+      minHeight: '100%',
+      padding: '25.4mm',
+      backgroundColor: 'var(--ds-surface-raised)',
+    });
+    expect(getComputedStyle(paper).boxShadow).toMatch(
+      /^var\(--ds-shadow-overflow,/,
+    );
+    expect(renderer.parentElement).toBe(paper);
+  });
+
+  it('supports an A3 paper width and toggles it from the header', async () => {
+    const user = userEvent.setup();
+    setup({ initialPageSize: 'A3' });
+
+    const paper = await screen.findByTestId('note-paper-surface');
+    expect(paper).toHaveStyle({ width: '297mm' });
+    await user.click(screen.getByRole('button', { name: 'Switch to A4' }));
+    expect(paper).toHaveStyle({ width: '210mm' });
+    await user.click(screen.getByRole('button', { name: 'Switch to A3' }));
+    expect(paper).toHaveStyle({ width: '297mm' });
   });
 
   it('switches to the editor without rendering a separate formatting toolbar', async () => {
@@ -150,9 +189,9 @@ describe('NoteWorkspace', () => {
     const { request } = setup({ initiallyEditing: true });
     await screen.findByLabelText('Editor surface');
 
-    await user.type(screen.getByRole('textbox', { name: 'Note title' }), ' v2');
+    await user.type(screen.getByTestId('note-title-inline-edit'), ' v2');
     await user.click(screen.getByRole('button', { name: 'Change document' }));
-    await user.click(screen.getByRole('button', { name: 'View' }));
+    await user.click(screen.getByRole('button', { name: 'Preview' }));
 
     await waitFor(() =>
       expect(screen.getByLabelText('Renderer surface')).toHaveTextContent(
@@ -175,7 +214,7 @@ describe('NoteWorkspace', () => {
     await screen.findByLabelText('Editor surface');
 
     await user.click(screen.getByRole('button', { name: 'Change document' }));
-    await user.click(screen.getByRole('button', { name: 'View' }));
+    await user.click(screen.getByRole('button', { name: 'Preview' }));
 
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveAccessibleName('Not saved'),

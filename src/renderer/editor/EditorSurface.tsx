@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { EditorActions } from '@atlaskit/editor-core';
 import { AutoDismissFlag, FlagGroup } from '@atlaskit/flag';
 import FailIcon from '@atlaskit/icon/core/cross-circle';
+import { Box, xcss } from '@atlaskit/primitives';
 import { useIntl } from 'react-intl';
 
 import type { AdfDocument } from '../../shared/ipc/adf';
@@ -12,6 +13,15 @@ import {
   subscribeMediaUploadRejection,
   type MediaUploadRejectionFeedback,
 } from '../atlassian-editor/media-upload-feedback';
+import type { NotePageSize } from '../notes/NoteWorkspace';
+
+import './EditorSurface.css';
+
+const editorSurfaceStyles = xcss({
+  height: '100%',
+  width: '100%',
+  minWidth: '0',
+});
 
 const EMPTY_EDITOR_CONTENT = Object.freeze([
   Object.freeze({ type: 'paragraph', content: Object.freeze([]) }),
@@ -54,12 +64,14 @@ function MediaUploadFeedbackFlag({
 export function EditorSurface({
   noteId,
   document,
+  pageSize = 'A4',
   onChange,
   onEditorReady,
   shouldFocus,
 }: {
   readonly noteId: string;
   readonly document: AdfDocument;
+  readonly pageSize?: NotePageSize;
   readonly onChange: (document: AdfDocument) => void;
   readonly onEditorReady?: (actions: EditorActions) => void;
   readonly shouldFocus?: boolean;
@@ -76,7 +88,11 @@ export function EditorSurface({
   }, [noteId]);
 
   return (
-    <>
+    <Box
+      xcss={editorSurfaceStyles}
+      data-page-size={pageSize}
+      testId="note-editor-surface"
+    >
       <Editor
         mediaProvider={mediaProviderForNote(noteId)}
         document={editorDocument}
@@ -90,6 +106,6 @@ export function EditorSurface({
           onDismissed={() => setUploadFeedback(undefined)}
         />
       ) : null}
-    </>
+    </Box>
   );
 }

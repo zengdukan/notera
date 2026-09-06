@@ -8,6 +8,8 @@ import Heading from '@atlaskit/heading';
 import AddIcon from '@atlaskit/icon/core/add';
 import ArrowRightIcon from '@atlaskit/icon/core/arrow-right';
 import ClockIcon from '@atlaskit/icon/core/clock';
+import ContentWidthNarrowIcon from '@atlaskit/icon/core/content-width-narrow';
+import ContentWidthWideIcon from '@atlaskit/icon/core/content-width-wide';
 import CopyIcon from '@atlaskit/icon/core/copy';
 import DeleteIcon from '@atlaskit/icon/core/delete';
 import DownloadIcon from '@atlaskit/icon/core/download';
@@ -25,6 +27,7 @@ import { useIntl } from 'react-intl';
 
 import Button from '@atlaskit/button/default/button';
 import type { SaveState } from './document-session';
+import type { NotePageSize } from './NoteWorkspace';
 
 export type NoteMoreAction =
   | 'create-version'
@@ -144,6 +147,8 @@ export function StickyNoteHeader({
   onEdit,
   onPreview,
   onRetry,
+  pageSize,
+  onPageSizeChange,
   onMore,
 }: {
   readonly mode: 'preview' | 'edit';
@@ -157,6 +162,8 @@ export function StickyNoteHeader({
   readonly onEdit: () => void;
   readonly onPreview: () => void;
   readonly onRetry?: () => void;
+  readonly pageSize: NotePageSize;
+  readonly onPageSizeChange: (pageSize: NotePageSize) => void;
   readonly onMore: (action: NoteMoreAction) => void;
 }) {
   const intl = useIntl();
@@ -174,6 +181,14 @@ export function StickyNoteHeader({
   const ModeIcon = mode === 'edit' ? EyeOpenIcon : EditIcon;
   const FavoriteIcon = isFavorite ? StarStarredIcon : StarUnstarredIcon;
   const moreLabel = intl.formatMessage({ id: 'notes.header.more' });
+  const nextPageSize: NotePageSize = pageSize === 'A4' ? 'A3' : 'A4';
+  const pageSizeLabel = intl.formatMessage(
+    pageSize === 'A4'
+      ? { id: 'notes.header.pageSize.wide' }
+      : { id: 'notes.header.pageSize.narrow' },
+  );
+  const PageSizeIcon =
+    pageSize === 'A4' ? ContentWidthWideIcon : ContentWidthNarrowIcon;
 
   return (
     <Box as="header" xcss={headerStyles} testId="sticky-note-header">
@@ -203,6 +218,14 @@ export function StickyNoteHeader({
                   icon={FavoriteIcon}
                   label=""
                   onClick={onToggleFavorite}
+                />
+              </Tooltip>
+              <Tooltip content={pageSizeLabel}>
+                <IconButton
+                  appearance="subtle"
+                  icon={PageSizeIcon}
+                  label=""
+                  onClick={() => onPageSizeChange(nextPageSize)}
                 />
               </Tooltip>
               <DropdownMenu<HTMLButtonElement>

@@ -172,6 +172,8 @@ export const englishMessages = Object.freeze({
   'notes.header.retry': 'Retry save',
   'notes.header.mode.view': 'Preview',
   'notes.header.mode.edit': 'Edit',
+  'notes.header.pageSize.narrow': 'Standard page',
+  'notes.header.pageSize.wide': 'Wide page',
   'notes.header.more': 'More',
   'settings.title': 'Settings',
   'settings.tabs.general': 'General',

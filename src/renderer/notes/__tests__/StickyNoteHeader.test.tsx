@@ -23,6 +23,11 @@ const paths = [
   { id: 'folder', name: 'Projects' },
 ];
 
+const pageSizeProps = {
+  pageSize: 'A4' as const,
+  onPageSizeChange: jest.fn(),
+};
+
 describe('StickyNoteHeader', () => {
   it('renders a stable PageHeader anchor in edit and preview modes', () => {
     const editView = renderHeader(
@@ -32,6 +37,7 @@ describe('StickyNoteHeader', () => {
         path={paths}
         saveState="clean"
         isFavorite={false}
+        {...pageSizeProps}
         onTitleChange={jest.fn()}
         onToggleFavorite={jest.fn()}
         onEdit={jest.fn()}
@@ -46,6 +52,7 @@ describe('StickyNoteHeader', () => {
         path={paths}
         saveState="clean"
         isFavorite={false}
+        {...pageSizeProps}
         onTitleChange={jest.fn()}
         onToggleFavorite={jest.fn()}
         onEdit={jest.fn()}
@@ -70,6 +77,7 @@ describe('StickyNoteHeader', () => {
         path={paths}
         saveState="clean"
         isFavorite={false}
+        {...pageSizeProps}
         onTitleChange={jest.fn()}
         onToggleFavorite={jest.fn()}
         onEdit={jest.fn()}
@@ -88,7 +96,9 @@ describe('StickyNoteHeader', () => {
     expect(
       screen.queryByTestId('note-save-status-icon-clean'),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '' })).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Add to favorites' }),
+    ).toBeVisible();
     expect(screen.getByRole('button', { name: 'Edit' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'More' })).toBeVisible();
   });
@@ -101,6 +111,7 @@ describe('StickyNoteHeader', () => {
         path={paths}
         saveState="clean"
         isFavorite={false}
+        {...pageSizeProps}
         autoFocusTitle
         onTitleChange={jest.fn()}
         onToggleFavorite={jest.fn()}
@@ -110,11 +121,12 @@ describe('StickyNoteHeader', () => {
       />,
     );
 
-    expect(getComputedStyle(screen.getByTestId('sticky-note-header')).paddingBlock).toBe(
-      'var(--ds-space-0, 0px)',
-    );
     expect(
-      getComputedStyle(screen.getByTestId('sticky-note-header-title-row')).alignItems,
+      getComputedStyle(screen.getByTestId('sticky-note-header')).paddingBlock,
+    ).toBe('var(--ds-space-0, 0px)');
+    expect(
+      getComputedStyle(screen.getByTestId('sticky-note-header-title-row'))
+        .alignItems,
     ).toBe('center');
   });
 
@@ -133,6 +145,7 @@ describe('StickyNoteHeader', () => {
           path={paths}
           saveState={saveState}
           isFavorite={false}
+          {...pageSizeProps}
           onTitleChange={jest.fn()}
           onToggleFavorite={jest.fn()}
           onEdit={jest.fn()}
@@ -160,6 +173,7 @@ describe('StickyNoteHeader', () => {
         path={paths}
         saveState="clean"
         isFavorite={false}
+        {...pageSizeProps}
         onTitleChange={jest.fn()}
         onToggleFavorite={onToggleFavorite}
         onEdit={jest.fn()}
@@ -174,7 +188,7 @@ describe('StickyNoteHeader', () => {
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
 
-    await user.click(screen.getByRole('button', { name: '' }));
+    await user.click(screen.getByRole('button', { name: 'Add to favorites' }));
     await user.click(screen.getByRole('button', { name: 'Preview' }));
     expect(onToggleFavorite).toHaveBeenCalledTimes(1);
     expect(onPreview).toHaveBeenCalledTimes(1);
@@ -192,6 +206,7 @@ describe('StickyNoteHeader', () => {
         path={paths}
         saveState="failed"
         isFavorite
+        {...pageSizeProps}
         onTitleChange={onTitleChange}
         onToggleFavorite={jest.fn()}
         onEdit={jest.fn()}
@@ -205,10 +220,7 @@ describe('StickyNoteHeader', () => {
       'note-title-inline-edit--edit-button',
     );
     await user.click(titleEditButton);
-    await user.type(
-      screen.getByTestId('note-title-inline-edit'),
-      ' updated',
-    );
+    await user.type(screen.getByTestId('note-title-inline-edit'), ' updated');
     expect(onTitleChange).not.toHaveBeenCalled();
     await user.keyboard('{Enter}');
     expect(onTitleChange).toHaveBeenCalledWith('Draft updated');
@@ -216,7 +228,7 @@ describe('StickyNoteHeader', () => {
     await user.click(screen.getByRole('button', { name: 'Retry save' }));
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(
-      screen.getByRole('button', { name: '' }),
+      screen.getByRole('button', { name: 'Remove from favorites' }),
     ).toBeVisible();
     expect(screen.getByRole('button', { name: 'Preview' })).toBeVisible();
 
@@ -246,6 +258,7 @@ describe('StickyNoteHeader', () => {
         path={paths}
         saveState="clean"
         isFavorite={false}
+        {...pageSizeProps}
         autoFocusTitle
         onTitleChange={jest.fn()}
         onToggleFavorite={jest.fn()}
@@ -267,6 +280,7 @@ describe('StickyNoteHeader', () => {
         path={paths}
         saveState="clean"
         isFavorite={false}
+        {...pageSizeProps}
         onTitleChange={jest.fn()}
         onToggleFavorite={jest.fn()}
         onEdit={jest.fn()}
@@ -283,5 +297,31 @@ describe('StickyNoteHeader', () => {
     expect(screen.getByRole('menuitem', { name: '历史版本' })).toBeVisible();
     expect(screen.getByRole('menuitem', { name: '导出' })).toBeVisible();
     expect(screen.getByRole('button', { name: '编辑' })).toBeVisible();
+  });
+
+  it('toggles the paper width with the accessible width action', async () => {
+    const user = userEvent.setup();
+    const onPageSizeChange = jest.fn();
+    renderHeader(
+      <StickyNoteHeader
+        mode="preview"
+        title="Architecture"
+        path={paths}
+        saveState="clean"
+        isFavorite={false}
+        pageSize="A4"
+        onPageSizeChange={onPageSizeChange}
+        onTitleChange={jest.fn()}
+        onToggleFavorite={jest.fn()}
+        onEdit={jest.fn()}
+        onPreview={jest.fn()}
+        onMore={jest.fn()}
+      />,
+    );
+
+    const widthButton = screen.getByRole('button', { name: 'Switch to A3' });
+    expect(widthButton).toBeVisible();
+    await user.click(widthButton);
+    expect(onPageSizeChange).toHaveBeenCalledWith('A3');
   });
 });

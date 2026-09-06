@@ -36,6 +36,8 @@ type LoadedNote = {
   readonly path: RequestData<'contentTree.getFolderPath'>['items'];
 };
 
+export type NotePageSize = 'A4' | 'A3';
+
 const workspaceStyles = xcss({
   display: 'flex',
   flexDirection: 'column',
@@ -48,11 +50,28 @@ const bodyStyles = xcss({
   flexGrow: '1',
   minHeight: '0',
   maxWidth: '100%',
-  // paddingBlock: 'space.300',
-  // paddingInline: 'space.400',
+  backgroundColor: 'elevation.surface.sunken',
 });
 const editBodyStyles = xcss({ overflow: 'hidden' });
-const previewBodyStyles = xcss({ overflow: 'auto' });
+const previewBodyStyles = xcss({
+  overflow: 'auto',
+  paddingBlock: 'space.300',
+  paddingInline: 'space.400',
+});
+const paperSurfaceStyles = xcss({
+  boxSizing: 'border-box',
+  flexShrink: '0',
+  minHeight: '100%',
+  marginInline: 'auto',
+  backgroundColor: 'elevation.surface.raised',
+  borderColor: 'color.border',
+  borderStyle: 'solid',
+  borderWidth: 'border.width',
+  borderRadius: 'radius.small',
+  boxShadow: 'elevation.shadow.overflow',
+});
+const a4PaperSurfaceStyles = xcss({ width: '210mm' });
+const a3PaperSurfaceStyles = xcss({ width: '297mm' });
 const centeredStyles = xcss({
   display: 'flex',
   alignItems: 'center',
@@ -65,6 +84,7 @@ export function NoteWorkspace({
   profileId,
   note,
   initiallyEditing = false,
+  initialPageSize = 'A4',
   lifecycle,
   writeCoordinator,
   onMore,
@@ -73,6 +93,7 @@ export function NoteWorkspace({
   readonly profileId: string;
   readonly note?: NoteEntry;
   readonly initiallyEditing?: boolean;
+  readonly initialPageSize?: NotePageSize;
   readonly lifecycle: ActiveDocumentLifecycle;
   readonly writeCoordinator: NoteWriteCoordinator;
   readonly onMore: (action: NoteMoreAction, note: NoteEntry) => void;
@@ -82,6 +103,7 @@ export function NoteWorkspace({
   const [session, setSession] = useState<DocumentSessionState>();
   const [loadError, setLoadError] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [pageSize, setPageSize] = useState<NotePageSize>(initialPageSize);
   const sessionRef = useRef<DocumentSessionState>();
   const coordinatorRef = useRef<SaveCoordinator>();
 
@@ -298,6 +320,8 @@ export function NoteWorkspace({
         onRetry={() =>
           void coordinatorRef.current?.retry().catch(() => undefined)
         }
+        pageSize={pageSize}
+        onPageSizeChange={setPageSize}
         onMore={(action) => void runMore(action)}
       />
       <Box
@@ -310,6 +334,7 @@ export function NoteWorkspace({
           <EditorSurface
             key={session.noteId}
             noteId={session.noteId}
+            pageSize={pageSize}
             document={session.draft.document}
             onChange={(document) =>
               change({ type: 'change-document', document })
@@ -317,10 +342,21 @@ export function NoteWorkspace({
             shouldFocus={initiallyEditing}
           />
         ) : (
-          <RendererSurface
-            noteId={session.noteId}
-            document={session.draft.document}
-          />
+          <Box
+            xcss={[
+              paperSurfaceStyles,
+              pageSize === 'A4' ? a4PaperSurfaceStyles : a3PaperSurfaceStyles,
+            ]}
+            // Word's 1-inch page margin is a physical measurement, not an Atlassian spacing token.
+            // eslint-disable-next-line @atlaskit/design-system/ensure-design-token-usage
+            style={{ padding: '25.4mm' }}
+            testId="note-paper-surface"
+          >
+            <RendererSurface
+              noteId={session.noteId}
+              document={session.draft.document}
+            />
+          </Box>
         )}
       </Box>
     </Box>

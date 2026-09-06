@@ -32,7 +32,7 @@ import {
   useMermaidEditor,
 } from './mermaid';
 
-const EDITOR_APPEARANCE = 'full-width' as const;
+const EDITOR_APPEARANCE = 'full-page' as const;
 
 export interface ProductEditorDiffNavigation {
   readonly activeIndex?: number;

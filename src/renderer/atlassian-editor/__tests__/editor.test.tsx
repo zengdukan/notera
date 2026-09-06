@@ -143,7 +143,7 @@ describe('Atlaskit product editor', () => {
     mockPreset.add.mockReturnValue(mockPreset);
   });
 
-  it('uses the full-width appearance consistently across editor plugins', () => {
+  it('uses the full-page appearance so the toolbar stays outside the paper', () => {
     render(
       <Editor
         mediaProvider={mediaProvider}
@@ -154,7 +154,7 @@ describe('Atlaskit product editor', () => {
 
     expect(screen.getByTestId('composable-editor')).toHaveAttribute(
       'data-appearance',
-      'full-width',
+      'full-page',
     );
     expect(screen.getByTestId('composable-editor')).toHaveAttribute(
       'data-document',
@@ -173,12 +173,12 @@ describe('Atlaskit product editor', () => {
 
     expect(mockUseUniversalPreset).toHaveBeenCalledWith(
       expect.objectContaining({
-        props: expect.objectContaining({ appearance: 'full-width' }),
+        props: expect.objectContaining({ appearance: 'full-page' }),
       }),
     );
     expect(mockPreset.add).toHaveBeenCalledWith([
       expect.anything(),
-      expect.objectContaining({ editorAppearance: 'full-width' }),
+      expect.objectContaining({ editorAppearance: 'full-page' }),
     ]);
   });
 

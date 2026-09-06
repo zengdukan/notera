@@ -1,0 +1,72 @@
+[data-testid='note-editor-surface'] {
+  height: 100%;
+  width: 100%;
+  min-width: 0;
+  background: var(--ds-surface-sunken, #f8f8f8);
+}
+
+[data-testid='note-editor-surface'] .akEditor {
+  height: 100%;
+  width: 100%;
+  min-width: 0;
+}
+
+[data-testid='note-editor-surface'] [data-testid='ak-editor-main-toolbar'] {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+[data-testid='note-editor-surface'] [data-editor-scroll-container='true'] {
+  overflow-x: auto;
+}
+
+[data-testid='note-editor-surface'] [data-editor-click-wrapper='true'] {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 0;
+  flex-shrink: 0;
+  height: auto;
+  min-height: 100%;
+  padding-block: var(--ds-space-300, 24px);
+}
+
+[data-testid='note-editor-surface'] #editor-scroll-gutter {
+  display: none;
+}
+
+[data-testid='note-editor-surface'] .ak-editor-content-area-region {
+  box-sizing: border-box;
+  flex-grow: 1;
+  flex-shrink: 0;
+  height: auto;
+  width: 210mm;
+  min-width: 210mm;
+  max-width: none;
+  margin-block: 0;
+  margin-inline: auto;
+  padding: 25.4mm;
+  background: var(--ds-surface-raised, #ffffff);
+  border: var(--ds-border-width, 1px) solid var(--ds-border, #0b120e24);
+  border-radius: var(--ds-radius-small, 3px);
+  box-shadow: var(
+    --ds-shadow-overflow,
+    0 0 8px #1e1f2128,
+    0 0 1px #1e1f211e
+  );
+}
+
+[data-testid='note-editor-surface'][data-page-size='A3']
+  .ak-editor-content-area-region {
+  width: 297mm;
+  min-width: 297mm;
+}
+
+[data-testid='note-editor-surface'] .ak-editor-content-area {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}

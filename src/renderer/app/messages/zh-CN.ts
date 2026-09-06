@@ -149,6 +149,8 @@ export const chineseMessages = Object.freeze({
   'notes.header.retry': '重试保存',
   'notes.header.mode.view': '预览',
   'notes.header.mode.edit': '编辑',
+  'notes.header.pageSize.narrow': '标准页',
+  'notes.header.pageSize.wide': '宽页',
   'notes.header.more': '更多',
   'settings.title': '设置',
   'settings.tabs.general': '常规',
