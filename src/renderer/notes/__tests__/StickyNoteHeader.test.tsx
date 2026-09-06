@@ -93,6 +93,31 @@ describe('StickyNoteHeader', () => {
     expect(screen.getByRole('button', { name: 'More' })).toBeVisible();
   });
 
+  it('uses compact spacing and top-aligns the editable title row', () => {
+    renderHeader(
+      <StickyNoteHeader
+        mode="edit"
+        title="Draft"
+        path={paths}
+        saveState="clean"
+        isFavorite={false}
+        autoFocusTitle
+        onTitleChange={jest.fn()}
+        onToggleFavorite={jest.fn()}
+        onEdit={jest.fn()}
+        onPreview={jest.fn()}
+        onMore={jest.fn()}
+      />,
+    );
+
+    expect(getComputedStyle(screen.getByTestId('sticky-note-header')).paddingBlock).toBe(
+      'var(--ds-space-0, 0px)',
+    );
+    expect(
+      getComputedStyle(screen.getByTestId('sticky-note-header-title-row')).alignItems,
+    ).toBe('start');
+  });
+
   it.each([
     ['clean', 'Saved'],
     ['dirty', 'Unsaved changes'],

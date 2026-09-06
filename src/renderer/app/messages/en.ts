@@ -165,8 +165,6 @@ export const englishMessages = Object.freeze({
   'trash.moveDescription':
     '{name} can be restored from the trash until it expires.',
   'trash.moveAction': 'Move to trash',
-  'notes.header.pathLabel': 'Note path',
-  'notes.header.titleLabel': 'Note title',
   'notes.header.save.clean': 'Saved',
   'notes.header.save.dirty': 'Unsaved changes',
   'notes.header.save.saving': 'Saving',

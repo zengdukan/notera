@@ -142,8 +142,6 @@ export const chineseMessages = Object.freeze({
   'trash.moveConfirmTitle': '将内容移至回收站？',
   'trash.moveDescription': '「{name}」可在到期前从回收站恢复。',
   'trash.moveAction': '移至回收站',
-  'notes.header.pathLabel': '笔记路径',
-  'notes.header.titleLabel': '笔记标题',
   'notes.header.save.clean': '已保存',
   'notes.header.save.dirty': '有未保存的修改',
   'notes.header.save.saving': '正在保存',

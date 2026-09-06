@@ -101,8 +101,6 @@ describe('application internationalization', () => {
 
   it('defines localized sticky note header messages', () => {
     expect(messagesFor('en')).toMatchObject({
-      'notes.header.pathLabel': 'Note path',
-      'notes.header.titleLabel': 'Note title',
       'notes.header.save.clean': 'Saved',
       'notes.header.save.dirty': 'Unsaved changes',
       'notes.header.save.saving': 'Saving',
@@ -111,8 +109,6 @@ describe('application internationalization', () => {
       'notes.header.mode.edit': 'Edit',
     });
     expect(messagesFor('zh-CN')).toMatchObject({
-      'notes.header.pathLabel': '笔记路径',
-      'notes.header.titleLabel': '笔记标题',
       'notes.header.save.clean': '已保存',
       'notes.header.save.dirty': '有未保存的修改',
       'notes.header.save.saving': '正在保存',
