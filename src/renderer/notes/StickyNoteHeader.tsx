@@ -7,9 +7,7 @@ import DropdownMenu, {
 import Heading from '@atlaskit/heading';
 import AddIcon from '@atlaskit/icon/core/add';
 import ArrowRightIcon from '@atlaskit/icon/core/arrow-right';
-import CheckMarkIcon from '@atlaskit/icon/core/check-mark';
 import ClockIcon from '@atlaskit/icon/core/clock';
-import CloudArrowUpIcon from '@atlaskit/icon/core/cloud-arrow-up';
 import CopyIcon from '@atlaskit/icon/core/copy';
 import DeleteIcon from '@atlaskit/icon/core/delete';
 import DownloadIcon from '@atlaskit/icon/core/download';
@@ -20,11 +18,8 @@ import RefreshIcon from '@atlaskit/icon/core/refresh';
 import ShowMoreHorizontalIcon from '@atlaskit/icon/core/show-more-horizontal';
 import StarStarredIcon from '@atlaskit/icon/core/star-starred';
 import StarUnstarredIcon from '@atlaskit/icon/core/star-unstarred';
-import StatusErrorIcon from '@atlaskit/icon/core/status-error';
-import StatusWarningIcon from '@atlaskit/icon/core/status-warning';
 import PageHeader from '@atlaskit/page-header';
 import { Box, Inline, xcss } from '@atlaskit/primitives';
-import { token } from '@atlaskit/tokens';
 import Tooltip from '@atlaskit/tooltip';
 import { useIntl } from 'react-intl';
 
@@ -53,9 +48,13 @@ const pageHeaderStyles = xcss({
   marginBlockEnd: 'space.negative.200',
 });
 const editTitleStyles = xcss({
-  // InlineEditableTextfield renders its Field with an 8px top margin.
-  // Compensate for that internal spacing so the title aligns with Breadcrumbs.
   marginBlockStart: 'space.negative.100',
+});
+
+const saveDotStyles = xcss({
+  width: '8px',
+  height: '8px',
+  borderRadius: 'radius.full',
 });
 
 function NoteHeaderTitle({
@@ -94,23 +93,15 @@ function NoteHeaderTitle({
 
 const saveStatus = Object.freeze({
   clean: {
-    icon: CheckMarkIcon,
-    color: token('color.icon.success'),
     messageId: 'notes.header.save.clean',
   },
   dirty: {
-    icon: StatusWarningIcon,
-    color: token('color.icon.warning'),
     messageId: 'notes.header.save.dirty',
   },
   saving: {
-    icon: CloudArrowUpIcon,
-    color: token('color.icon.information'),
     messageId: 'notes.header.save.saving',
   },
   failed: {
-    icon: StatusErrorIcon,
-    color: token('color.icon.danger'),
     messageId: 'notes.header.save.failed',
   },
 } as const);
@@ -171,7 +162,6 @@ export function StickyNoteHeader({
   const displayTitle = title || intl.formatMessage({ id: 'recent.untitled' });
   const save = saveStatus[saveState];
   const saveLabel = intl.formatMessage({ id: save.messageId });
-  const SaveIcon = save.icon;
   const favoriteLabel = intl.formatMessage({
     id: isFavorite
       ? 'navigation.removeFromFavorites'
@@ -266,21 +256,27 @@ export function StickyNoteHeader({
               autoFocusTitle={autoFocusTitle}
               onTitleChange={onTitleChange}
             />
-            <Tooltip content={saveLabel}>
-              <Box
-                as="span"
-                role="status"
-                aria-live="polite"
-                aria-label={saveLabel}
-                testId="note-save-status"
-              >
-                <SaveIcon
-                  label=""
-                  color={save.color}
-                  testId={`note-save-status-icon-${saveState}`}
-                />
-              </Box>
-            </Tooltip>
+            {mode === 'edit' ? (
+              <Tooltip content={saveLabel}>
+                <Box
+                  as="span"
+                  role="status"
+                  aria-live="polite"
+                  aria-label={saveLabel}
+                  testId="note-save-status"
+                >
+                  <Box
+                    xcss={saveDotStyles}
+                    backgroundColor={
+                      saveState === 'clean'
+                        ? 'color.background.success.bold'
+                        : 'color.background.danger.bold'
+                    }
+                    testId={`note-save-status-icon-${saveState}`}
+                  />
+                </Box>
+              </Tooltip>
+            ) : null}
           </Inline>
         </PageHeader>
       </Box>

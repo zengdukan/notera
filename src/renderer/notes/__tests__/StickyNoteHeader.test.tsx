@@ -79,7 +79,7 @@ describe('StickyNoteHeader', () => {
     );
 
     expect(
-      screen.getByRole('navigation', { name: 'Note path' }),
+      screen.getByRole('navigation', { name: 'Breadcrumbs' }),
     ).toHaveTextContent('Notes');
     expect(
       screen.getByRole('heading', { name: 'Architecture', level: 1 }),
@@ -201,16 +201,16 @@ describe('StickyNoteHeader', () => {
       />,
     );
 
-    const titleEditButton = screen.getByRole('button', {
-      name: /Edit, Note title/,
-    });
+    const titleEditButton = screen.getByTestId(
+      'note-title-inline-edit--edit-button',
+    );
     await user.click(titleEditButton);
     await user.type(
-      screen.getByRole('textbox', { name: 'Note title' }),
+      screen.getByTestId('note-title-inline-edit'),
       ' updated',
     );
     expect(onTitleChange).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    await user.keyboard('{Enter}');
     expect(onTitleChange).toHaveBeenCalledWith('Draft updated');
     expect(screen.getByRole('status')).toHaveAccessibleName('Not saved');
     await user.click(screen.getByRole('button', { name: 'Retry save' }));
@@ -255,7 +255,7 @@ describe('StickyNoteHeader', () => {
       />,
     );
 
-    expect(screen.getByRole('textbox', { name: 'Note title' })).toHaveFocus();
+    expect(screen.getByTestId('note-title-inline-edit')).toHaveFocus();
   });
 
   it('localizes the history and export actions in Chinese', async () => {
