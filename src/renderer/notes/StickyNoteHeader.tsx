@@ -206,7 +206,6 @@ export function StickyNoteHeader({
                 />
               </Tooltip>
               <DropdownMenu<HTMLButtonElement>
-                shouldRenderToParent
                 trigger={({ triggerRef, ...props }) => (
                   <IconButton
                     {...props}
