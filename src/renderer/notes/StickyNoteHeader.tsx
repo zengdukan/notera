@@ -244,7 +244,7 @@ export function StickyNoteHeader({
           }
         >
           <Inline
-            alignBlock={mode === 'edit' ? 'start' : 'center'}
+            alignBlock="center"
             space="space.100"
             shouldWrap={false}
             grow="fill"

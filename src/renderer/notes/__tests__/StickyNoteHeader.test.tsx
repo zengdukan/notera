@@ -93,7 +93,7 @@ describe('StickyNoteHeader', () => {
     expect(screen.getByRole('button', { name: 'More' })).toBeVisible();
   });
 
-  it('uses compact spacing and top-aligns the editable title row', () => {
+  it('uses compact spacing and vertically centers the editable title row', () => {
     renderHeader(
       <StickyNoteHeader
         mode="edit"
@@ -115,7 +115,7 @@ describe('StickyNoteHeader', () => {
     );
     expect(
       getComputedStyle(screen.getByTestId('sticky-note-header-title-row')).alignItems,
-    ).toBe('start');
+    ).toBe('center');
   });
 
   it.each([
