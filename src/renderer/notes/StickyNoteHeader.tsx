@@ -81,22 +81,22 @@ const MORE_ACTIONS: readonly {
 }[] = Object.freeze([
   {
     id: 'create-version',
-    messageId: 'notes.header.menu.createVersion',
+    messageId: 'history.create.title',
     icon: AddIcon,
   },
   {
     id: 'history',
-    messageId: 'notes.header.menu.history',
+    messageId: 'history.title',
     icon: ClockIcon,
   },
   {
     id: 'export',
-    messageId: 'notes.header.menu.export',
+    messageId: 'export.action',
     icon: DownloadIcon,
   },
-  { id: 'move', messageId: 'notes.header.menu.move', icon: ArrowRightIcon },
-  { id: 'copy', messageId: 'notes.header.menu.copy', icon: CopyIcon },
-  { id: 'trash', messageId: 'notes.header.menu.trash', icon: DeleteIcon },
+  { id: 'move', messageId: 'navigation.move', icon: ArrowRightIcon },
+  { id: 'copy', messageId: 'navigation.copy', icon: CopyIcon },
+  { id: 'trash', messageId: 'navigation.moveToTrash', icon: DeleteIcon },
 ]);
 
 export function StickyNoteHeader({
@@ -127,15 +127,14 @@ export function StickyNoteHeader({
   readonly onMore: (action: NoteMoreAction) => void;
 }) {
   const intl = useIntl();
-  const displayTitle =
-    title || intl.formatMessage({ id: 'notes.header.untitled' });
+  const displayTitle = title || intl.formatMessage({ id: 'recent.untitled' });
   const save = saveStatus[saveState];
   const saveLabel = intl.formatMessage({ id: save.messageId });
   const SaveIcon = save.icon;
   const favoriteLabel = intl.formatMessage({
     id: isFavorite
-      ? 'notes.header.favorite.remove'
-      : 'notes.header.favorite.add',
+      ? 'navigation.removeFromFavorites'
+      : 'navigation.addToFavorites',
   });
   const modeLabel = intl.formatMessage({
     id: mode === 'edit' ? 'notes.header.mode.view' : 'notes.header.mode.edit',

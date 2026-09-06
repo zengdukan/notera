@@ -103,7 +103,6 @@ describe('application internationalization', () => {
     expect(messagesFor('en')).toMatchObject({
       'notes.header.pathLabel': 'Note path',
       'notes.header.titleLabel': 'Note title',
-      'notes.header.untitled': 'Untitled',
       'notes.header.save.clean': 'Saved',
       'notes.header.save.dirty': 'Unsaved changes',
       'notes.header.save.saving': 'Saving',
@@ -114,13 +113,36 @@ describe('application internationalization', () => {
     expect(messagesFor('zh-CN')).toMatchObject({
       'notes.header.pathLabel': '笔记路径',
       'notes.header.titleLabel': '笔记标题',
-      'notes.header.untitled': '无标题',
       'notes.header.save.clean': '已保存',
       'notes.header.save.dirty': '有未保存的修改',
       'notes.header.save.saving': '正在保存',
       'notes.header.save.failed': '未保存',
       'notes.header.mode.view': '预览',
       'notes.header.mode.edit': '编辑',
+    });
+    expect(Object.keys(englishMessages)).not.toContain('notes.header.untitled');
+    expect(Object.keys(chineseMessages)).not.toContain('notes.header.untitled');
+    expect(messagesFor('en')).toMatchObject({
+      'recent.untitled': 'Untitled',
+      'navigation.addToFavorites': 'Add to favorites',
+      'navigation.removeFromFavorites': 'Remove from favorites',
+      'history.create.title': 'Create version',
+      'history.title': 'History',
+      'export.action': 'Export',
+      'navigation.move': 'Move',
+      'navigation.copy': 'Copy',
+      'navigation.moveToTrash': 'Move to trash',
+    });
+    expect(messagesFor('zh-CN')).toMatchObject({
+      'recent.untitled': '无标题',
+      'navigation.addToFavorites': '添加收藏',
+      'navigation.removeFromFavorites': '取消收藏',
+      'history.create.title': '创建版本',
+      'history.title': '历史版本',
+      'export.action': '导出',
+      'navigation.move': '移动',
+      'navigation.copy': '复制',
+      'navigation.moveToTrash': '移至回收站',
     });
   });
 
