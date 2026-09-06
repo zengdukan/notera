@@ -229,19 +229,31 @@ describe('validated preload bridge', () => {
     const rejectionListener = addEventListener.mock.calls.find(
       ([event]) => event === 'unhandledrejection',
     )?.[1] as (event: Event) => void;
+    const uncaughtError = new TypeError('private content');
+    Object.defineProperty(uncaughtError, 'stack', {
+      value: 'TypeError: private content\n    at editor.ts:10:2',
+    });
+    const rejectionError = new RangeError('private content');
+    Object.defineProperty(rejectionError, 'stack', {
+      value: 'RangeError: private content\n    at editor.ts:20:2',
+    });
     errorListener({
-      error: new TypeError('private content'),
+      error: uncaughtError,
       message: 'failed at C:\\private\\note.txt',
     } as unknown as Event);
-    rejectionListener({
-      reason: new RangeError('private content'),
-    } as unknown as Event);
+    rejectionListener({ reason: rejectionError } as unknown as Event);
 
     expect(consoleError).toHaveBeenCalledWith(
       expect.stringContaining('renderer uncaught error type=TypeError'),
     );
     expect(consoleError).toHaveBeenCalledWith(
       expect.stringContaining('renderer unhandled rejection type=RangeError'),
+    );
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringContaining('[Notera] stack=TypeError: private content'),
+    );
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringContaining('[Notera] stack=RangeError: private content'),
     );
     consoleError.mockRestore();
     Object.defineProperty(global, 'window', {

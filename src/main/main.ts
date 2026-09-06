@@ -21,6 +21,7 @@ import { createMediaApiArgument } from '../shared/atlassian-editor/media-runtime
 import { resolveHtmlPath } from './util';
 import { createSecureWindow } from './window';
 import { createFileLogger, type FileLogger } from './file-logger';
+import { rendererConsoleDetails } from './renderer-console';
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -126,14 +127,18 @@ async function start(): Promise<void> {
     additionalArguments: [createMediaApiArgument(mediaAdapter.apiBaseUrl)],
     logger: diagnostics,
   }) as BrowserWindow;
-  mainWindow.webContents.on('console-message', (_event, level, message) => {
-    diagnostics?.log(rendererLogLevel(level), 'RENDERER_CONSOLE', {
-      sessionId: diagnosticSessionId ?? null,
-      level,
-      severity: rendererLogLevel(level),
-      message: String(message).slice(0, 512),
-    });
-  });
+  mainWindow.webContents.on(
+    'console-message',
+    (_event, level, message, line, sourceId) => {
+      const consoleDetails = rendererConsoleDetails(message, line, sourceId);
+      diagnostics?.log(rendererLogLevel(level), 'RENDERER_CONSOLE', {
+        sessionId: diagnosticSessionId ?? null,
+        level,
+        severity: rendererLogLevel(level),
+        ...consoleDetails,
+      });
+    },
+  );
   mainWindow.webContents.on('did-fail-load', (_event, errorCode) => {
     diagnostics?.error('WINDOW_DID_FAIL_LOAD', { errorCode });
   });

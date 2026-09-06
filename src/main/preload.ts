@@ -87,18 +87,24 @@ function bindEvent<E extends EventContractShape>(
 
 if (typeof window !== 'undefined') {
   window.addEventListener('error', (event) => {
+    const error = event.error instanceof Error ? event.error : undefined;
     console.error(
       `[Notera] renderer uncaught error type=${
-        event.error instanceof Error ? event.error.name : 'Error'
-      } message=${String(event.message).slice(0, 512)}`,
+        error?.name ?? 'Error'
+      } message=${String(event.message).slice(0, 512)}${
+        error?.stack === undefined ? '' : `\n[Notera] stack=${error.stack}`
+      }`,
     );
   });
   window.addEventListener('unhandledrejection', (event) => {
     const { reason } = event;
+    const error = reason instanceof Error ? reason : undefined;
     console.error(
       `[Notera] renderer unhandled rejection type=${
-        reason instanceof Error ? reason.name : typeof reason
-      }`,
+        error?.name ?? typeof reason
+      }${
+        error?.message === undefined ? '' : ` message=${error.message}`
+      }${error?.stack === undefined ? '' : `\n[Notera] stack=${error.stack}`}`,
     );
   });
 }
