@@ -41,6 +41,15 @@ async function collect(source: AsyncIterable<Uint8Array>): Promise<Uint8Array> {
   return result;
 }
 
+function expectBytesEqual(actual: Uint8Array, expected: Uint8Array): void {
+  expect(actual.byteLength).toBe(expected.byteLength);
+  expect(
+    Buffer.from(actual.buffer, actual.byteOffset, actual.byteLength).equals(
+      Buffer.from(expected.buffer, expected.byteOffset, expected.byteLength),
+    ),
+  ).toBe(true);
+}
+
 async function importBytes(
   root: string,
   plaintext: Uint8Array,
@@ -75,27 +84,30 @@ describe('authenticated blob reading', () => {
     const { store, imported } = await importBytes(root, plaintext);
     const reader = await openImported(store, imported);
 
-    await expect(collect(reader.stream())).resolves.toEqual(plaintext);
-    await expect(reader.readChunk(0)).resolves.toEqual(
+    expectBytesEqual(await collect(reader.stream()), plaintext);
+    expectBytesEqual(
+      await reader.readChunk(0),
       plaintext.slice(0, ATTACHMENT_CHUNK_BYTES),
     );
-    await expect(reader.readChunk(1)).resolves.toEqual(
+    expectBytesEqual(
+      await reader.readChunk(1),
       plaintext.slice(ATTACHMENT_CHUNK_BYTES),
     );
-    await expect(collect(reader.streamRange(31, 129))).resolves.toEqual(
+    expectBytesEqual(
+      await collect(reader.streamRange(31, 129)),
       plaintext.slice(31, 129),
     );
-    await expect(
-      collect(
+    expectBytesEqual(
+      await collect(
         reader.streamRange(
           ATTACHMENT_CHUNK_BYTES - 19,
           ATTACHMENT_CHUNK_BYTES + 23,
         ),
       ),
-    ).resolves.toEqual(
       plaintext.slice(ATTACHMENT_CHUNK_BYTES - 19, ATTACHMENT_CHUNK_BYTES + 23),
     );
-    await expect(collect(reader.streamRange(10, 10))).resolves.toEqual(
+    expectBytesEqual(
+      await collect(reader.streamRange(10, 10)),
       new Uint8Array(),
     );
 
