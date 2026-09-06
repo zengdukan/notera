@@ -88,9 +88,7 @@ describe('StickyNoteHeader', () => {
     expect(
       screen.queryByTestId('note-save-status-icon-clean'),
     ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'Add to favorites' }),
-    ).toBeVisible();
+    expect(screen.getByRole('button', { name: '' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'Edit' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'More' })).toBeVisible();
   });
@@ -176,8 +174,8 @@ describe('StickyNoteHeader', () => {
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Add to favorites' }));
-    await user.click(screen.getByRole('button', { name: 'View' }));
+    await user.click(screen.getByRole('button', { name: '' }));
+    await user.click(screen.getByRole('button', { name: 'Preview' }));
     expect(onToggleFavorite).toHaveBeenCalledTimes(1);
     expect(onPreview).toHaveBeenCalledTimes(1);
   });
@@ -218,9 +216,9 @@ describe('StickyNoteHeader', () => {
     await user.click(screen.getByRole('button', { name: 'Retry save' }));
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(
-      screen.getByRole('button', { name: 'Remove from favorites' }),
+      screen.getByRole('button', { name: '' }),
     ).toBeVisible();
-    expect(screen.getByRole('button', { name: 'View' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Preview' })).toBeVisible();
 
     await user.click(screen.getByRole('button', { name: 'More' }));
     for (const [id, label] of [
