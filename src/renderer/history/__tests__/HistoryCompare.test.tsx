@@ -117,11 +117,17 @@ describe('HistoryCompare', () => {
     expect(screen.getByText('2 of 3')).toBeVisible();
 
     const documentContainer = screen.getByTestId('history-diff-document');
+    const compareRegion = screen.getByRole('region', {
+      name: 'Version comparison',
+    });
     const toolbar = screen.getByTestId('history-diff-toolbar');
     const documentStyles = window.getComputedStyle(documentContainer);
+    const compareStyles = window.getComputedStyle(compareRegion);
     const toolbarStyles = window.getComputedStyle(toolbar);
     expect(documentStyles.maxHeight).not.toBe('440px');
     expect(documentStyles.overflow).not.toBe('auto');
+    expect(compareStyles.overflow).toBe('auto');
+    expect(compareRegion).toHaveClass('fabric-editor-popup-scroll-parent');
     expect(toolbarStyles.position).toBe('sticky');
 
     expect(editor).toHaveBeenCalledWith(

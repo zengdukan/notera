@@ -62,6 +62,9 @@ export function HistoryCompare({
     <Box
       as="section"
       aria-label={intl.formatMessage({ id: 'history.compare.region' })}
+      ref={(element) => {
+        element?.classList.add('fabric-editor-popup-scroll-parent');
+      }}
       xcss={compareStyles}
     >
       <Box testId="history-diff-document" xcss={documentStyles}>
@@ -160,6 +163,7 @@ const compareStyles = xcss({
   minWidth: '0',
   minHeight: '0',
   flexGrow: 1,
+  overflow: 'auto',
 });
 const documentStyles = xcss({
   minWidth: '0',
