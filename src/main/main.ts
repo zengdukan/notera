@@ -21,6 +21,7 @@ import { createMediaApiArgument } from '../shared/atlassian-editor/media-runtime
 import { resolveHtmlPath } from './util';
 import { createSecureWindow } from './window';
 import { createFileLogger, type FileLogger } from './file-logger';
+import { rendererExceptionDetails } from './renderer-exception';
 import { rendererConsoleDetails } from './renderer-console';
 
 protocol.registerSchemesAsPrivileged([
@@ -137,10 +138,38 @@ async function start(): Promise<void> {
     );
     diagnostics?.log(rendererLogLevel(details.level), 'RENDERER_CONSOLE', {
       sessionId: diagnosticSessionId ?? null,
-      level: details.level,
+      rendererLevel: details.level,
       severity: rendererLogLevel(details.level),
       ...consoleDetails,
     });
+  });
+  const rendererDebugger = mainWindow.webContents.debugger;
+  const onRendererDebuggerMessage = (
+    _event: unknown,
+    method: string,
+    params: unknown,
+  ): void => {
+    if (method !== 'Runtime.exceptionThrown') return;
+    const exception = rendererExceptionDetails(params);
+    if (exception === undefined) return;
+    diagnostics?.log('ERROR', 'RENDERER_EXCEPTION', {
+      sessionId: diagnosticSessionId ?? null,
+      message: exception.message,
+      stack: exception.stack,
+      line: exception.line,
+      sourceId: exception.sourceId,
+    });
+  };
+  rendererDebugger.on('message', onRendererDebuggerMessage);
+  try {
+    if (!rendererDebugger.isAttached()) rendererDebugger.attach('1.3');
+    rendererDebugger.sendCommand('Runtime.enable').catch(() => undefined);
+  } catch {
+    // Renderer exception diagnostics are best effort when DevTools is attached.
+  }
+  mainWindow.on('closed', () => {
+    rendererDebugger.removeListener('message', onRendererDebuggerMessage);
+    if (rendererDebugger.isAttached()) rendererDebugger.detach();
   });
   mainWindow.webContents.on('did-fail-load', (_event, errorCode) => {
     diagnostics?.error('WINDOW_DID_FAIL_LOAD', { errorCode });
