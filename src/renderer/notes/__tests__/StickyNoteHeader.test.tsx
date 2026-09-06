@@ -176,11 +176,17 @@ describe('StickyNoteHeader', () => {
       />,
     );
 
+    const titleEditButton = screen.getByRole('button', {
+      name: /Edit, Note title/,
+    });
+    await user.click(titleEditButton);
     await user.type(
       screen.getByRole('textbox', { name: 'Note title' }),
       ' updated',
     );
-    expect(onTitleChange).toHaveBeenCalled();
+    expect(onTitleChange).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(onTitleChange).toHaveBeenCalledWith('Draft updated');
     expect(screen.getByRole('status')).toHaveAccessibleName('Not saved');
     await user.click(screen.getByRole('button', { name: 'Retry save' }));
     expect(onRetry).toHaveBeenCalledTimes(1);

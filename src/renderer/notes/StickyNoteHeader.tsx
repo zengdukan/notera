@@ -15,6 +15,7 @@ import DeleteIcon from '@atlaskit/icon/core/delete';
 import DownloadIcon from '@atlaskit/icon/core/download';
 import EditIcon from '@atlaskit/icon/core/edit';
 import EyeOpenIcon from '@atlaskit/icon/core/eye-open';
+import InlineEditableTextfield from '@atlaskit/inline-edit/inline-editable-textfield';
 import RefreshIcon from '@atlaskit/icon/core/refresh';
 import ShowMoreHorizontalIcon from '@atlaskit/icon/core/show-more-horizontal';
 import StarStarredIcon from '@atlaskit/icon/core/star-starred';
@@ -68,12 +69,13 @@ function NoteHeaderTitle({
   return (
     <Box xcss={titleStyles}>
       {mode === 'edit' ? (
-        <Textfield
+        <InlineEditableTextfield
+          defaultValue={title}
           aria-label={titleLabel}
-          autoFocus={autoFocusTitle}
-          appearance="none"
-          value={title}
-          onChange={(event) => onTitleChange(event.currentTarget.value)}
+          onConfirm={(value) => onTitleChange(value)}
+          placeholder={displayTitle}
+          startWithEditViewOpen={autoFocusTitle}
+          testId="note-title-inline-edit"
         />
       ) : (
         <Heading size="medium" as="h1">
