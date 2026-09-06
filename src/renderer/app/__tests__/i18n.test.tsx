@@ -99,6 +99,31 @@ describe('application internationalization', () => {
     });
   });
 
+  it('defines localized sticky note header messages', () => {
+    expect(messagesFor('en')).toMatchObject({
+      'notes.header.pathLabel': 'Note path',
+      'notes.header.titleLabel': 'Note title',
+      'notes.header.untitled': 'Untitled',
+      'notes.header.save.clean': 'Saved',
+      'notes.header.save.dirty': 'Unsaved changes',
+      'notes.header.save.saving': 'Saving',
+      'notes.header.save.failed': 'Not saved',
+      'notes.header.mode.view': 'View',
+      'notes.header.mode.edit': 'Edit',
+    });
+    expect(messagesFor('zh-CN')).toMatchObject({
+      'notes.header.pathLabel': '笔记路径',
+      'notes.header.titleLabel': '笔记标题',
+      'notes.header.untitled': '无标题',
+      'notes.header.save.clean': '已保存',
+      'notes.header.save.dirty': '有未保存的修改',
+      'notes.header.save.saving': '正在保存',
+      'notes.header.save.failed': '未保存',
+      'notes.header.mode.view': '预览',
+      'notes.header.mode.edit': '编辑',
+    });
+  });
+
   it('includes Chinese messages required by rendered editor content', () => {
     expect(messagesFor('zh-CN')).toMatchObject({
       'fabric.editor.fieldsetLabel': '操作项列表',

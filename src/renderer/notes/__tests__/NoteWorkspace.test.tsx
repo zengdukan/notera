@@ -152,7 +152,7 @@ describe('NoteWorkspace', () => {
 
     await user.type(screen.getByRole('textbox', { name: 'Note title' }), ' v2');
     await user.click(screen.getByRole('button', { name: 'Change document' }));
-    await user.click(screen.getByRole('button', { name: 'Preview' }));
+    await user.click(screen.getByRole('button', { name: 'View' }));
 
     await waitFor(() =>
       expect(screen.getByLabelText('Renderer surface')).toHaveTextContent(
@@ -175,10 +175,10 @@ describe('NoteWorkspace', () => {
     await screen.findByLabelText('Editor surface');
 
     await user.click(screen.getByRole('button', { name: 'Change document' }));
-    await user.click(screen.getByRole('button', { name: 'Preview' }));
+    await user.click(screen.getByRole('button', { name: 'View' }));
 
     await waitFor(() =>
-      expect(screen.getByRole('status')).toHaveTextContent('Not saved'),
+      expect(screen.getByRole('status')).toHaveAccessibleName('Not saved'),
     );
     expect(screen.getByLabelText('Editor surface')).toBeVisible();
   });

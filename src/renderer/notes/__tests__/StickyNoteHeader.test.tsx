@@ -79,12 +79,75 @@ describe('StickyNoteHeader', () => {
       screen.getByRole('navigation', { name: 'Note path' }),
     ).toHaveTextContent('Notes');
     expect(screen.getByRole('heading', { name: 'Architecture' })).toBeVisible();
-    expect(screen.getByRole('status')).toHaveTextContent('Saved');
+    expect(screen.getByRole('status')).toHaveAccessibleName('Saved');
+    expect(screen.getByTestId('note-save-status-icon-clean')).toBeVisible();
     expect(
       screen.getByRole('button', { name: 'Add to favorites' }),
     ).toBeVisible();
     expect(screen.getByRole('button', { name: 'Edit' })).toBeVisible();
     expect(screen.getByRole('button', { name: 'More' })).toBeVisible();
+  });
+
+  it.each([
+    ['clean', 'Saved'],
+    ['dirty', 'Unsaved changes'],
+    ['saving', 'Saving'],
+    ['failed', 'Not saved'],
+  ] as const)(
+    'renders the %s save state as an accessible icon',
+    (saveState, label) => {
+      renderHeader(
+        <StickyNoteHeader
+          mode="preview"
+          title="Architecture"
+          path={paths}
+          saveState={saveState}
+          isFavorite={false}
+          onTitleChange={jest.fn()}
+          onToggleFavorite={jest.fn()}
+          onEdit={jest.fn()}
+          onPreview={jest.fn()}
+          onMore={jest.fn()}
+        />,
+      );
+
+      expect(screen.getByRole('status')).toHaveAccessibleName(label);
+      expect(
+        screen.getByTestId(`note-save-status-icon-${saveState}`),
+      ).toBeVisible();
+      expect(screen.getByRole('status')).toHaveAttribute('aria-live', 'polite');
+    },
+  );
+
+  it('places the save indicator after the title and wires icon actions', async () => {
+    const user = userEvent.setup();
+    const onToggleFavorite = jest.fn();
+    const onEdit = jest.fn();
+    renderHeader(
+      <StickyNoteHeader
+        mode="preview"
+        title="Architecture"
+        path={paths}
+        saveState="clean"
+        isFavorite={false}
+        onTitleChange={jest.fn()}
+        onToggleFavorite={onToggleFavorite}
+        onEdit={onEdit}
+        onPreview={jest.fn()}
+        onMore={jest.fn()}
+      />,
+    );
+
+    const heading = screen.getByRole('heading', { name: 'Architecture' });
+    const status = screen.getByRole('status');
+    expect(heading.compareDocumentPosition(status)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Add to favorites' }));
+    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    expect(onToggleFavorite).toHaveBeenCalledTimes(1);
+    expect(onEdit).toHaveBeenCalledTimes(1);
   });
 
   it('edits the title and exposes the complete product menu in edit mode', async () => {
@@ -113,13 +176,13 @@ describe('StickyNoteHeader', () => {
       ' updated',
     );
     expect(onTitleChange).toHaveBeenCalled();
-    expect(screen.getByRole('status')).toHaveTextContent('Not saved');
+    expect(screen.getByRole('status')).toHaveAccessibleName('Not saved');
     await user.click(screen.getByRole('button', { name: 'Retry save' }));
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(
       screen.getByRole('button', { name: 'Remove from favorites' }),
     ).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Preview' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'View' })).toBeVisible();
 
     await user.click(screen.getByRole('button', { name: 'More' }));
     for (const [id, label] of [
@@ -177,11 +240,12 @@ describe('StickyNoteHeader', () => {
       'zh-CN',
     );
 
-    await user.click(screen.getByRole('button', { name: 'More' }));
+    await user.click(screen.getByRole('button', { name: '更多' }));
     expect(
       await screen.findByRole('menuitem', { name: '创建版本' }),
     ).toBeVisible();
     expect(screen.getByRole('menuitem', { name: '历史版本' })).toBeVisible();
     expect(screen.getByRole('menuitem', { name: '导出' })).toBeVisible();
+    expect(screen.getByRole('button', { name: '编辑' })).toBeVisible();
   });
 });
