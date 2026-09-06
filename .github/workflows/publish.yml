@@ -15,8 +15,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-13
-            build_args: --mac --x64
           - os: macos-latest
             build_args: --mac --arm64
           - os: windows-latest
