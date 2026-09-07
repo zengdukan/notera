@@ -44,7 +44,8 @@ const headerStyles = xcss({
   borderBlockEndColor: 'color.border',
   borderBlockEndStyle: 'solid',
   borderBlockEndWidth: 'border.width',
-  paddingBlock: 'space.0',
+  paddingBlockStart: 'space.100',
+  paddingBlockEnd: 'space.0',
   paddingInline: 'space.200',
 });
 const pageHeaderStyles = xcss({
