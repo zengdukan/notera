@@ -23,6 +23,7 @@ const styles = cssMap({
   main: {
     width: '100%',
     maxWidth: '1200px',
+    minHeight: 'calc(100vh - 72px)',
     marginInline: 'auto',
     boxSizing: 'border-box',
     display: 'grid',

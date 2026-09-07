@@ -37,6 +37,22 @@ function deferred<T>() {
 }
 
 describe('ProfileAccessPage', () => {
+  it('fills the viewport below the header so desktop content can center vertically', () => {
+    render(
+      <AppProviders locale="en">
+        <ProfileAccessPage
+          profiles={profiles}
+          onCreate={jest.fn()}
+          onUnlock={jest.fn()}
+        />
+      </AppProviders>,
+    );
+
+    expect(getComputedStyle(screen.getByRole('main')).minHeight).toBe(
+      'calc(100vh - 72px)',
+    );
+  });
+
   it('switches between same-page unlock and create forms without cancel', async () => {
     const user = userEvent.setup();
     render(
