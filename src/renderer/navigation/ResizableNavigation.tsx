@@ -365,8 +365,12 @@ export function ResizableNavigation({
               onSettings={onSettings}
             />
             <SideNavToggleButton
-              collapseLabel={intl.formatMessage({ id: 'navigation.collapseSidebar' })}
-              expandLabel={intl.formatMessage({ id: 'navigation.expandSidebar' })}
+              collapseLabel={intl.formatMessage({
+                id: 'navigation.collapseSidebar',
+              })}
+              expandLabel={intl.formatMessage({
+                id: 'navigation.expandSidebar',
+              })}
             />
           </Inline>
         </SideNavHeader>
@@ -447,7 +451,10 @@ export function ResizableNavigation({
             </Box>
           </Box>
         </SideNavBody>
-        <SideNavPanelSplitter label="Resize navigation" />
+        <SideNavPanelSplitter
+          label="Resize navigation"
+          testId="notera-side-nav-splitter"
+        />
       </SideNav>
       <Main>
         <Box xcss={mainLayoutStyles}>

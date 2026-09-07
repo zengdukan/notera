@@ -9,6 +9,16 @@
   }
 }
 
+/*
+ * PanelSplitter uses the same base display:none utility as the editor. Keep
+ * its responsive display rule from being overridden when editor CSS loads.
+ */
+@media (min-width: 48rem) {
+  [data-testid='notera-side-nav-splitter-container'][class] {
+    display: block;
+  }
+}
+
 [data-testid='notera-notes-menu-section'] {
   display: flex;
   flex-direction: column;

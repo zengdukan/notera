@@ -150,6 +150,10 @@ describe('ResizableNavigation', () => {
     });
     expect(sideNav).toBeInTheDocument();
     expect(screen.getByTestId('notera-expanded-side-nav')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('notera-side-nav-splitter-container'),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('notera-side-nav-splitter')).toBeInTheDocument();
     expect(within(sideNav).getByRole('list')).toBeVisible();
     expect(screen.getByText('Content tree')).toBeVisible();
     expect(screen.getByText('Central workspace')).toBeVisible();
