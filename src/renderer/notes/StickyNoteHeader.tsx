@@ -217,7 +217,7 @@ export function StickyNoteHeader({
                 <IconButton
                   appearance="subtle"
                   icon={FavoriteIcon}
-                  label=""
+                  label={favoriteLabel}
                   onClick={onToggleFavorite}
                 />
               </Tooltip>
@@ -225,7 +225,7 @@ export function StickyNoteHeader({
                 <IconButton
                   appearance="subtle"
                   icon={PageSizeIcon}
-                  label=""
+                  label={pageSizeLabel}
                   onClick={() => onPageSizeChange(nextPageSize)}
                 />
               </Tooltip>

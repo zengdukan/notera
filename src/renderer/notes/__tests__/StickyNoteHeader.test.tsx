@@ -321,7 +321,9 @@ describe('StickyNoteHeader', () => {
       />,
     );
 
-    const widthButton = screen.getByRole('button', { name: 'Switch to A3' });
+    const widthButton = screen.getByRole('button', {
+      name: 'Swtich to WidePage width',
+    });
     expect(widthButton).toBeVisible();
     await user.click(widthButton);
     expect(onPageSizeChange).toHaveBeenCalledWith('A3');

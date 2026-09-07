@@ -107,6 +107,8 @@ describe('application internationalization', () => {
       'notes.header.save.failed': 'Not saved',
       'notes.header.mode.view': 'Preview',
       'notes.header.mode.edit': 'Edit',
+      'notes.header.pageSize.narrow': 'Switch to StandardPage width',
+      'notes.header.pageSize.wide': 'Swtich to WidePage width',
     });
     expect(messagesFor('zh-CN')).toMatchObject({
       'notes.header.save.clean': '已保存',
@@ -115,6 +117,8 @@ describe('application internationalization', () => {
       'notes.header.save.failed': '未保存',
       'notes.header.mode.view': '预览',
       'notes.header.mode.edit': '编辑',
+      'notes.header.pageSize.narrow': '切换到标准页',
+      'notes.header.pageSize.wide': '切换到宽页',
     });
     expect(Object.keys(englishMessages)).not.toContain('notes.header.untitled');
     expect(Object.keys(chineseMessages)).not.toContain('notes.header.untitled');
