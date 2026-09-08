@@ -21,6 +21,8 @@ function setup() {
   let permissionCheck:
     | ((webContents: unknown, permission: string) => boolean)
     | undefined;
+  let readyToShow: (() => void) | undefined;
+  const lifecycleOrder: string[] = [];
   const session = {
     setPermissionRequestHandler: jest.fn((handler) => {
       permissionRequest = handler;
@@ -31,8 +33,11 @@ function setup() {
   };
   const window = {
     loadURL: jest.fn(async () => undefined),
-    on: jest.fn(),
-    show: jest.fn(),
+    on: jest.fn((event: string, listener: () => void) => {
+      if (event === 'ready-to-show') readyToShow = listener;
+    }),
+    show: jest.fn(() => lifecycleOrder.push('show')),
+    maximize: jest.fn(() => lifecycleOrder.push('maximize')),
     minimize: jest.fn(),
     webContents: {
       session,
@@ -66,6 +71,7 @@ function setup() {
     window,
     options,
     shell,
+    lifecycleOrder,
     get navigate() {
       if (navigate === undefined) throw new Error('Navigate handler missing.');
       return navigate;
@@ -84,10 +90,23 @@ function setup() {
         throw new Error('Permission check missing.');
       return permissionCheck;
     },
+    get readyToShow() {
+      if (readyToShow === undefined)
+        throw new Error('Ready-to-show handler missing.');
+      return readyToShow;
+    },
   };
 }
 
 describe('secure BrowserWindow', () => {
+  const originalStartMinimized = process.env.START_MINIMIZED;
+
+  afterEach(() => {
+    if (originalStartMinimized === undefined)
+      delete process.env.START_MINIMIZED;
+    else process.env.START_MINIMIZED = originalStartMinimized;
+  });
+
   it('keeps the initial content viewport above the ADS desktop navigation breakpoint', () => {
     const state = setup();
 
@@ -96,6 +115,29 @@ describe('secure BrowserWindow', () => {
       minWidth: 1120,
       height: 728,
     });
+  });
+
+  it('maximizes the window before showing it on normal startup', () => {
+    delete process.env.START_MINIMIZED;
+    const state = setup();
+
+    state.readyToShow();
+
+    expect(state.window.maximize).toHaveBeenCalledTimes(1);
+    expect(state.window.show).toHaveBeenCalledTimes(1);
+    expect(state.window.minimize).not.toHaveBeenCalled();
+    expect(state.lifecycleOrder).toEqual(['maximize', 'show']);
+  });
+
+  it('keeps explicit minimized startup from maximizing or showing the window', () => {
+    process.env.START_MINIMIZED = '1';
+    const state = setup();
+
+    state.readyToShow();
+
+    expect(state.window.minimize).toHaveBeenCalledTimes(1);
+    expect(state.window.maximize).not.toHaveBeenCalled();
+    expect(state.window.show).not.toHaveBeenCalled();
   });
 
   it('sets all five explicit web security options and loads the app entry', () => {

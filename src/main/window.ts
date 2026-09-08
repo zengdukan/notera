@@ -2,6 +2,7 @@ export interface SecureWindowPort {
   loadURL(url: string): Promise<unknown> | unknown;
   on(event: string, listener: () => void): void;
   show(): void;
+  maximize(): void;
   minimize(): void;
   readonly webContents: {
     readonly session: {
@@ -132,7 +133,10 @@ export function createSecureWindow(input: {
   );
   window.on('ready-to-show', () => {
     if (process.env.START_MINIMIZED) window.minimize();
-    else window.show();
+    else {
+      window.maximize();
+      window.show();
+    }
   });
   Promise.resolve(window.loadURL(input.entryUrl)).catch((error: unknown) => {
     input.logger?.error('WINDOW_LOAD_FAILED', {
