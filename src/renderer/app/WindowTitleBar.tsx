@@ -79,6 +79,7 @@ export function WindowTitleBar({ client }: { readonly client: NoteraClient }) {
           icon={CrossIcon}
           label={intl.formatMessage({ id: 'window.close' })}
           onClick={() => invoke('app.closeWindow')}
+          testId="notera-window-close"
         />
       </TopNavEnd>
     </TopNav>

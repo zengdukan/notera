@@ -34,6 +34,9 @@ describe('WindowTitleBar', () => {
 
     expect(screen.getByText('Notera')).toBeVisible();
     expect(screen.getByTestId('notera-window-title-bar')).toBeInTheDocument();
+    expect(screen.getByTestId('notera-window-close')).toBe(
+      screen.getByRole('button', { name: 'Close window' }),
+    );
 
     await user.click(screen.getByRole('button', { name: 'Minimize window' }));
     await user.click(
@@ -56,6 +59,12 @@ describe('WindowTitleBar', () => {
 
     expect(css).toMatch(
       /\[data-testid='notera-window-title-bar'\]\s+nav\s*>\s*\[role='list'\]\s*\{[^}]*display:\s*flex;/su,
+    );
+    expect(css).toMatch(
+      /\[data-testid='notera-window-close'\]:hover\s*\{[^}]*color:\s*var\(--ds-text-inverse\);[^}]*background-color:\s*var\(--ds-background-danger-bold\);/su,
+    );
+    expect(css).toMatch(
+      /\[data-testid='notera-window-close'\]:active\s*\{[^}]*background-color:\s*var\(--ds-background-danger-bold-pressed\);/su,
     );
   });
 
