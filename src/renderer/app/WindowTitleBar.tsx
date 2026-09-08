@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { cssMap } from '@atlaskit/css';
-import CloseIcon from '@atlaskit/icon/core/close';
+import CrossIcon from '@atlaskit/icon/core/cross';
 import MaximizeIcon from '@atlaskit/icon/core/maximize';
 import MinimizeIcon from '@atlaskit/icon/core/minimize';
 import Image from '@atlaskit/image';
@@ -32,10 +32,7 @@ const dragRegionStyle = {
 export function WindowTitleBar({ client }: { readonly client: NoteraClient }) {
   const intl = useIntl();
   const invoke = (
-    key:
-      | 'app.minimizeWindow'
-      | 'app.toggleMaximizeWindow'
-      | 'app.closeWindow',
+    key: 'app.minimizeWindow' | 'app.toggleMaximizeWindow' | 'app.closeWindow',
   ) => {
     void client.request(key, {}).catch(() => undefined);
   };
@@ -78,7 +75,7 @@ export function WindowTitleBar({ client }: { readonly client: NoteraClient }) {
           onClick={() => invoke('app.toggleMaximizeWindow')}
         />
         <EndItem
-          icon={CloseIcon}
+          icon={CrossIcon}
           label={intl.formatMessage({ id: 'window.close' })}
           onClick={() => invoke('app.closeWindow')}
         />

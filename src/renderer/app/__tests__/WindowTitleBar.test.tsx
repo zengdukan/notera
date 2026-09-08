@@ -56,9 +56,11 @@ describe('WindowTitleBar', () => {
     expect(screen.getByRole('button', { name: '关闭窗口' })).toBeVisible();
     const dragRegion = screen.getByTestId('notera-window-drag-region');
     expect(
-      (dragRegion.style as CSSStyleDeclaration & {
-        WebkitAppRegion?: string;
-      }).WebkitAppRegion,
+      (
+        dragRegion.style as CSSStyleDeclaration & {
+          WebkitAppRegion?: string;
+        }
+      ).WebkitAppRegion,
     ).toBe('drag');
   });
 
