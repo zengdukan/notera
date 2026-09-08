@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useState } from 'react';
+import { useColorMode, useSetColorMode } from '@atlaskit/app-provider';
 import ModalDialog, {
   ModalHeader,
   ModalTitle,
@@ -13,6 +14,20 @@ export interface HostedModal {
   readonly width?: number | 'small' | 'medium' | 'large' | 'x-large';
 }
 
+function PortalColorModeSync({
+  colorMode,
+}: {
+  readonly colorMode: 'light' | 'dark';
+}) {
+  const setPortalColorMode = useSetColorMode();
+
+  useEffect(
+    () => setPortalColorMode(colorMode),
+    [colorMode, setPortalColorMode],
+  );
+  return null;
+}
+
 export function ModalHost({
   modal,
   onClose,
@@ -21,6 +36,7 @@ export function ModalHost({
   readonly onClose: () => void;
 }) {
   const [open, setOpen] = useState(modal !== null);
+  const colorMode = useColorMode();
 
   useEffect(() => setOpen(modal !== null), [modal]);
 
@@ -37,6 +53,7 @@ export function ModalHost({
           }}
           shouldReturnFocus
         >
+          <PortalColorModeSync colorMode={colorMode} />
           <ModalHeader hasCloseButton>
             <ModalTitle>{modal.title}</ModalTitle>
           </ModalHeader>
