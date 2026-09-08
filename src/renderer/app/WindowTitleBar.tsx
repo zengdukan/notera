@@ -12,7 +12,6 @@ import {
 } from '@atlaskit/navigation-system/layout/top-nav';
 import { EndItem } from '@atlaskit/navigation-system/top-nav-items';
 import { Box, Inline, Text } from '@atlaskit/primitives/compiled';
-import Tile from '@atlaskit/tile';
 import { useIntl } from 'react-intl';
 
 import logoSrc from '../../../assets/icon.svg';
@@ -43,13 +42,7 @@ export function WindowTitleBar({ client }: { readonly client: NoteraClient }) {
     <TopNav testId="notera-window-title-bar">
       <TopNavStart sideNavToggleButton={null}>
         <Inline alignBlock="center" space="space.100">
-          <Tile
-            label=""
-            size="small"
-            backgroundColor="color.background.brand.bold"
-          >
-            <Image src={logoSrc} alt="" width="16" height="16" />
-          </Tile>
+          <Image src={logoSrc} alt="" width="24" height="24" />
           <Text weight="semibold">
             {intl.formatMessage({ id: 'app.name' })}
           </Text>
