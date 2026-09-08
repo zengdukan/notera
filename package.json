@@ -20,7 +20,7 @@
     "type": "git",
     "url": "git+https://github.com/zengdukan/notera.git"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": {
     "name": "zengdukan",
     "email": "zengdukan@163.com"

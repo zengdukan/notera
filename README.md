@@ -149,7 +149,11 @@ Become a sponsor and get your logo on our README on Github with a link to your s
 
 ## License
 
-MIT © [Electron React Boilerplate](https://github.com/electron-react-boilerplate)
+Licensed under the [Apache License 2.0](LICENSE) © [zengdukan](https://github.com/zengdukan).
+
+This project includes portions derived from
+[Electron React Boilerplate](https://github.com/electron-react-boilerplate)
+under the MIT License. See [NOTICE](NOTICE) for attribution details.
 
 [github-actions-status]: https://github.com/electron-react-boilerplate/electron-react-boilerplate/workflows/Test/badge.svg
 [github-actions-url]: https://github.com/electron-react-boilerplate/electron-react-boilerplate/actions
