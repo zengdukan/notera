@@ -58,62 +58,9 @@ describe('ProfileAccessPage', () => {
     expect(rootStyle.height).toBe('100%');
     expect(rootStyle.overflowY).toBe('auto');
     expect(contentStyle.minHeight).toBe('100%');
-    expect(screen.getByRole('button', { name: 'English' })).toBeDisabled();
-  });
-
-  it('places language selection inside the access panel without a second brand header', async () => {
-    const user = userEvent.setup();
-    const request = jest.fn(async (key: string) => {
-      if (key === 'settings.updateDevice') {
-        return { theme: 'SYSTEM', language: 'zh-CN' };
-      }
-      return {};
-    });
-    const client = { request } as never;
-    render(
-      <AppProviders locale="en">
-        <ProfileAccessPage
-          client={client}
-          profiles={profiles}
-          onCreate={jest.fn()}
-          onUnlock={jest.fn()}
-        />
-      </AppProviders>,
-    );
-
-    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
-    const panel = screen.getByTestId('profile-access-panel');
-    const languageButton = screen.getByRole('button', { name: 'English' });
-    expect(panel).toContainElement(languageButton);
-
-    await user.click(languageButton);
-    await user.click(screen.getByRole('menuitem', { name: '简体中文' }));
-    expect(request).toHaveBeenCalledWith('settings.updateDevice', {
-      language: 'zh-CN',
-    });
-  });
-
-  it('shows an ADS error flag when changing the language fails', async () => {
-    const user = userEvent.setup();
-    const client = {
-      request: jest.fn().mockRejectedValue(new Error('settings unavailable')),
-    } as never;
-    render(
-      <AppProviders locale="en">
-        <ProfileAccessPage
-          client={client}
-          profiles={profiles}
-          onCreate={jest.fn()}
-          onUnlock={jest.fn()}
-        />
-      </AppProviders>,
-    );
-
-    await user.click(screen.getByRole('button', { name: 'English' }));
-    await user.click(screen.getByRole('menuitem', { name: '简体中文' }));
-
-    expect(await screen.findByText('Could not update language.')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'English' })).toBeEnabled();
+    expect(
+      screen.queryByRole('button', { name: 'English' }),
+    ).not.toBeInTheDocument();
   });
 
   it('switches between same-page unlock and create forms without cancel', async () => {

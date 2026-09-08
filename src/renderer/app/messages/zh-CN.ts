@@ -276,7 +276,7 @@ export const chineseMessages = Object.freeze({
   'fabric.media.errorFlagTitle': '文件上传失败',
   'fabric.media.uploadRejectionFlagDescription':
     '{fileName} 太大，无法上传。文件必须小于 {limit}。',
-  'profile.language.error': '语言更新失败。',
+  'window.language.error': '语言更新失败。',
   'navigation.lockProfile': '锁定 Profile',
   'navigation.expandSidebar': '展开侧边栏',
   'navigation.collapseSidebar': '收起侧边栏',

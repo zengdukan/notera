@@ -17,6 +17,7 @@ import { useIntl } from 'react-intl';
 
 import logoSrc from '../../../assets/icon.svg';
 import type { NoteraClient } from '../platform/notera-client';
+import { WindowLanguageSwitcher } from './WindowLanguageSwitcher';
 import './WindowTitleBar.css';
 
 const styles = cssMap({
@@ -65,6 +66,7 @@ export function WindowTitleBar({ client }: { readonly client: NoteraClient }) {
         label={intl.formatMessage({ id: 'window.controls' })}
         showMoreButtonLabel={intl.formatMessage({ id: 'window.controls' })}
       >
+        <WindowLanguageSwitcher client={client} />
         <EndItem
           icon={MinimizeIcon}
           label={intl.formatMessage({ id: 'window.minimize' })}

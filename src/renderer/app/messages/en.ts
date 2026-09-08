@@ -308,7 +308,7 @@ export const englishMessages = Object.freeze({
   'fabric.media.errorFlagTitle': 'Your file failed to upload',
   'fabric.media.uploadRejectionFlagDescription':
     '{fileName} is too big to upload. Files must be less than {limit}.',
-  'profile.language.error': 'Could not update language.',
+  'window.language.error': 'Could not update language.',
   'navigation.lockProfile': 'Lock profile',
   'navigation.expandSidebar': 'Expand sidebar',
   'navigation.collapseSidebar': 'Collapse sidebar',
