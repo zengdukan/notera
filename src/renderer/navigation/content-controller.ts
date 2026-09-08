@@ -123,7 +123,7 @@ export function createContentController(input: {
         );
       const created = await input.client.request('note.create', {
         folderId,
-        title: '',
+        title: 'Untitled',
       });
       await invalidateTree(folderId);
       const summary = noteSummary(created);

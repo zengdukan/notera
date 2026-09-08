@@ -15,7 +15,7 @@ const note = {
 };
 
 describe('content controller', () => {
-  it('creates an empty-title note in context and selects it for editing', async () => {
+  it('creates an Untitled note in context and selects it for editing', async () => {
     const request = jest.fn(async () => ({
       ...note,
       document: { type: 'doc', version: 1 },
@@ -37,7 +37,7 @@ describe('content controller', () => {
     await controller.createNote();
     expect(request).toHaveBeenCalledWith('note.create', {
       folderId: 'parent',
-      title: '',
+      title: 'Untitled',
     });
     expect(select).toHaveBeenCalledWith(note);
     expect(beginEditing).toHaveBeenCalledWith('note');
