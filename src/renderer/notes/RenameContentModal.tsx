@@ -1,5 +1,5 @@
 import Button from '@atlaskit/button/new';
-import Form, { Field } from '@atlaskit/form';
+import Form, { ErrorMessage, Field, MessageWrapper } from '@atlaskit/form';
 import { ModalBody, ModalFooter } from '@atlaskit/modal-dialog';
 import Textfield from '@atlaskit/textfield';
 
@@ -7,16 +7,14 @@ const RENAME_CONTENT_FORM_ID = 'notera-rename-content-form';
 
 export function RenameContentModal({
   initialName,
-  allowBlank = false,
   onRename,
 }: {
   readonly initialName: string;
-  readonly allowBlank?: boolean;
   readonly onRename: (name: string) => Promise<void> | void;
 }) {
   return (
     <Form<{ name: string }>
-      onSubmit={async ({ name }) => onRename(allowBlank ? name : name.trim())}
+      onSubmit={async ({ name }) => onRename(name.trim())}
     >
       {({ formProps, submitting }) => (
         <>
@@ -26,14 +24,21 @@ export function RenameContentModal({
                 name="name"
                 label="Name"
                 defaultValue={initialName}
+                isRequired
                 validate={(value) =>
-                  !allowBlank &&
-                  (typeof value !== 'string' || value.trim().length === 0)
+                  typeof value !== 'string' || value.trim().length === 0
                     ? 'Name is required'
                     : undefined
                 }
               >
-                {({ fieldProps }) => <Textfield {...fieldProps} autoFocus />}
+                {({ fieldProps, error }) => (
+                  <>
+                    <Textfield {...fieldProps} autoFocus />
+                    <MessageWrapper>
+                      {error ? <ErrorMessage>{error}</ErrorMessage> : null}
+                    </MessageWrapper>
+                  </>
+                )}
               </Field>
             </form>
           </ModalBody>

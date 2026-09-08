@@ -93,7 +93,7 @@ describe('content operation modal bodies', () => {
     expect(onSubmit).toHaveBeenCalledWith('target');
   });
 
-  it('submits rename from the modal footer', async () => {
+  it('rejects a blank name and submits a trimmed rename', async () => {
     const user = userEvent.setup();
     const onRename = jest.fn();
     renderContentModal(
@@ -102,13 +102,25 @@ describe('content operation modal bodies', () => {
 
     const input = screen.getByRole('textbox', { name: 'Name' });
     await user.clear(input);
-    await user.type(input, 'Final');
+    await user.type(input, '   ');
     await user.click(
       within(
         screen.getByTestId('notera-modal-content-operation--footer'),
       ).getByRole('button', { name: 'Rename' }),
     );
 
+    expect(onRename).not.toHaveBeenCalled();
+    expect(screen.getByText('Name is required')).toBeVisible();
+
+    await user.clear(input);
+    await user.type(input, ' Final ');
+    await user.click(
+      within(
+        screen.getByTestId('notera-modal-content-operation--footer'),
+      ).getByRole('button', { name: 'Rename' }),
+    );
+
+    expect(onRename).toHaveBeenCalledTimes(1);
     expect(onRename).toHaveBeenCalledWith('Final');
   });
 });

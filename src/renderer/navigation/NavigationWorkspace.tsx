@@ -486,7 +486,6 @@ function UnlockedNavigationWorkspace({
                 ? overlay.entry.name
                 : overlay.entry.title
             }
-            allowBlank={overlay.entry.kind === 'note'}
             onRename={async (name) => {
               await controller.rename(overlay.entry, name);
               setOverlay(undefined);

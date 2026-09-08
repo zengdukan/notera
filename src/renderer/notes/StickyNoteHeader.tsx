@@ -86,6 +86,7 @@ function NoteHeaderTitle({
           hideActionButtons
           startWithEditViewOpen={autoFocusTitle}
           testId="note-title-inline-edit"
+          isRequired
         />
       ) : (
         <Heading size="medium" as="h1">
