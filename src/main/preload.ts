@@ -201,6 +201,11 @@ const noteraApi = {
   },
   app: {
     completeClose: bindRequest(requestContracts['app.completeClose']),
+    minimizeWindow: bindRequest(requestContracts['app.minimizeWindow']),
+    toggleMaximizeWindow: bindRequest(
+      requestContracts['app.toggleMaximizeWindow'],
+    ),
+    closeWindow: bindRequest(requestContracts['app.closeWindow']),
   },
   events: {
     onProfileLocked: bindEvent(eventContracts['profile.locked']),

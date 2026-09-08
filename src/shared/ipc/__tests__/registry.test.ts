@@ -1,8 +1,8 @@
 import { eventContracts, requestContracts } from '../registry';
 
 describe('IPC contract registry', () => {
-  it('registers exactly 64 requests and 4 events', () => {
-    expect(Object.keys(requestContracts)).toHaveLength(64);
+  it('registers exactly 67 requests and 4 events', () => {
+    expect(Object.keys(requestContracts)).toHaveLength(67);
     expect(Object.keys(eventContracts)).toHaveLength(4);
   });
 

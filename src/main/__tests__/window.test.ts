@@ -111,6 +111,7 @@ describe('secure BrowserWindow', () => {
     const state = setup();
 
     expect(state.options).toMatchObject({
+      frame: false,
       width: 1280,
       minWidth: 1120,
       height: 728,
@@ -144,6 +145,7 @@ describe('secure BrowserWindow', () => {
     const state = setup();
     expect(state.created).toBe(state.window);
     expect(state.options).toMatchObject({
+      frame: false,
       webPreferences: {
         preload: 'D:\\app\\preload.js',
         additionalArguments: [

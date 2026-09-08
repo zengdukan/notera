@@ -114,6 +114,11 @@ export interface NoteraApi {
   };
   readonly app: {
     readonly completeClose: InvokeMethod<Request<'app.completeClose'>>;
+    readonly minimizeWindow: InvokeMethod<Request<'app.minimizeWindow'>>;
+    readonly toggleMaximizeWindow: InvokeMethod<
+      Request<'app.toggleMaximizeWindow'>
+    >;
+    readonly closeWindow: InvokeMethod<Request<'app.closeWindow'>>;
   };
   readonly events: {
     readonly onProfileLocked: SubscribeMethod<Event<'profile.locked'>>;

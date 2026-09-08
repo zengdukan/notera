@@ -20,4 +20,33 @@ export const appCompleteClose = defineRequestContract({
   errors: ['INVALID_ENTITY_STATE', 'IPC_OPERATION_FAILED'],
 });
 
-export const appContracts = { completeClose: appCompleteClose } as const;
+export const appMinimizeWindow = defineRequestContract({
+  key: 'app.minimizeWindow',
+  channel: 'notera:app:minimize-window',
+  request: emptyObjectSchema,
+  data: emptyObjectSchema,
+  errors: ['IPC_OPERATION_FAILED'],
+});
+
+export const appToggleMaximizeWindow = defineRequestContract({
+  key: 'app.toggleMaximizeWindow',
+  channel: 'notera:app:toggle-maximize-window',
+  request: emptyObjectSchema,
+  data: emptyObjectSchema,
+  errors: ['IPC_OPERATION_FAILED'],
+});
+
+export const appCloseWindow = defineRequestContract({
+  key: 'app.closeWindow',
+  channel: 'notera:app:close-window',
+  request: emptyObjectSchema,
+  data: emptyObjectSchema,
+  errors: ['IPC_OPERATION_FAILED'],
+});
+
+export const appContracts = {
+  completeClose: appCompleteClose,
+  minimizeWindow: appMinimizeWindow,
+  toggleMaximizeWindow: appToggleMaximizeWindow,
+  closeWindow: appCloseWindow,
+} as const;

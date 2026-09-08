@@ -59,6 +59,7 @@ export function createRuntimeWindowFake() {
   const close = jest.fn(() => {
     listeners.get('close')?.({ preventDefault: jest.fn() });
   });
+  let maximized = false;
   const window = {
     isDestroyed: () => destroyed,
     on: jest.fn(
@@ -78,6 +79,14 @@ export function createRuntimeWindowFake() {
       },
     ),
     close,
+    minimize: jest.fn(),
+    maximize: jest.fn(() => {
+      maximized = true;
+    }),
+    unmaximize: jest.fn(() => {
+      maximized = false;
+    }),
+    isMaximized: jest.fn(() => maximized),
     webContents: {
       id: 7,
       mainFrame: { routingId: 11 },
@@ -92,6 +101,9 @@ export function createRuntimeWindowFake() {
     listeners,
     destroy: () => {
       destroyed = true;
+    },
+    setMaximized: (value: boolean) => {
+      maximized = value;
     },
   };
 }

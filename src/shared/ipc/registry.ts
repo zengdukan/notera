@@ -5,7 +5,13 @@ import {
   attachmentStartImport,
   attachmentStartSaveAs,
 } from './contracts/attachment';
-import { appCloseRequested, appCompleteClose } from './contracts/app';
+import {
+  appCloseRequested,
+  appCloseWindow,
+  appCompleteClose,
+  appMinimizeWindow,
+  appToggleMaximizeWindow,
+} from './contracts/app';
 import {
   batchAddTags,
   batchCopy,
@@ -153,6 +159,9 @@ export const requestContracts = {
   'settings.getProfile': settingsGetProfile,
   'settings.updateProfile': settingsUpdateProfile,
   'app.completeClose': appCompleteClose,
+  'app.minimizeWindow': appMinimizeWindow,
+  'app.toggleMaximizeWindow': appToggleMaximizeWindow,
+  'app.closeWindow': appCloseWindow,
 } as const;
 
 export const eventContracts = {

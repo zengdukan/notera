@@ -61,6 +61,10 @@ export interface RuntimeWindow {
     listener: (event: { preventDefault(): void }) => void,
   ): void;
   close(): void;
+  minimize(): void;
+  maximize(): void;
+  unmaximize(): void;
+  isMaximized(): boolean;
   readonly webContents: {
     readonly id: number;
     readonly mainFrame: { readonly routingId: number };
@@ -291,7 +295,10 @@ export async function createMainRuntime(input: {
         getUnlockedProfileId(() => manager.getSessionState()),
       activity: autoLock,
     }),
-    ...createAppBindings({ closeController: windowClose }),
+    ...createAppBindings({
+      closeController: windowClose,
+      window: input.window,
+    }),
   ]);
   assertEnabledBindings(bindings);
 

@@ -40,6 +40,7 @@ export interface WindowDiagnosticLogger {
 export interface BrowserWindowFactory {
   create(options: {
     readonly show: boolean;
+    readonly frame: false;
     readonly width: number;
     readonly minWidth: number;
     readonly height: number;
@@ -95,6 +96,7 @@ export function createSecureWindow(input: {
 }): SecureWindowPort {
   const window = input.factory.create({
     show: false,
+    frame: false,
     width: 1280,
     minWidth: 1120,
     height: 728,
