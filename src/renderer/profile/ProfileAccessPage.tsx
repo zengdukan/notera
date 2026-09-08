@@ -19,11 +19,13 @@ const styles = cssMap({
   root: {
     minHeight: '100vh',
     backgroundColor: 'var(--ds-surface-sunken)',
+    display: 'grid',
+    gridTemplateRows: 'auto minmax(0, 1fr)',
   },
   main: {
     width: '100%',
     maxWidth: '1200px',
-    minHeight: 'calc(100vh - 72px)',
+    minHeight: '0',
     marginInline: 'auto',
     boxSizing: 'border-box',
     display: 'grid',

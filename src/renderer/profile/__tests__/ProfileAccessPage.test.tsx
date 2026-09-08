@@ -48,9 +48,11 @@ describe('ProfileAccessPage', () => {
       </AppProviders>,
     );
 
-    expect(getComputedStyle(screen.getByRole('main')).minHeight).toBe(
-      'calc(100vh - 72px)',
-    );
+    const main = screen.getByRole('main');
+    const rootStyle = getComputedStyle(main.parentElement as HTMLElement);
+    expect(rootStyle.display).toBe('grid');
+    expect(rootStyle.gridTemplateRows).toBe('auto minmax(0,1fr)');
+    expect(getComputedStyle(main).minHeight).toBe('0');
   });
 
   it('switches between same-page unlock and create forms without cancel', async () => {
