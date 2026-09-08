@@ -1,5 +1,7 @@
 /** @jest-environment jsdom */
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Main } from '@atlaskit/navigation-system/layout/main';
@@ -44,6 +46,17 @@ describe('WindowTitleBar', () => {
       ['app.toggleMaximizeWindow', {}],
       ['app.closeWindow', {}],
     ]);
+  });
+
+  it('keeps the ADS desktop action list visible in the Electron title bar', () => {
+    const css = readFileSync(
+      join(__dirname, '..', 'WindowTitleBar.css'),
+      'utf8',
+    );
+
+    expect(css).toMatch(
+      /\[data-testid='notera-window-title-bar'\]\s+nav\s*>\s*\[role='list'\]\s*\{[^}]*display:\s*flex;/su,
+    );
   });
 
   it('localizes control labels and marks the center as draggable', () => {

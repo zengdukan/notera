@@ -17,6 +17,7 @@ import { useIntl } from 'react-intl';
 
 import logoSrc from '../../../assets/icon.svg';
 import type { NoteraClient } from '../platform/notera-client';
+import './WindowTitleBar.css';
 
 const styles = cssMap({
   dragRegion: {
