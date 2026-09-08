@@ -15,7 +15,6 @@ import SettingsIcon from '@atlaskit/icon/core/settings';
 import SidebarExpandIcon from '@atlaskit/icon/core/sidebar-expand';
 import StarIcon from '@atlaskit/icon/core/star-unstarred';
 import { Main } from '@atlaskit/navigation-system/layout/main';
-import { Root } from '@atlaskit/navigation-system/layout/root';
 import {
   SideNav,
   SideNavBody,
@@ -343,7 +342,7 @@ export function ResizableNavigation({
   );
 
   return (
-    <Root defaultSideNavCollapsed={false} isSideNavShortcutEnabled>
+    <>
       <SideNav
         testId={
           isSideNavCollapsedOnDesktop ? undefined : 'notera-expanded-side-nav'
@@ -466,6 +465,6 @@ export function ResizableNavigation({
           <Box xcss={centralWorkspaceStyles}>{children}</Box>
         </Box>
       </Main>
-    </Root>
+    </>
   );
 }

@@ -13,6 +13,10 @@ export const englishMessages = Object.freeze({
   'app.fatalRecovery':
     'Close Notera, then reopen it to try again. No repair or reset action is performed here.',
   'app.close': 'Close app',
+  'window.controls': 'Window controls',
+  'window.minimize': 'Minimize window',
+  'window.toggleMaximize': 'Maximize or restore window',
+  'window.close': 'Close window',
   'profile.hero.eyebrow': 'NOTERA · LOCAL ENCRYPTED NOTES',
   'profile.hero.title': 'Your notes stay on this device.',
   'profile.hero.description':
@@ -173,7 +177,7 @@ export const englishMessages = Object.freeze({
   'notes.header.mode.view': 'Preview',
   'notes.header.mode.edit': 'Edit',
   'notes.header.pageSize.narrow': 'Switch to StandardPage width',
-  'notes.header.pageSize.wide': 'Swtich to WidePage width',
+  'notes.header.pageSize.wide': 'Switch to WidePage width',
   'notes.header.more': 'More',
   'settings.title': 'Settings',
   'settings.tabs.general': 'General',

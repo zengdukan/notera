@@ -41,7 +41,7 @@ export type NotePageSize = 'A4' | 'A3';
 const workspaceStyles = xcss({
   display: 'flex',
   flexDirection: 'column',
-  height: '100vh',
+  height: '100%',
   minWidth: '0',
   overflow: 'hidden',
   backgroundColor: 'elevation.surface',

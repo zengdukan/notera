@@ -3,6 +3,7 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { IntlProvider } from 'react-intl';
+import { Root } from '@atlaskit/navigation-system/layout/root';
 
 import { type AppLocale, messagesFor } from '../../app/i18n';
 import { configureFeatureFlags } from '../../atlassian-editor/feature-flags';
@@ -54,13 +55,15 @@ function renderNavigation(locale: AppLocale = 'en') {
   };
   const result = render(
     <IntlProvider locale={locale} messages={messagesFor(locale)}>
-      <ResizableNavigation
-        profileName="Personal Notes"
-        tree={<div>Content tree</div>}
-        {...callbacks}
-      >
-        <div>Central workspace</div>
-      </ResizableNavigation>
+      <Root defaultSideNavCollapsed={false} isSideNavShortcutEnabled>
+        <ResizableNavigation
+          profileName="Personal Notes"
+          tree={<div>Content tree</div>}
+          {...callbacks}
+        >
+          <div>Central workspace</div>
+        </ResizableNavigation>
+      </Root>
     </IntlProvider>,
   );
   return { ...result, callbacks };
