@@ -4,14 +4,14 @@
   "workspaces": [
     "packages/*"
   ],
-  "description": "A foundation for scalable desktop apps",
+  "description": "Notera is a local-first, encrypted note-taking application",
   "keywords": [
     "electron",
-    "boilerplate",
+    "encrypted",
+    "note",
     "react",
     "typescript",
     "ts",
-    "sass",
     "webpack",
     "hot",
     "reload"
@@ -278,9 +278,6 @@
       "repo": "notera",
       "releaseType": "release"
     }
-  },
-  "collective": {
-    "url": "https://opencollective.com/electron-react-boilerplate-594"
   },
   "devEngines": {
     "runtime": {
