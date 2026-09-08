@@ -10,6 +10,7 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { appBuilderPath } from 'app-builder-bin';
 import sharp from 'sharp';
 
 const candidatesRoot = path.join(
@@ -25,12 +26,17 @@ const candidateNames = [
 ] as const;
 const allowedColors = new Set(['#0c66e4', '#1558bc', '#172b4d', '#f7f8f9']);
 const exportedSizes = [1024, 256, 64, 32, 16] as const;
+const activeIconSizes = [16, 24, 32, 48, 64, 96, 128, 256, 512, 1024] as const;
 
 function readCandidateSvg(candidateName: string): string {
   return readFileSync(
     path.join(candidatesRoot, candidateName, 'icon.svg'),
     'utf8',
   );
+}
+
+function hashFile(filePath: string): string {
+  return createHash('sha256').update(readFileSync(filePath)).digest('hex');
 }
 
 describe('Notera icon candidate masters', () => {
@@ -124,6 +130,97 @@ describe('Notera icon candidate exports', () => {
       expect(result.status).toBe(1);
       expect(result.stderr).toContain('Stale icon candidate exports:');
       expect(result.stderr).toContain('vault-n/icon-1024.png');
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('active Notera application icon', () => {
+  const selectedCandidateRoot = path.join(candidatesRoot, 'sealed-note');
+  const activeIconsRoot = path.join(process.cwd(), 'assets', 'icons');
+
+  it('uses Sealed Note as its editable master', () => {
+    expect(hashFile(path.join(process.cwd(), 'assets', 'icon.svg'))).toBe(
+      hashFile(path.join(selectedCandidateRoot, 'icon.svg')),
+    );
+  });
+
+  it.each(activeIconSizes)('provides a transparent %d px application PNG', async (size) => {
+    const metadata = await sharp(
+      path.join(activeIconsRoot, `${size}x${size}.png`),
+    ).metadata();
+
+    expect(metadata).toEqual(
+      expect.objectContaining({
+        width: size,
+        height: size,
+        format: 'png',
+        hasAlpha: true,
+      }),
+    );
+  });
+
+  it('keeps the generic application PNG aligned with the selected candidate', () => {
+    const selectedPng = path.join(selectedCandidateRoot, 'icon-256.png');
+
+    expect(hashFile(path.join(process.cwd(), 'assets', 'icon.png'))).toBe(
+      hashFile(selectedPng),
+    );
+    expect(hashFile(path.join(activeIconsRoot, '256x256.png'))).toBe(
+      hashFile(selectedPng),
+    );
+  });
+
+  it('packages every Windows-native size in the active ICO', () => {
+    const ico = readFileSync(path.join(process.cwd(), 'assets', 'icon.ico'));
+    const entryCount = ico.readUInt16LE(4);
+    const entries = Array.from({ length: entryCount }, (_, index) => {
+      const entryOffset = 6 + index * 16;
+      const size = ico[entryOffset] || 256;
+      const payloadLength = ico.readUInt32LE(entryOffset + 8);
+      const payloadOffset = ico.readUInt32LE(entryOffset + 12);
+
+      return {
+        size,
+        payload: ico.subarray(payloadOffset, payloadOffset + payloadLength),
+      };
+    });
+
+    expect(entries.map((entry) => entry.size)).toEqual([
+      16, 24, 32, 48, 64, 96, 128, 256,
+    ]);
+    for (const entry of entries) {
+      expect(
+        createHash('sha256').update(entry.payload).digest('hex'),
+      ).toBe(hashFile(path.join(activeIconsRoot, `${entry.size}x${entry.size}.png`)));
+    }
+  });
+
+  it('keeps the ICNS artifact reproducible from the active PNG set', () => {
+    const temporaryRoot = mkdtempSync(path.join(tmpdir(), 'notera-platform-icons-'));
+
+    try {
+      const result = spawnSync(
+        appBuilderPath,
+        [
+          'icon',
+          '--format',
+          'icns',
+          '--root',
+          process.cwd(),
+          '--out',
+          temporaryRoot,
+          '--input',
+          path.join('assets', 'icons'),
+        ],
+        { cwd: process.cwd(), encoding: 'utf8' },
+      );
+
+      expect(result.status).toBe(0);
+      expect(hashFile(path.join(temporaryRoot, 'icon.icns'))).toBe(
+        hashFile(path.join(process.cwd(), 'assets', 'icon.icns')),
+      );
     } finally {
       rmSync(temporaryRoot, { recursive: true, force: true });
     }
