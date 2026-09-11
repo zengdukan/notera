@@ -1,9 +1,4 @@
-import {
-  app,
-  BrowserWindow,
-  Menu,
-  type MenuItemConstructorOptions,
-} from 'electron';
+import { BrowserWindow, globalShortcut, Menu } from 'electron';
 
 export default class MenuBuilder {
   private readonly mainWindow: BrowserWindow;
@@ -12,7 +7,7 @@ export default class MenuBuilder {
     this.mainWindow = mainWindow;
   }
 
-  buildMenu(): Menu {
+  buildMenu(): void {
     if (
       process.env.NODE_ENV === 'development' ||
       process.env.DEBUG_PROD === 'true'
@@ -31,62 +26,23 @@ export default class MenuBuilder {
       });
     }
 
-    const template: MenuItemConstructorOptions[] = [
-      ...(process.platform === 'darwin'
-        ? [
-            {
-              label: 'Notera',
-              submenu: [
-                { role: 'about' as const },
-                { type: 'separator' as const },
-                { role: 'hide' as const },
-                { role: 'hideOthers' as const },
-                { role: 'unhide' as const },
-                { type: 'separator' as const },
-                { role: 'quit' as const },
-              ],
-            },
-          ]
-        : []),
-      {
-        label: 'File',
-        submenu: [
-          {
-            label: 'Close',
-            accelerator: 'CmdOrCtrl+W',
-            click: () => this.mainWindow.close(),
-          },
-          {
-            label: 'Quit',
-            accelerator: 'CmdOrCtrl+Q',
-            click: () => app.quit(),
-          },
-        ],
-      },
-      {
-        label: 'Edit',
-        submenu: [
-          { role: 'undo' },
-          { role: 'redo' },
-          { type: 'separator' },
-          { role: 'cut' },
-          { role: 'copy' },
-          { role: 'paste' },
-          { role: 'selectAll' },
-        ],
-      },
-      {
-        label: 'View',
-        submenu: [
-          ...(process.env.NODE_ENV === 'development'
-            ? [{ role: 'reload' as const }, { role: 'toggleDevTools' as const }]
-            : []),
-          { role: 'togglefullscreen' },
-        ],
-      },
-    ];
-    const menu = Menu.buildFromTemplate(template);
-    Menu.setApplicationMenu(menu);
-    return menu;
+    Menu.setApplicationMenu(null);
+
+    if (process.env.NODE_ENV === 'development') {
+      globalShortcut.register('CmdOrCtrl+R', () => {
+        if (!this.mainWindow.isDestroyed()) {
+          this.mainWindow.reload();
+        }
+      });
+      globalShortcut.register('CmdOrCtrl+Shift+I', () => {
+        if (!this.mainWindow.isDestroyed()) {
+          this.mainWindow.webContents.toggleDevTools();
+        }
+      });
+      this.mainWindow.on('closed', () => {
+        globalShortcut.unregister('CmdOrCtrl+R');
+        globalShortcut.unregister('CmdOrCtrl+Shift+I');
+      });
+    }
   }
 }
