@@ -79,6 +79,7 @@ function setup(initialState: SessionState = { state: 'LOCKED' }) {
       confirmRemove: jest.fn(async () => true),
     },
     logger: { error: jest.fn() },
+    nativeTheme: { setThemeSource: jest.fn() },
     randomUUID: () => {
       random += 1;
       return uuid(random);

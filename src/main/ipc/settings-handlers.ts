@@ -1,19 +1,40 @@
-import { ApplicationError, type PreferencesStore } from '@notera/application';
+import {
+  ApplicationError,
+  type PreferencesStore,
+  type ThemePreference,
+} from '@notera/application';
 
 import type { SessionCommandGate } from './local-notes-handlers';
 import { defineIpcBinding, type IpcBinding } from './router';
+
+export interface NativeThemePort {
+  setThemeSource(source: 'system' | 'light' | 'dark'): void;
+}
+
+export function nativeThemeSource(
+  preference: ThemePreference,
+): 'system' | 'light' | 'dark' {
+  if (preference === 'LIGHT') return 'light';
+  if (preference === 'DARK') return 'dark';
+  return 'system';
+}
 
 export function createSettingsBindings(input: {
   readonly preferences: PreferencesStore;
   readonly gate: SessionCommandGate;
   readonly getLocalProfileId: () => string;
   readonly activity: { touchActivity(): void };
+  readonly nativeTheme: NativeThemePort;
 }): readonly IpcBinding[] {
   return Object.freeze([
     defineIpcBinding('settings.getDevice', () => input.preferences.getDevice()),
-    defineIpcBinding('settings.updateDevice', (value) =>
-      input.preferences.updateDevice(value),
-    ),
+    defineIpcBinding('settings.updateDevice', async (value) => {
+      const result = await input.preferences.updateDevice(value);
+      if (result.theme !== undefined) {
+        input.nativeTheme.setThemeSource(nativeThemeSource(result.theme));
+      }
+      return result;
+    }),
     defineIpcBinding('settings.getProfile', () =>
       input.gate.run(() =>
         input.preferences.getProfile(input.getLocalProfileId()),

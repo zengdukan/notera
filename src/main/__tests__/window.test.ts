@@ -1,5 +1,6 @@
 import {
   createSecureWindow,
+  windowBackgroundColor,
   type BrowserWindowFactory,
   type SecureWindowPort,
 } from '../window';
@@ -214,5 +215,82 @@ describe('secure BrowserWindow', () => {
     expect(state.permissionCheck({}, 'clipboard-read')).toBe(true);
     expect(state.permissionCheck({}, 'clipboard-sanitized-write')).toBe(true);
     expect(state.permissionCheck({}, 'clipboard-write')).toBe(true);
+  });
+
+  it('passes backgroundColor to the factory when provided', () => {
+    const window = {
+      loadURL: jest.fn(async () => undefined),
+      on: jest.fn(),
+      show: jest.fn(),
+      maximize: jest.fn(),
+      minimize: jest.fn(),
+      webContents: {
+        session: {
+          setPermissionRequestHandler: jest.fn(),
+          setPermissionCheckHandler: jest.fn(),
+        },
+        on: jest.fn(),
+        setWindowOpenHandler: jest.fn(),
+      },
+    } as unknown as SecureWindowPort;
+    let options: Record<string, unknown> | undefined;
+    const factory: BrowserWindowFactory = {
+      create: jest.fn((value) => {
+        options = value as unknown as Record<string, unknown>;
+        return window;
+      }),
+    };
+    const shell = { openExternal: jest.fn(async () => undefined) };
+    createSecureWindow({
+      factory,
+      shell,
+      preloadPath: 'D:\\app\\preload.js',
+      entryUrl: 'https://notera.local/index.html',
+      backgroundColor: '#1B2638',
+    });
+    expect(options).toMatchObject({ backgroundColor: '#1B2638' });
+  });
+
+  it('omits backgroundColor when not provided', () => {
+    const window = {
+      loadURL: jest.fn(async () => undefined),
+      on: jest.fn(),
+      show: jest.fn(),
+      maximize: jest.fn(),
+      minimize: jest.fn(),
+      webContents: {
+        session: {
+          setPermissionRequestHandler: jest.fn(),
+          setPermissionCheckHandler: jest.fn(),
+        },
+        on: jest.fn(),
+        setWindowOpenHandler: jest.fn(),
+      },
+    } as unknown as SecureWindowPort;
+    let options: Record<string, unknown> | undefined;
+    const factory: BrowserWindowFactory = {
+      create: jest.fn((value) => {
+        options = value as unknown as Record<string, unknown>;
+        return window;
+      }),
+    };
+    const shell = { openExternal: jest.fn(async () => undefined) };
+    createSecureWindow({
+      factory,
+      shell,
+      preloadPath: 'D:\\app\\preload.js',
+      entryUrl: 'https://notera.local/index.html',
+    });
+    expect(options).not.toHaveProperty('backgroundColor');
+  });
+});
+
+describe('windowBackgroundColor', () => {
+  it('returns dark surface for dark mode', () => {
+    expect(windowBackgroundColor(true)).toBe('#1B2638');
+  });
+
+  it('returns white for light mode', () => {
+    expect(windowBackgroundColor(false)).toBe('#FFFFFF');
   });
 });

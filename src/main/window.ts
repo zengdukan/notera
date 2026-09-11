@@ -43,6 +43,7 @@ export interface BrowserWindowFactory {
     readonly width: number;
     readonly minWidth: number;
     readonly height: number;
+    readonly backgroundColor?: string;
     readonly icon?: string;
     readonly webPreferences: {
       readonly preload: string;
@@ -84,6 +85,10 @@ function allowsNavigation(entryUrl: string, candidateUrl: string): boolean {
   }
 }
 
+export function windowBackgroundColor(shouldUseDarkColors: boolean): string {
+  return shouldUseDarkColors ? '#1B2638' : '#FFFFFF';
+}
+
 export function createSecureWindow(input: {
   readonly factory: BrowserWindowFactory;
   readonly shell: ExternalShellPort;
@@ -91,6 +96,7 @@ export function createSecureWindow(input: {
   readonly entryUrl: string;
   readonly iconPath?: string;
   readonly additionalArguments?: readonly string[];
+  readonly backgroundColor?: string;
   readonly logger?: WindowDiagnosticLogger;
 }): SecureWindowPort {
   const window = input.factory.create({
@@ -98,6 +104,9 @@ export function createSecureWindow(input: {
     width: 1280,
     minWidth: 1120,
     height: 728,
+    ...(input.backgroundColor === undefined
+      ? {}
+      : { backgroundColor: input.backgroundColor }),
     ...(input.iconPath === undefined ? {} : { icon: input.iconPath }),
     webPreferences: {
       preload: input.preloadPath,

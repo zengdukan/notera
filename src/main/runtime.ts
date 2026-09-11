@@ -32,6 +32,7 @@ import {
 import {
   createSettingsBindings,
   getUnlockedProfileId,
+  type NativeThemePort,
 } from './ipc/settings-handlers';
 import {
   registerIpcBindings,
@@ -83,6 +84,7 @@ export interface MainElectronPorts {
   readonly scheduler: SchedulerPort & PdfHostSchedulerPort;
   readonly confirmation: ProfileRemovalConfirmation;
   readonly logger: AutoLockLogger;
+  readonly nativeTheme: NativeThemePort;
   readonly diagnostics?: FileLogger;
   readonly diagnosticSessionId?: string;
   readonly randomUUID: () => string;
@@ -290,6 +292,7 @@ export async function createMainRuntime(input: {
       getLocalProfileId: () =>
         getUnlockedProfileId(() => manager.getSessionState()),
       activity: autoLock,
+      nativeTheme: input.electron.nativeTheme,
     }),
     ...createAppBindings({ closeController: windowClose }),
   ]);

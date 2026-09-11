@@ -1,6 +1,9 @@
 import type { PreferencesStore } from '@notera/application';
 import type { SessionCommandGate } from '../local-notes-handlers';
-import { createSettingsBindings } from '../settings-handlers';
+import {
+  createSettingsBindings,
+  nativeThemeSource,
+} from '../settings-handlers';
 
 const profileId = '10000000-0000-4000-8000-000000000001';
 
@@ -20,11 +23,13 @@ describe('settings IPC handlers', () => {
       },
     };
     const activity = { touchActivity: jest.fn() };
+    const setThemeSource = jest.fn();
     const bindings = createSettingsBindings({
       preferences,
       gate,
       getLocalProfileId: () => profileId,
       activity,
+      nativeTheme: { setThemeSource },
     });
     const invoke = (key: string, value: unknown) => {
       const found = bindings.find((binding) => binding.key === key);
@@ -46,5 +51,12 @@ describe('settings IPC handlers', () => {
       autoLockMinutes: 5,
     });
     expect(activity.touchActivity).toHaveBeenCalledTimes(1);
+    expect(setThemeSource).toHaveBeenCalledWith('dark');
+  });
+
+  it('maps theme preferences to native theme sources', () => {
+    expect(nativeThemeSource('SYSTEM')).toBe('system');
+    expect(nativeThemeSource('LIGHT')).toBe('light');
+    expect(nativeThemeSource('DARK')).toBe('dark');
   });
 });

@@ -8,6 +8,7 @@ import {
   clipboard,
   dialog,
   ipcMain,
+  nativeTheme,
   powerMonitor,
   protocol,
   shell,
@@ -20,10 +21,11 @@ import type { MediaAdapterServer } from './media-adapter/server';
 import { createMainRuntime, type MainRuntime } from './runtime';
 import { createMediaApiArgument } from '../shared/atlassian-editor/media-runtime';
 import { resolveHtmlPath } from './util';
-import { createSecureWindow } from './window';
+import { createSecureWindow, windowBackgroundColor } from './window';
 import { createFileLogger, type FileLogger } from './file-logger';
 import { rendererExceptionDetails } from './renderer-exception';
 import { rendererConsoleDetails } from './renderer-console';
+import { nativeThemeSource } from './ipc/settings-handlers';
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -106,6 +108,9 @@ async function start(): Promise<void> {
   const entryUrl = resolveHtmlPath('index.html');
   const exportPageUrl = resolveHtmlPath('export.html');
   manager = await createProfileManager({ appDataRoot });
+  nativeTheme.themeSource = nativeThemeSource(
+    manager.preferences.getDevice().theme,
+  );
   mediaAdapter = await startElectronMediaAdapter({
     manager,
     allowedOrigin: new URL(entryUrl).origin,
@@ -129,6 +134,7 @@ async function start(): Promise<void> {
     entryUrl,
     iconPath,
     additionalArguments: [createMediaApiArgument(mediaAdapter.apiBaseUrl)],
+    backgroundColor: windowBackgroundColor(nativeTheme.shouldUseDarkColors),
     logger: diagnostics,
   }) as BrowserWindow;
   ipcMain.handle('notera:clipboard.writeText', (_event, text: string) => {
@@ -281,6 +287,11 @@ async function start(): Promise<void> {
         },
       },
       logger: { error: fixedLog },
+      nativeTheme: {
+        setThemeSource: (source) => {
+          nativeTheme.themeSource = source;
+        },
+      },
       diagnostics,
       diagnosticSessionId,
       randomUUID,
