@@ -2,12 +2,3 @@
 [data-testid='notera-window-title-bar'] nav > [role='list'] {
   display: flex;
 }
-
-[data-testid='notera-window-close']:hover {
-  color: var(--ds-text-inverse);
-  background-color: var(--ds-background-danger-bold);
-}
-
-[data-testid='notera-window-close']:active {
-  background-color: var(--ds-background-danger-bold-pressed);
-}
