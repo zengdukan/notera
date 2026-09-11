@@ -26,7 +26,9 @@ describe('app window IPC handlers', () => {
       action: 'proceed' as const,
     };
 
-    await expect(state.invoke('app.completeClose', value)).resolves.toEqual({});
+    await expect(
+      state.invoke('app.completeClose', value),
+    ).resolves.toEqual({});
     expect(state.closeController.complete).toHaveBeenCalledWith(value);
   });
 
