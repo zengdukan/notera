@@ -64,7 +64,7 @@ export interface ProductEditorProps {
 
 export function Editor({
   mediaProvider,
-  document,
+  document: editorDocument,
   appearance = EDITOR_APPEARANCE,
   diff,
   disabled = false,
@@ -237,13 +237,20 @@ export function Editor({
       <ComposableEditor
         allowUndoRedoButtons
         appearance={appearance}
-        defaultValue={document}
+        defaultValue={editorDocument}
         disabled={disabled}
         emojiProvider={emojiProvider}
         extensionProviders={[mathExtensionProvider, mermaidExtensionProvider]}
         media={mediaOptions}
         onChange={handleChange}
         onEditorReady={handleEditorReady}
+        // Toolbar dropdowns render inline by default. The full-page toolbar is
+        // horizontally scrollable, so inline popups are clipped by its
+        // overflow box. Mount editor popups at the document body to let
+        // Atlaskit's positioning layer render them above the toolbar.
+        popupsMountPoint={
+          typeof window === 'undefined' ? undefined : window.document.body
+        }
         preset={preset}
         primaryToolbarComponents={primaryToolbarComponents}
         quickInsert={!disabled}

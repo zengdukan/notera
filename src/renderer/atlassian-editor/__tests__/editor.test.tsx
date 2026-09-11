@@ -54,6 +54,7 @@ jest.mock('@atlaskit/editor-core/composable-editor', () => ({
     featureFlags?: { twoLineEditorToolbar?: boolean };
     onChange(): void;
     onEditorReady(actions: typeof mockEditorActions): void;
+    popupsMountPoint?: HTMLElement;
     quickInsert?: boolean;
   }) => {
     const React = jest.requireActual<typeof import('react')>('react');
@@ -65,6 +66,9 @@ jest.mock('@atlaskit/editor-core/composable-editor', () => ({
         data-disabled={String(props.disabled ?? false)}
         data-document={JSON.stringify(props.defaultValue)}
         data-quick-insert={String(props.quickInsert ?? false)}
+        data-popups-mount-point={
+          props.popupsMountPoint === document.body ? 'body' : 'other'
+        }
         data-two-line-toolbar={String(
           props.featureFlags?.twoLineEditorToolbar ?? false,
         )}
@@ -200,6 +204,21 @@ describe('Atlaskit product editor', () => {
           },
         }),
       }),
+    );
+  });
+
+  it('mounts toolbar popups outside the scrollable toolbar container', () => {
+    render(
+      <Editor
+        mediaProvider={mediaProvider}
+        document={initialDocument}
+        onChange={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('composable-editor')).toHaveAttribute(
+      'data-popups-mount-point',
+      'body',
     );
   });
 
