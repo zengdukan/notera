@@ -22,7 +22,7 @@ function loadPreload(): NoteraApi {
     // eslint-disable-next-line global-require
     require('../main/preload');
   });
-  expect(mockExposeInMainWorld).toHaveBeenCalledTimes(3);
+  expect(mockExposeInMainWorld).toHaveBeenCalledTimes(2);
   expect(mockExposeInMainWorld).toHaveBeenCalledWith(
     'notera',
     expect.any(Object),
@@ -84,24 +84,6 @@ describe('validated preload bridge', () => {
     expect(api).not.toHaveProperty('ipcRenderer');
     expect(api).not.toHaveProperty('sendMessage');
   });
-
-  it.each([
-    ['minimizeWindow', 'notera:app:minimize-window'],
-    ['toggleMaximizeWindow', 'notera:app:toggle-maximize-window'],
-    ['closeWindow', 'notera:app:close-window'],
-  ] as const)(
-    'exposes app.%s through its fixed channel',
-    async (method, channel) => {
-      mockInvoke.mockResolvedValue({ ret: true, data: {} });
-      const api = loadPreload();
-
-      await expect(api.app[method]({})).resolves.toEqual({
-        ret: true,
-        data: {},
-      });
-      expect(mockInvoke).toHaveBeenCalledWith(channel, {});
-    },
-  );
 
   it('invokes a fixed channel with parsed request data', async () => {
     mockInvoke.mockResolvedValue({

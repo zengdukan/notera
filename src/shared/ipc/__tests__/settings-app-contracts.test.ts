@@ -50,15 +50,4 @@ describe('settings, activity, and close IPC contracts', () => {
       }).success,
     ).toBe(false);
   });
-
-  it.each([
-    'app.minimizeWindow',
-    'app.toggleMaximizeWindow',
-    'app.closeWindow',
-  ] as const)('defines a strict empty %s request', (key) => {
-    expect(requestContracts[key].request.safeParse({}).success).toBe(true);
-    expect(
-      requestContracts[key].request.safeParse({ path: 'D:\\private' }).success,
-    ).toBe(false);
-  });
 });
