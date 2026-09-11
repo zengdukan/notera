@@ -132,7 +132,6 @@ describe('NoteWorkspace', () => {
     const editor = await screen.findByLabelText('Editor surface');
 
     expect(container.firstElementChild).toHaveStyle({ overflow: 'hidden' });
-    expect(container.firstElementChild).toHaveStyle({ height: '100%' });
     expect(editor.parentElement).toHaveStyle({
       overflow: 'hidden',
       backgroundColor: 'var(--ds-surface-sunken)',
@@ -165,13 +164,9 @@ describe('NoteWorkspace', () => {
 
     const paper = await screen.findByTestId('note-paper-surface');
     expect(paper).toHaveStyle({ width: '297mm' });
-    await user.click(
-      screen.getByRole('button', { name: 'Switch to StandardPage width' }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Switch to A4' }));
     expect(paper).toHaveStyle({ width: '210mm' });
-    await user.click(
-      screen.getByRole('button', { name: 'Switch to WidePage width' }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Switch to A3' }));
     expect(paper).toHaveStyle({ width: '297mm' });
   });
 

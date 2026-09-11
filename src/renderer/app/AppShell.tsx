@@ -2,9 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Button from '@atlaskit/button/new';
 import Heading from '@atlaskit/heading';
 import CheckCircleIcon from '@atlaskit/icon/core/check-circle';
-import { Main } from '@atlaskit/navigation-system/layout/main';
-import { Root } from '@atlaskit/navigation-system/layout/root';
-import { Box, Stack, Text, xcss } from '@atlaskit/primitives';
+import { Box, Inline, Stack, Text, xcss } from '@atlaskit/primitives';
 import SectionMessage from '@atlaskit/section-message';
 import Skeleton from '@atlaskit/skeleton';
 import Spinner from '@atlaskit/spinner';
@@ -22,12 +20,10 @@ import { NavigationWorkspace } from '../navigation/NavigationWorkspace';
 import { ActiveDocumentLifecycle } from '../notes/document-lifecycle';
 import { NoteWriteCoordinator } from '../notes/note-write-coordinator';
 import { useSession } from './session';
-import { WindowTitleBar } from './WindowTitleBar';
 import './AppShell.css';
 
 const shellStyles = xcss({
-  height: '100%',
-  minHeight: '0',
+  minHeight: '100vh',
   backgroundColor: 'elevation.surface',
 });
 
@@ -152,12 +148,24 @@ export function AppShell({
     return () => window.clearTimeout(timer);
   }, [dispatch, state]);
 
-  const workspaceReady = loaded && state.status === 'unlocked';
-
   return (
-    <Root defaultSideNavCollapsed={false} isSideNavShortcutEnabled>
-      <WindowTitleBar client={client} />
-      {workspaceReady ? (
+    <Box as="main" xcss={shellStyles}>
+      {!loaded || state.status === 'booting' ? <StartupView /> : null}
+      {loaded && (state.status === 'locked' || state.status === 'unlocking') ? (
+        <ProfileGate
+          client={client}
+          profiles={profiles}
+          onProfileCreated={rememberCreatedProfile}
+          onProfileRemoved={forgetRemovedProfile}
+        >
+          {null}
+        </ProfileGate>
+      ) : null}
+      {loaded && state.status === 'fatal' ? <FatalStartupView /> : null}
+      {loaded && state.status === 'transitioning' ? (
+        <WorkspaceTransitionView />
+      ) : null}
+      {loaded && state.status === 'unlocked' ? (
         <ProfileGate
           client={client}
           profiles={profiles}
@@ -170,29 +178,8 @@ export function AppShell({
             writeCoordinator={writeCoordinator}
           />
         </ProfileGate>
-      ) : (
-        <Main testId="notera-main-content">
-          <Box xcss={shellStyles}>
-            {!loaded || state.status === 'booting' ? <StartupView /> : null}
-            {loaded &&
-            (state.status === 'locked' || state.status === 'unlocking') ? (
-              <ProfileGate
-                client={client}
-                profiles={profiles}
-                onProfileCreated={rememberCreatedProfile}
-                onProfileRemoved={forgetRemovedProfile}
-              >
-                {null}
-              </ProfileGate>
-            ) : null}
-            {loaded && state.status === 'fatal' ? <FatalStartupView /> : null}
-            {loaded && state.status === 'transitioning' ? (
-              <WorkspaceTransitionView />
-            ) : null}
-          </Box>
-        </Main>
-      )}
-    </Root>
+      ) : null}
+    </Box>
   );
 }
 
@@ -206,6 +193,21 @@ function StartupBrand() {
         <FormattedMessage id="app.name" />
       </Heading>
     </Stack>
+  );
+}
+
+function StartupHeader() {
+  return (
+    <header className="notera-startup-header">
+      <Inline alignBlock="center" space="space.100">
+        <span className="notera-startup-header__mark">
+          <span className="notera-startup-header__brand-image" />
+        </span>
+        <Heading size="medium">
+          <FormattedMessage id="app.name" />
+        </Heading>
+      </Inline>
+    </header>
   );
 }
 
@@ -239,7 +241,8 @@ function FatalStartupView() {
 
   return (
     <div className="notera-startup-page">
-      <div className="notera-startup-page__main">
+      <StartupHeader />
+      <main className="notera-startup-page__main">
         <section className="notera-startup-card">
           <Stack space="space.400">
             <SectionMessage
@@ -261,7 +264,7 @@ function FatalStartupView() {
             </Stack>
           </Stack>
         </section>
-      </div>
+      </main>
     </div>
   );
 }

@@ -13,10 +13,6 @@ export const chineseMessages = Object.freeze({
   'app.fatalRecovery':
     '关闭 Notera 后重新打开即可重试。此处不会执行修复或重置操作。',
   'app.close': '关闭应用',
-  'window.controls': '窗口控制',
-  'window.minimize': '最小化窗口',
-  'window.toggleMaximize': '最大化或还原窗口',
-  'window.close': '关闭窗口',
   'profile.hero.eyebrow': 'NOTERA · 本地加密笔记',
   'profile.hero.title': '你的笔记，留在这台设备。',
   'profile.hero.description':

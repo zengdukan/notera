@@ -108,7 +108,7 @@ describe('application internationalization', () => {
       'notes.header.mode.view': 'Preview',
       'notes.header.mode.edit': 'Edit',
       'notes.header.pageSize.narrow': 'Switch to StandardPage width',
-      'notes.header.pageSize.wide': 'Switch to WidePage width',
+      'notes.header.pageSize.wide': 'Swtich to WidePage width',
     });
     expect(messagesFor('zh-CN')).toMatchObject({
       'notes.header.save.clean': '已保存',

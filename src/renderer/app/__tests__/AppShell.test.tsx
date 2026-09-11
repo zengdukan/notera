@@ -55,7 +55,6 @@ describe('application shell', () => {
 
     render(providers(<AppShell client={client} />));
 
-    expect(screen.getByTestId('notera-window-title-bar')).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(
       'Loading local Profiles and session…',
     );
@@ -67,7 +66,6 @@ describe('application shell', () => {
     session.resolve({ state: 'LOCKED' });
 
     expect(await screen.findByText('Create your first Profile')).toBeVisible();
-    expect(screen.getAllByTestId('notera-window-title-bar')).toHaveLength(1);
   });
 
   it('shows the approved workspace transition before rendering notes', async () => {
@@ -126,7 +124,6 @@ describe('application shell', () => {
     });
 
     expect(await screen.findByText('Profile unlocked')).toBeVisible();
-    expect(screen.getAllByTestId('notera-window-title-bar')).toHaveLength(1);
     expect(screen.getByText('Entering your local workspace…')).toBeVisible();
     expect(screen.getByLabelText('Preparing workspace')).toBeVisible();
     expect(screen.queryByText('Note workspace')).not.toBeInTheDocument();
@@ -161,7 +158,6 @@ describe('application shell', () => {
     render(providers(<AppShell client={client} />));
 
     expect(await screen.findByText('Note workspace')).toBeVisible();
-    expect(screen.getAllByTestId('notera-window-title-bar')).toHaveLength(1);
     expect(screen.queryByText('Profile unlocked')).not.toBeInTheDocument();
   });
 
@@ -178,7 +174,6 @@ describe('application shell', () => {
     render(providers(<AppShell client={client} />));
 
     expect(await screen.findByText('Notera could not start.')).toBeVisible();
-    expect(screen.getAllByTestId('notera-window-title-bar')).toHaveLength(1);
     expect(
       screen.getByText(
         'Notera could not access local Profile information. Restart the app and try again.',

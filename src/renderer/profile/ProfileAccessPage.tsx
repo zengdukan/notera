@@ -7,8 +7,8 @@ import { Box, Inline, Stack, Text } from '@atlaskit/primitives/compiled';
 import { FormattedMessage } from 'react-intl';
 
 import { CreateProfileForm } from './CreateProfileForm';
+import { ProfileAccessHeader } from './ProfileAccessHeader';
 import { ProfileAccessHero } from './ProfileAccessHero';
-import { ProfileLanguageSwitcher } from './ProfileLanguageSwitcher';
 import { ProfileList, type ProfileListItem } from './ProfileList';
 import { UnlockProfileForm } from './UnlockProfileForm';
 
@@ -17,16 +17,15 @@ import type { NoteraClient } from '../platform/notera-client';
 
 const styles = cssMap({
   root: {
-    height: '100%',
-    minHeight: '0',
+    minHeight: '100vh',
     backgroundColor: 'var(--ds-surface-sunken)',
     display: 'grid',
-    overflowY: 'auto',
+    gridTemplateRows: 'auto minmax(0, 1fr)',
   },
   main: {
     width: '100%',
     maxWidth: '1200px',
-    minHeight: '100%',
+    minHeight: '0',
     marginInline: 'auto',
     boxSizing: 'border-box',
     display: 'grid',
@@ -99,14 +98,12 @@ export function ProfileAccessPage({
   };
 
   return (
-    <Box testId="profile-access-page" xcss={styles.root}>
-      <Box as="section" testId="profile-access-content" xcss={styles.main}>
+    <Box xcss={styles.root}>
+      <ProfileAccessHeader client={client} />
+      <Box as="main" xcss={styles.main}>
         <ProfileAccessHero hasProfiles={profiles.length > 0} />
-        <Box as="section" testId="profile-access-panel" xcss={styles.panel}>
+        <Box as="section" xcss={styles.panel}>
           <Stack space="space.300">
-            <Inline alignInline="end">
-              <ProfileLanguageSwitcher client={client} />
-            </Inline>
             <AccessPanelHeader
               creating={isCreating}
               isFirstProfile={profiles.length === 0}
