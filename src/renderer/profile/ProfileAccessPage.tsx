@@ -8,10 +8,12 @@ import { FormattedMessage } from 'react-intl';
 
 import { CreateProfileForm } from './CreateProfileForm';
 import { ProfileAccessHero } from './ProfileAccessHero';
+import { ProfileLanguageSwitcher } from './ProfileLanguageSwitcher';
 import { ProfileList, type ProfileListItem } from './ProfileList';
 import { UnlockProfileForm } from './UnlockProfileForm';
 
 /* eslint-disable @atlaskit/design-system/no-unsafe-design-token-usage, @atlaskit/design-system/ensure-design-token-usage */
+import type { NoteraClient } from '../platform/notera-client';
 
 const styles = cssMap({
   root: {
@@ -74,11 +76,13 @@ export function ProfileAccessPage({
   isBusy = false,
   onCreate,
   onUnlock,
+  client,
 }: {
   readonly profiles: readonly ProfileListItem[];
   readonly isBusy?: boolean;
   readonly onCreate: Parameters<typeof CreateProfileForm>[0]['onCreate'];
   readonly onUnlock: Parameters<typeof UnlockProfileForm>[0]['onUnlock'];
+  readonly client?: NoteraClient;
 }) {
   const [creating, setCreating] = useState(profiles.length === 0);
   const [selected, setSelected] = useState<ProfileListItem | undefined>(
@@ -100,6 +104,9 @@ export function ProfileAccessPage({
         <ProfileAccessHero hasProfiles={profiles.length > 0} />
         <Box as="section" testId="profile-access-panel" xcss={styles.panel}>
           <Stack space="space.300">
+            <Inline alignInline="end">
+              <ProfileLanguageSwitcher client={client} />
+            </Inline>
             <AccessPanelHeader
               creating={isCreating}
               isFirstProfile={profiles.length === 0}

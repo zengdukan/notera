@@ -72,6 +72,7 @@ export function ProfileGate({
     return (
       <ProfileAccessPage
         profiles={profiles}
+        client={client}
         isBusy={state.status === 'unlocking'}
         onCreate={async (value) => {
           const profile = await controller.create(value);

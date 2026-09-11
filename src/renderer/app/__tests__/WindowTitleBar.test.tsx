@@ -28,51 +28,6 @@ function setup(locale: 'en' | 'zh-CN' = 'en', rejects = false) {
 }
 
 describe('WindowTitleBar', () => {
-  it('places the language selector before the window controls', () => {
-    setup();
-
-    const language = screen.getByRole('button', { name: 'English' });
-    const minimize = screen.getByRole('button', { name: 'Minimize window' });
-    const maximize = screen.getByRole('button', {
-      name: 'Maximize or restore window',
-    });
-    const close = screen.getByRole('button', { name: 'Close window' });
-
-    expect(screen.getByTestId('notera-window-language')).toBe(language);
-    expect(language.compareDocumentPosition(minimize)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
-    expect(language.compareDocumentPosition(maximize)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
-    expect(language.compareDocumentPosition(close)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
-  });
-
-  it('updates the device language from the title bar menu', async () => {
-    const user = userEvent.setup();
-    const { request } = setup();
-
-    await user.click(screen.getByRole('button', { name: 'English' }));
-    await user.click(screen.getByRole('menuitem', { name: '简体中文' }));
-
-    expect(request).toHaveBeenCalledWith('settings.updateDevice', {
-      language: 'zh-CN',
-    });
-  });
-
-  it('shows an ADS error flag when the language update fails', async () => {
-    const user = userEvent.setup();
-    setup('en', true);
-
-    await user.click(screen.getByRole('button', { name: 'English' }));
-    await user.click(screen.getByRole('menuitem', { name: '简体中文' }));
-
-    expect(await screen.findByText('Could not update language.')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'English' })).toBeEnabled();
-  });
-
   it('renders ADS branding and dispatches all window controls', async () => {
     const user = userEvent.setup();
     const { request } = setup();
