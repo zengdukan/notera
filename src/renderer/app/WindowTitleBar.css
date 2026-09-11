@@ -1,4 +1,0 @@
-/* Atlaskit renders this desktop list with its base display:none rule. */
-[data-testid='notera-window-title-bar'] nav > [role='list'] {
-  display: flex;
-}
